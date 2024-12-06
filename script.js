@@ -9,7 +9,7 @@ async function main() {
     el.dataset.oriUrl = el.src;
     el.onerror = handleError;
     el.onload = handleLoad;
-    el.src = el.src.replace(/thumbnail/g, "/sample");
+    el.src = el.src.replace(/thumbnail/g, "sample");
   }
 
   document.body.style.display = "initial";
@@ -49,7 +49,9 @@ function handleError() {
   const retry = parseInt(this.dataset.retry || "0");
 
   if (retry >= 5) this.src = this.dataset.oriUrl;
-  else if (this.src.includes("/sample")) this.src = toImages(this.src);
+  else if (this.src.includes("org/sample")) this.src = this.src.replace("/sample", "//sample");
+  else if (this.src.includes("//sample")) this.src = toImages(this.src);
+  else if (this.src.includes("//images")) this.src = this.src.replace("//images", "/images");
   else if (this.src.includes("/images")) this.src = this.src.replace(/jp(e?)g/, "png");
 
   this.dataset.retry = retry + 1;
