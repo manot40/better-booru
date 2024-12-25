@@ -8,10 +8,6 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-12-25',
 
-  typescript: {
-    typeCheck: 'build',
-  },
-
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', 'shadcn-nuxt', '@vueuse/nuxt'],
 
   shadcn: {
