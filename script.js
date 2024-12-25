@@ -46,13 +46,14 @@ function handleLoad() {
 }
 
 function handleError() {
+  const srcUrl = this.src.split("?").at(0) || this.src;
   const retry = parseInt(this.dataset.retry || "0");
 
   if (retry >= 5) this.src = this.dataset.oriUrl;
-  else if (this.src.includes("org/sample")) this.src = this.src.replace("/sample", "//sample");
-  else if (this.src.includes("//sample")) this.src = toImages(this.src);
-  else if (this.src.includes("//images")) this.src = this.src.replace("//images", "/images");
-  else if (this.src.includes("/images")) this.src = this.src.replace(/jp(e?)g/, "png");
+  else if (srcUrl.includes("org/sample")) this.src = srcUrl.replace("/sample", "//sample");
+  else if (srcUrl.includes("//sample")) this.src = toImages(srcUrl);
+  else if (srcUrl.includes("//images")) this.src = srcUrl.replace("//images", "/images");
+  else if (srcUrl.includes("/images")) this.src = srcUrl.replace(/jp(e?)g/, "png");
 
   this.dataset.retry = retry + 1;
 }
