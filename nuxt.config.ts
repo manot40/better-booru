@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     typeCheck: 'build',
   },
 
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', 'shadcn-nuxt'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', 'shadcn-nuxt', '@vueuse/nuxt'],
 
   shadcn: {
     prefix: '',
