@@ -40,8 +40,11 @@ const updateQuery = debounce((tags: string[]) => {
 
 const unsub = router.afterEach(({ query }) => {
   const qTags = (<string | undefined>query.tags)?.split('+');
-  if (qTags && qTags.length != tags.value.length && qTags.every((a) => tags.value.includes(a)))
+  if (!qTags) tags.value.length > 0 && (tags.value = []);
+  else if (qTags.length != tags.value.length && qTags.every((a) => tags.value.includes(a))) {
     tags.value = qTags;
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+  }
 });
 
 onUnmounted(unsub);
@@ -58,7 +61,11 @@ onUnmounted(unsub);
       </TagsInputItem>
     </div>
 
-    <ComboboxRoot v-model="tags" v-model:open="open" v-model:searchTerm="searchTerm" class="w-full">
+    <ComboboxRoot
+      v-model="tags"
+      v-model:open="open"
+      v-model:searchTerm="searchTerm"
+      class="w-full [&>input]:w-full">
       <ComboboxAnchor as-child>
         <ComboboxInput placeholder="Search..." as-child>
           <TagsInputInput @keydown.enter.prevent />
@@ -70,7 +77,7 @@ onUnmounted(unsub);
           <CommandList
             side="top"
             position="popper"
-            class="w-[--radix-popper-anchor-width] rounded-md mt-2 border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2">
+            class="z-40 w-[--radix-popper-anchor-width] rounded-md mt-2 border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2">
             <CommandEmpty />
             <CommandGroup>
               <CommandItem

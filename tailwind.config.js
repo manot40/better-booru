@@ -1,7 +1,8 @@
-const animate = require('tailwindcss-animate');
+import animate from 'tailwindcss-animate';
+import { theme as defaultTheme } from 'tailwindcss/defaultConfig';
 
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   darkMode: 'class',
   safelist: ['dark'],
   prefix: '',
@@ -15,6 +16,9 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Rubik', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

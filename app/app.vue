@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '@fontsource-variable/rubik';
+
 const colorMode = useColorMode();
 
 const htmlAttrs = computed(() => ({ class: colorMode.value }));

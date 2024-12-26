@@ -15,6 +15,7 @@
     "prettier:check": "prettier -c ."
   },
   "devDependencies": {
+    "@fontsource-variable/rubik": "^5.1.0",
     "@nuxtjs/color-mode": "3.5.2",
     "@nuxtjs/tailwindcss": "^6.12.2",
     "@types/bun": "^1.1.14",

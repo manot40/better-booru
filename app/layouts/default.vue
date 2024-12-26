@@ -22,7 +22,7 @@ function toggleTheme() {
 
 <template>
   <Card
-    class="sticky z-30 top-0 rounded-none border-x-0 bg-card/90 backdrop-blur-lg"
+    class="sticky z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg"
     :data-show="top < 300 || scrollUp">
     <div class="flex items-center justify-between gap-4 px-3 py-2">
       <div class="w-6"></div>

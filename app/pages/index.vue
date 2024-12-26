@@ -3,7 +3,7 @@ import type { BooruParams } from '~~/types/booru';
 
 import 'photoswipe/style.css';
 
-import { ChevronLeft, ChevronRight, Download, RefreshCcw } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, SquareArrowOutUpRight } from 'lucide-vue-next';
 
 const COLUMNS = 'columns-2 md:columns-3 xl:columns-4 gap-x-2 md:gap-x-3 lg:gap-x-4 p-2 md:p-3 lg:p-4';
 
@@ -38,10 +38,11 @@ function updatePage(pageState: 'prev' | 'next' | number) {
           target="_blank"
           class="ps__item"
           data-cropped="true"
+          :id="item.id"
           :data-pswp-src="item.file_url"
           :data-pswp-width="item.width"
           :data-pswp-height="item.height"
-          :to="`https://safebooru.org/index.php?page=post&s=view&id=${item.id}`">
+          :to="createBooruURL(item.id)">
           <img
             class="w-full transition-all duration-200"
             :key="item.hash"
@@ -50,15 +51,14 @@ function updatePage(pageState: 'prev' | 'next' | number) {
             :width="item.sample_width"
             :height="item.sample_height"
             :data-hires="item.file_url"
+            :data-sample="item.sample_url"
             @error="handleImageError($event, item)" />
         </NuxtLink>
       </div>
     </template>
 
-    <template v-if="rendered">
-      <Teleport to=".pswp__open"><Download class="w-5 h-5 mx-auto" /></Teleport>
-      <Teleport to=".pswp__reload"><RefreshCcw class="w-5 h-5 mx-auto" /></Teleport>
-    </template>
+    <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>
+
     <Teleport to=".prev-btn">
       <Button
         variant="ghost"
