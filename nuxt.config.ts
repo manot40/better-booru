@@ -14,4 +14,9 @@ export default defineNuxtConfig({
     prefix: '',
     componentDir: './app/components/ui',
   },
+
+  colorMode: {
+    storage: 'cookie',
+    fallback: 'dark',
+  },
 });

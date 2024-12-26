@@ -1,42 +1,30 @@
 <script setup lang="ts">
-import type { BooruData, BooruParams } from '~~/types/booru';
+import type { BooruParams } from '~~/types/booru';
 
 import 'photoswipe/style.css';
 
-import PhotoSwipeLightbox from 'photoswipe/lightbox';
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Download, RefreshCcw } from 'lucide-vue-next';
 
 const COLUMNS = 'columns-2 md:columns-3 xl:columns-4 gap-x-2 md:gap-x-3 lg:gap-x-4 p-2 md:p-3 lg:p-4';
 
 const { query, update } = usePaginationQuery<BooruParams>();
-const { data, error } = useFetch<BooruData[]>('/api/list', { query });
+const { data } = useFetch('/api/list', { query });
 
-const lightbox = ref<PhotoSwipeLightbox>();
 const container = useTemplateRef('container');
+const { rendered } = useLightbox(container);
 
-onMounted(createLightbox);
-onUnmounted(destroyLightbox);
+function updatePage(pageState: 'prev' | 'next' | number) {
+  if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+  if (typeof pageState == 'number') return update({ page: pageState });
 
-function createLightbox() {
-  if (!container.value) return;
-  const lb = (lightbox.value = new PhotoSwipeLightbox({
-    initialZoomLevel: 'fit',
-    gallery: container.value,
-    children: '.ps__item',
-    pswpModule: () => import('photoswipe'),
-  }));
-
-  lb.init();
-}
-function destroyLightbox() {
-  if (!lightbox.value) return;
-  lightbox.value.destroy();
-  lightbox.value = undefined;
+  const qValue = query.value.page;
+  if (isNaN(+qValue)) update({ page: 1 });
+  else update({ page: pageState == 'prev' ? qValue - 1 : qValue + 1 });
 }
 </script>
 
 <template>
-  <div ref="container" :class="COLUMNS">
+  <div ref="container" :class="COLUMNS" class="mb-6">
     <template v-if="!data">
       <Skeleton
         v-for="_ in 20"
@@ -55,27 +43,33 @@ function destroyLightbox() {
           :data-pswp-height="item.height"
           :to="`https://safebooru.org/index.php?page=post&s=view&id=${item.id}`">
           <img
-            @error="handleImageError($event, item)"
+            class="w-full transition-all duration-200"
             :key="item.hash"
             :alt="item.tags"
             :src="item.sample_url"
+            :width="item.sample_width"
+            :height="item.sample_height"
             :data-hires="item.file_url"
-            class="w-full"
-            loading="lazy" />
+            @error="handleImageError($event, item)" />
         </NuxtLink>
       </div>
+    </template>
+
+    <template v-if="rendered">
+      <Teleport to=".pswp__open"><Download class="w-5 h-5 mx-auto" /></Teleport>
+      <Teleport to=".pswp__reload"><RefreshCcw class="w-5 h-5 mx-auto" /></Teleport>
     </template>
     <Teleport to=".prev-btn">
       <Button
         variant="ghost"
         class="rounded-full px-2.5"
-        :disabled="query.page < 2"
-        @click="update({ page: query.page - 1 })">
+        @click="updatePage('prev')"
+        :disabled="isNaN(+query.page) || query.page < 2">
         <ChevronLeft class="w-6 h-6" />
       </Button>
     </Teleport>
     <Teleport to=".next-btn">
-      <Button variant="ghost" class="rounded-full px-2.5" @click="update({ page: query.page + 1 })">
+      <Button variant="ghost" class="rounded-full px-2.5" @click="updatePage('next')">
         <ChevronRight class="w-6 h-6" />
       </Button>
     </Teleport>

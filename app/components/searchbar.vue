@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { BooruAutocomplete } from '~~/types/booru';
-
 import { debounce } from 'perfect-debounce';
 
 import {
@@ -15,12 +13,15 @@ import {
 const route = useRoute();
 const router = useRouter();
 
-const tags = ref((<string | undefined>route.query.tags)?.split('+') || []);
-const searchTags = shallowRef<BooruAutocomplete[]>([]);
-
 const open = ref(false);
+const tags = ref((<string | undefined>route.query.tags)?.split('+') || []);
+const searchTerm = ref('');
 
-const filteredSearchTags = computed(() => searchTags.value.filter((a) => !tags.value.includes(a.value)));
+const q = debouncedRef(searchTerm, 600);
+const query = computed(() => ({ q: q.value }));
+const { data: searchTags } = useFetch('/api/autocomplete', { query });
+
+const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.includes(a.value)) || []);
 
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
   const value = ev.detail.value;
@@ -36,11 +37,6 @@ const updateQuery = debounce((tags: string[]) => {
     query: { tags: tags.join('+') },
   });
 }, 600);
-const updateSearchTags = debounce(async (q: string) => {
-  if (!q) return;
-  const result = await $fetch<BooruAutocomplete[]>('/api/autocomplete', { query: { q } });
-  searchTags.value = result;
-}, 600);
 
 const unsub = router.afterEach(({ query }) => {
   const qTags = (<string | undefined>query.tags)?.split('+');
@@ -53,14 +49,16 @@ onUnmounted(unsub);
 
 <template>
   <TagsInput v-model="tags" @update:modelValue="updateQuery(<string[]>$event)">
-    <div class="flex gap-2 flex-wrap items-center max-h-16 overflow-y-auto" v-show="tags.length > 0">
+    <div
+      class="flex gap-2 flex-wrap items-center max-h-8 md:max-h-16 overflow-y-auto"
+      v-show="tags.length > 0">
       <TagsInputItem v-for="item in tags" :key="item" :value="item">
         <TagsInputItemText class="text-xs" />
         <TagsInputItemDelete />
       </TagsInputItem>
     </div>
 
-    <ComboboxRoot v-model="tags" v-model:open="open" @update:searchTerm="updateSearchTags">
+    <ComboboxRoot v-model="tags" v-model:open="open" v-model:searchTerm="searchTerm" class="w-full">
       <ComboboxAnchor as-child>
         <ComboboxInput placeholder="Search..." as-child>
           <TagsInputInput @keydown.enter.prevent />
@@ -78,7 +76,7 @@ onUnmounted(unsub);
               <CommandItem
                 :key="item.value"
                 :value="item.value"
-                v-for="item in filteredSearchTags"
+                v-for="item in filtered"
                 @select.prevent="handleFilter">
                 {{ item.label }}
               </CommandItem>
