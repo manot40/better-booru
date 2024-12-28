@@ -10,10 +10,11 @@ import {
   type ComboboxItemEmits,
 } from 'radix-vue';
 
+const open = defineModel<boolean>('open');
+
 const route = useRoute();
 const router = useRouter();
 
-const open = ref(false);
 const tags = ref((<string | undefined>route.query.tags)?.split('+') || []);
 const searchTerm = ref('');
 
@@ -51,7 +52,7 @@ onUnmounted(unsub);
 </script>
 
 <template>
-  <TagsInput v-model="tags" @update:modelValue="updateQuery(<string[]>$event)">
+  <TagsInput v-model="tags" @update:modelValue="updateQuery(<string[]>$event)" class="bg-background/50">
     <div
       class="flex gap-2 flex-wrap items-center max-h-8 md:max-h-16 overflow-y-auto"
       v-show="tags.length > 0">
@@ -66,8 +67,8 @@ onUnmounted(unsub);
       v-model:open="open"
       v-model:searchTerm="searchTerm"
       class="w-full [&>input]:w-full">
-      <ComboboxAnchor as-child>
-        <ComboboxInput placeholder="Search..." as-child>
+      <ComboboxAnchor asChild>
+        <ComboboxInput placeholder="Search..." asChild>
           <TagsInputInput @keydown.enter.prevent />
         </ComboboxInput>
       </ComboboxAnchor>
@@ -75,9 +76,14 @@ onUnmounted(unsub);
       <ComboboxPortal>
         <ComboboxContent>
           <CommandList
-            side="top"
+            avoidCollisions
+            :sideOffset="12"
             position="popper"
-            class="z-40 w-[--radix-popper-anchor-width] rounded-md mt-2 border bg-popover text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2">
+            :class="[
+              'z-40 max-h-64 !bg-popover/90 backdrop-blur-lg',
+              'w-[--radix-popper-anchor-width] rounded-md mt-2 border bg-popover text-popover-foreground shadow-md outline-none',
+              'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+            ]">
             <CommandEmpty />
             <CommandGroup>
               <CommandItem

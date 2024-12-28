@@ -9,14 +9,17 @@ export function useScrollDirection(offset = 0) {
   useEventListener('scroll', function () {
     const current = window.scrollY || document.documentElement.scrollTop;
     top.value = current;
-    up.value = current < lastPos.value - offset;
-    down.value = current > lastPos.value + offset;
     isBot.value = current > this.document.documentElement.scrollHeight - 1200;
+
+    const up_ = current < lastPos.value;
+    const down_ = current > lastPos.value;
+    up.value = up_ === up.value ? up_ : current < lastPos.value - offset;
+    down.value = down_ === down.value ? down_ : current > lastPos.value + offset;
   });
 
   const isBottom = refThrottled(isBot, 100);
-  const scrollUp = refThrottled(up, 100);
-  const scrollDown = refThrottled(down, 100);
+  const scrollUp = refThrottled(up, 250);
+  const scrollDown = refThrottled(down, 250);
 
   return { top, isBottom, scrollUp, scrollDown };
 }

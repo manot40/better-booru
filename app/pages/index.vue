@@ -24,7 +24,7 @@ function updatePage(pageState: 'prev' | 'next' | number) {
 </script>
 
 <template>
-  <div ref="container" :class="COLUMNS" class="mb-6">
+  <div ref="container" :class="COLUMNS" class="mb-4">
     <template v-if="!data">
       <Skeleton
         v-for="_ in 20"

@@ -2,11 +2,14 @@
 import { Sun, Moon, SwatchBook } from 'lucide-vue-next';
 
 const colorMode = useColorMode();
-const { top, scrollUp, isBottom } = useScrollDirection();
+const { top, scrollUp, isBottom } = useScrollDirection(200);
 
 const ThemeIcon = computed(() =>
   colorMode.preference === 'system' ? SwatchBook : colorMode.preference === 'light' ? Sun : Moon
 );
+
+const openSearch = ref(false);
+watch(scrollUp, (v) => !v && (openSearch.value = false));
 
 function toggleTheme() {
   switch (colorMode.preference) {
@@ -45,7 +48,7 @@ function toggleTheme() {
       class="flex justify-between items-center p-2 gap-2 max-w-sm md:max-w-md mx-auto bg-card/80 backdrop-blur-lg"
       @click="colorMode.preference = 'dark'">
       <div class="prev-btn" />
-      <Searchbar class="flex-1" />
+      <Searchbar class="flex-1" v-model:open="openSearch" />
       <div class="next-btn" />
     </Card>
   </div>

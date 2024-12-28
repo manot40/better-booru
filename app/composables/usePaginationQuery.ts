@@ -61,7 +61,7 @@ export const usePaginationQuery = <T extends object>(initial = {} as Query<T>): 
 const processQuery = <T extends object>(query: T) =>
   Object.entries(query).reduce(
     (acc, [key, value]) => {
-      if (value === undefined) return acc;
+      if (value === undefined || value === '') return acc;
 
       if (value === 'null') acc[key] = null;
       else if (value === 'true' || value === 'false') acc[key] = value === 'true';
