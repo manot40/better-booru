@@ -91,7 +91,14 @@ onUnmounted(unsub);
                 :value="item.value"
                 v-for="item in filtered"
                 @select.prevent="handleFilter">
-                {{ item.label }}
+                <div class="flex items-center justify-between gap-2 w-full">
+                  {{ startCase(item.label) }}
+                  <Badge
+                    :variant="item.category === 'copyright' ? 'default' : 'outline'"
+                    v-if="item.category && item.category != 'tag'">
+                    {{ startCase(item.category) }}
+                  </Badge>
+                </div>
               </CommandItem>
             </CommandGroup>
           </CommandList>

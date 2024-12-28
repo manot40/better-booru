@@ -1,8 +1,13 @@
-import type { BooruData } from '~~/types/booru';
+import type { Post } from '~~/types/common';
+import type { AsyncDataRequestStatus } from '#app';
 
 export const randomInt = (from: number, to: number) => Math.floor(Math.random() * (to - from + 1) + from);
 
-export function handleImageError(e: Event, item: BooruData) {
+export const isPend = (status: AsyncDataRequestStatus) => status === 'pending';
+
+export const unwrapRef = <T = any>(v: MaybeRef<T>) => (isRef(v) ? v.value : v);
+
+export function handleImageError(e: Event, item: Post) {
   const el = <HTMLImageElement>e.currentTarget;
   const retry = isNaN(+el.dataset.retry!) ? 0 : +el.dataset.retry!;
 
@@ -24,4 +29,8 @@ export function handleImageError(e: Event, item: BooruData) {
   }
 }
 
-export const createBooruURL = (id: number) => `https://safebooru.org/index.php?page=post&s=view&id=${id}`;
+export const createBooruURL = (id: number) => {
+  const config = useUserConfig();
+  const hostname = config.provider === 'safebooru' ? 'safebooru.org' : 'gelbooru.com';
+  return `https://${hostname}/index.php?page=post&s=view&id=${id}`;
+};

@@ -8,7 +8,12 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-12-25',
 
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', 'shadcn-nuxt', '@vueuse/nuxt'],
+  runtimeConfig: {
+    gelbooruUserId: '',
+    gelbooruApiKey: '',
+  },
+
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
 
   shadcn: {
     prefix: '',

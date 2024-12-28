@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BooruParams } from '~~/types/booru';
+import type { ListParams } from '~~/types/common';
 
 import 'photoswipe/style.css';
 
@@ -7,8 +7,10 @@ import { ChevronLeft, ChevronRight, SquareArrowOutUpRight } from 'lucide-vue-nex
 
 const COLUMNS = 'columns-2 md:columns-3 xl:columns-4 gap-x-2 md:gap-x-3 lg:gap-x-4 p-2 md:p-3 lg:p-4';
 
-const { query, update } = usePaginationQuery<BooruParams>();
-const { data } = useFetch('/api/list', { query });
+const userConfig = useUserConfig();
+
+const { query, update } = usePaginationQuery<ListParams>();
+const { data, refresh } = useFetch('/api/list', { query });
 
 const container = useTemplateRef('container');
 const { rendered } = useLightbox(container);
@@ -21,6 +23,12 @@ function updatePage(pageState: 'prev' | 'next' | number) {
   if (isNaN(+qValue)) update({ page: 1 });
   else update({ page: pageState == 'prev' ? qValue - 1 : qValue + 1 });
 }
+
+watch([() => userConfig.provider, () => userConfig.rating], () => {
+  const page = query.value.page;
+  if (page && page > 1) update({ page: 1 });
+  setTimeout(() => refresh(), 100);
+});
 </script>
 
 <template>
@@ -32,7 +40,7 @@ function updatePage(pageState: 'prev' | 'next' | number) {
         :style="`height: ${randomInt(300, 600)}px`" />
     </template>
     <template v-else>
-      <div v-for="item in data" class="mb-2 md:mb-3 lg:mb-4 overflow-hidden rounded-xl">
+      <div v-for="item in data.post" :key="item.hash" class="mb-2 md:mb-3 lg:mb-4 overflow-hidden rounded-xl">
         <NuxtLink
           external
           target="_blank"
@@ -47,11 +55,10 @@ function updatePage(pageState: 'prev' | 'next' | number) {
             class="w-full transition-all duration-200"
             :key="item.hash"
             :alt="item.tags"
-            :src="item.sample_url"
-            :width="item.sample_width"
-            :height="item.sample_height"
+            :src="item.sample_url || item.file_url"
+            :width="item.sample_width || item.width"
+            :height="item.sample_height || item.height"
             :data-hires="item.file_url"
-            :data-sample="item.sample_url"
             @error="handleImageError($event, item)" />
         </NuxtLink>
       </div>
