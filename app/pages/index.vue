@@ -59,7 +59,7 @@ watch([() => userConfig.provider, () => userConfig.rating], () => {
             :width="item.sample_width || item.width"
             :height="item.sample_height || item.height"
             :data-hires="item.file_url"
-            @error="handleImageError($event, item)" />
+            @error="userConfig.provider === 'safebooru' && handleImageError($event, item)" />
         </NuxtLink>
       </div>
     </template>
