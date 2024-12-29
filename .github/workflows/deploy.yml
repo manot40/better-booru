@@ -1,0 +1,30 @@
+name: 'Build Routine'
+
+on:
+  push:
+    paths:
+      - app/**
+      - server/**
+      - shared/**
+      - public/**
+      - Dockerfile
+      - package.json
+
+jobs:
+  deploy-production:
+    name: 'BuildDeployProduction'
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Cloning repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Push to production
+        uses: dokku/github-action@master
+        with:
+          branch: main
+          git_push_flags: --force
+          git_remote_url: 'ssh://dokku@${{ secrets.PRODUCTION_ADDRESS }}/booru'
+          ssh_private_key: ${{ secrets.PRODUCTION_KEY }}
