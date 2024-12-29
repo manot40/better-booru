@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ListParams } from '~~/types/common';
+import type { ListParams, Post } from '~~/types/common';
 
 import 'photoswipe/style.css';
 
@@ -9,8 +9,12 @@ const COLUMNS = 'columns-2 md:columns-3 xl:columns-4 gap-x-2 md:gap-x-3 lg:gap-x
 
 const userConfig = useUserConfig();
 
+const headers = computed(() => ({
+  'x-rating': userConfig.rating?.join('+') || '',
+  'x-provider': userConfig.provider,
+}));
 const { query, update } = usePaginationQuery<ListParams>();
-const { data, refresh } = useFetch('/api/list', { query });
+const { data } = useFetch('/api/list', { query, headers });
 
 const container = useTemplateRef('container');
 const { rendered } = useLightbox(container);
@@ -24,11 +28,30 @@ function updatePage(pageState: 'prev' | 'next' | number) {
   else update({ page: pageState == 'prev' ? qValue - 1 : qValue + 1 });
 }
 
-watch([() => userConfig.provider, () => userConfig.rating], () => {
-  const page = query.value.page;
-  if (page && page > 1) update({ page: 1 });
-  setTimeout(() => refresh(), 100);
-});
+function handleImageError(e: Event, item: Post) {
+  const el = <HTMLImageElement>e.currentTarget;
+  const retry = isNaN(+el.dataset.retry!) ? 0 : +el.dataset.retry!;
+  const userConfig = useUserConfig();
+
+  if (userConfig.provider !== 'safebooru') return;
+
+  if (el.src === item.preview_url) return;
+  else if (retry > 4) {
+    el.src = item.preview_url;
+    return;
+  }
+
+  el.dataset.retry = `${retry + 1}`;
+  if (el.src === item.file_url) {
+    el.src = item.file_url.replace('org/image', 'org//image');
+  } else if (el.src.includes('org/sample')) {
+    el.src = item.sample_url.replace('org/sample', 'org//sample');
+  } else if (el.src.includes('org//')) {
+    el.src = el.src + `?${item.id}`;
+  } else if (el.src.includes('?')) {
+    el.src = el.src.replace('org//', 'org/');
+  }
+}
 </script>
 
 <template>
@@ -59,7 +82,7 @@ watch([() => userConfig.provider, () => userConfig.rating], () => {
             :width="item.sample_width || item.width"
             :height="item.sample_height || item.height"
             :data-hires="item.file_url"
-            @error="userConfig.provider === 'safebooru' && handleImageError($event, item)" />
+            @error="handleImageError($event, item)" />
         </NuxtLink>
       </div>
     </template>

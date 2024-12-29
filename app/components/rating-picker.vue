@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Rating, RatingQuery } from '~~/types/common';
+import type { RatingQuery } from '~~/types/common';
 
 import { X, Check } from 'lucide-vue-next';
 
@@ -13,28 +13,47 @@ import {
 } from 'radix-vue';
 
 const open = defineModel<boolean>('open');
-const RATING = <(Rating | 'all')[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];
+const RATING = <RatingQuery[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];
 
 const userConfig = useUserConfig();
+const cachedRating = ref<RatingQuery[] | undefined>(userConfig.rating);
+
+watchDebounced(cachedRating, (rating) => userConfig.mutate({ rating }), { debounce: 600 });
 
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
-  const rating = <Rating | 'all'>ev.detail.value;
-  const userRating = userConfig.rating;
+  const rating = <RatingQuery>ev.detail.value;
 
-  if (rating === 'all') userConfig.mutate({ rating: undefined });
+  if (userConfig.provider === 'danbooru') {
+    const userRatings = cachedRating.value ?? [];
+    if (rating === 'all') return (cachedRating.value = undefined);
+    else if (userRatings.includes(rating))
+      return (cachedRating.value = userRatings.filter((r) => r !== rating));
+    return (cachedRating.value = [...userRatings, rating]);
+  }
+
+  const [userRating = 'all'] = cachedRating.value ?? [];
+  if (rating === 'all') cachedRating.value = undefined;
   else if (rating === userRating) {
     const updatedRating = userRating.startsWith('-') ? rating : <RatingQuery>`-${rating}`;
-    userConfig.mutate({ rating: updatedRating });
-  } else userConfig.mutate({ rating });
+    cachedRating.value = [updatedRating];
+  } else cachedRating.value = [rating];
 }
 
-function processRatingEntry(item: Rating | 'all'): { isSelected: boolean; isInverted: boolean } {
-  const userRating = userConfig.rating;
-  if (!userRating) return { isSelected: item === 'all', isInverted: false };
+function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverted: boolean } {
+  if (userConfig.provider === 'danbooru') {
+    const userRatings = cachedRating.value;
+    return {
+      isInverted: false,
+      isSelected: (item === 'all' && !userRatings) || !!userRatings?.includes(item),
+    };
+  } else {
+    const [userRating] = cachedRating.value ?? [];
+    if (!userRating) return { isSelected: item === 'all', isInverted: false };
 
-  const isSelected = item === userRating || item === userRating.slice(1);
-  const isInverted = item === userRating.slice(1);
-  return { isSelected, isInverted };
+    const isSelected = item === userRating || item === userRating.slice(1);
+    const isInverted = item === userRating.slice(1);
+    return { isSelected, isInverted };
+  }
 }
 </script>
 

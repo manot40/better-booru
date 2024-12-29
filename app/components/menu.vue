@@ -9,11 +9,19 @@ const userConfig = useUserConfig();
 
 const drawerOpen = ref(false);
 
-const [TriggerTemplate, Trigger] = createReusableTemplate();
-const [ContentTemplate, Content] = createReusableTemplate();
+const [TriggerTemplate, TriggerComponent] = createReusableTemplate();
+const [ContentTemplate, ContentComponent] = createReusableTemplate();
+const [RatingTemplate, RatingComponent] = createReusableTemplate();
 </script>
 
 <template>
+  <RatingTemplate>
+    <div class="form-control">
+      <label class="block text-xs font-medium ml-1 mb-2" for="rating-picker">Rating</label>
+      <RatingPicker />
+    </div>
+  </RatingTemplate>
+
   <TriggerTemplate>
     <Button variant="ghost" class="w-10 h-10 p-0">
       <Menu class="w-8 h-8" />
@@ -22,20 +30,17 @@ const [ContentTemplate, Content] = createReusableTemplate();
 
   <ContentTemplate>
     <div>
-      <div class="block text-xs font-medium ml-1 mb-2">Data Source</div>
+      <div class="block text-xs font-medium ml-1 mb-2">Booru Source</div>
       <Tabs
         :modelValue="userConfig.provider"
-        @update:modelValue="userConfig.mutate({ provider: <Provider>$event })">
-        <TabsList class="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="gelbooru">Gelbooru</TabsTrigger>
-          <TabsTrigger value="safebooru">Safebooru</TabsTrigger>
+        @update:modelValue="userConfig.changeProvider(<Provider>$event)">
+        <TabsList class="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="danbooru">Dan</TabsTrigger>
+          <TabsTrigger value="gelbooru">Gel</TabsTrigger>
+          <TabsTrigger value="safebooru">Safe</TabsTrigger>
         </TabsList>
-        <TabsContent value="gelbooru">
-          <div class="form-control">
-            <label class="block text-xs font-medium ml-1 mb-2" for="rating-picker">Rating</label>
-            <RatingPicker />
-          </div>
-        </TabsContent>
+        <TabsContent value="danbooru"><RatingComponent /></TabsContent>
+        <TabsContent value="gelbooru"><RatingComponent /></TabsContent>
       </Tabs>
     </div>
     <Separator />
@@ -60,23 +65,23 @@ const [ContentTemplate, Content] = createReusableTemplate();
   </ContentTemplate>
 
   <Popover v-if="isDesktop">
-    <PopoverTrigger as-child><Trigger /></PopoverTrigger>
+    <PopoverTrigger as-child><TriggerComponent /></PopoverTrigger>
     <PopoverContent class="w-80">
       <div class="grid gap-2.5">
-        <Content />
+        <ContentComponent />
       </div>
     </PopoverContent>
   </Popover>
 
   <Drawer v-else v-model:open="drawerOpen">
-    <DrawerTrigger as-child><Trigger /></DrawerTrigger>
+    <DrawerTrigger as-child><TriggerComponent /></DrawerTrigger>
     <DrawerContent>
       <DrawerHeader class="text-left">
         <DrawerTitle>User Configuration</DrawerTitle>
         <DrawerDescription>Data source and site-wide experience configuration</DrawerDescription>
       </DrawerHeader>
       <div class="grid gap-3 px-4 my-4">
-        <Content />
+        <ContentComponent />
       </div>
       <DrawerFooter class="pt-2">
         <DrawerClose as-child>

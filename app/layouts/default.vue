@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { top, scrollUp, isBottom } = useScrollDirection(200);
+const { top, scrollUp, isBottom } = useScrollDirection(150);
 
 const openSearch = ref(false);
 watch(scrollUp, (v) => !v && (openSearch.value = false));

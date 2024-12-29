@@ -12,3 +12,14 @@ export const $gelbooruFetch = createFetch({
     },
   },
 });
+
+export const $danbooruFetch = createFetch({
+  defaults: {
+    baseURL: 'https://danbooru.donmai.us',
+    onRequest({ options }) {
+      const config = useRuntimeConfig();
+      const query = { login: config.danbooruUserId, api_key: config.danbooruApiKey };
+      Object.assign((options.query ??= {}), query);
+    },
+  },
+});

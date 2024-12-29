@@ -11,6 +11,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     gelbooruUserId: '',
     gelbooruApiKey: '',
+    danbooruUserId: '',
+    danbooruApiKey: '',
   },
 
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
@@ -23,5 +25,12 @@ export default defineNuxtConfig({
   colorMode: {
     storage: 'cookie',
     fallback: 'dark',
+  },
+
+  routeRules: {
+    '/api/**': {
+      swr: true,
+      cache: { maxAge: 60 * 5, varies: ['x-provider', 'x-rating'] },
+    },
   },
 });

@@ -1,10 +1,12 @@
 export type Rating = 'general' | 'explicit' | 'sensitive' | 'questionable';
-export type RatingQuery = Rating | `-${Rating}`;
+export type RatingQuery = Rating | `-${Rating}` | 'all';
 
-export type Provider = 'gelbooru' | 'safebooru';
+export type FileExt = 'jpg' | 'png' | 'webp';
+
+export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
 
 export interface UserConfig {
-  rating?: RatingQuery;
+  rating?: RatingQuery[];
   provider: Provider;
 }
 
@@ -22,7 +24,7 @@ export interface BooruData {
   image: string;
   change: number;
   owner: 'danbooru';
-  parent_id: number;
+  parent_id?: number;
   rating: Rating;
   sample: boolean;
   sample_height: number;

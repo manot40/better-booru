@@ -1,26 +1,36 @@
 import type { H3Event } from 'h3';
 import type { GelbooruData } from '~~/types/gelbooru';
-import type { BooruData, UserConfig, Post } from '~~/types/common';
+import type { DanbooruResponse } from '~~/types/danbooru';
+import type { BooruData, Post, UserConfig } from '~~/types/common';
 
-export const processBooruData = (data: BooruData[] | GelbooruData[]): Post[] =>
-  data.map((raw) => {
+export function processBooruData(data: BooruResponse): Post[] {
+  if (isDanbooru(data))
+    return data
+      .filter((v) => !!v.media_asset.variants)
+      .map((raw) => ({
+        id: raw.id,
+        hash: raw.md5,
+        image: `${raw.md5}.${raw.media_asset.file_ext}`,
+        directory: raw.id,
+        change: 0,
+        owner: 'danbooru',
+        parent_id: raw.parent_id,
+        rating: convertDanbooruRating(raw.rating),
+        sample: true,
+        score: raw.fav_count,
+        tags: raw.tag_string,
+        source: raw.source,
+        status: raw.is_deleted ? 'deleted' : 'active',
+        has_notes: 0,
+        comment_count: 0,
+        ...getDanbooruImage(raw),
+      }));
+  return data.map((raw) => {
     const { directory, change, owner, parent_id, status, has_notes, comment_count, ...rest } = raw;
     const hash = 'md5' in rest ? rest.md5 : rest.hash;
     return { ...rest, hash };
   });
-
-export const processRating = (rating: string | undefined, tags: string) => {
-  if (!rating) return tags;
-  const splitted = rating.split('+');
-  const processed = splitted.reduce((acc, next, i) => {
-    const plus = i === 0 ? '' : '+';
-    if (!next) return acc;
-    if (!next.startsWith('-')) return acc + `${plus}rating:${next}`;
-    return acc + `${plus}-rating:${next.slice(1)}`;
-  }, '');
-
-  return processed ? `${tags ? tags + '+' : ''}${processed}` : tags;
-};
+}
 
 export const getUserConfig = (evt: H3Event<any>) => {
   const cookieStr = getCookie(evt, STATIC.keys.userConfig);
@@ -28,3 +38,5 @@ export const getUserConfig = (evt: H3Event<any>) => {
     if (cookieStr) return <UserConfig>JSON.parse(cookieStr);
   } catch {}
 };
+
+export type BooruResponse = BooruData[] | GelbooruData[] | DanbooruResponse[];
