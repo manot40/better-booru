@@ -16,11 +16,7 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
     const query = { ...baseQuery, tags };
     const data = await $safebooruFetch<BooruData[]>('/index.php', { query });
     return { post: processBooruData(data) };
-  } else if (provider === 'gelbooru') {
-    const query = { ...baseQuery, tags: processRating(provider, rating, tags) };
-    const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
-    return { meta: data['@attributes'], post: processBooruData(data.post || []) };
-  } else {
+  } else if (provider === 'danbooru') {
     const query = { ...baseQuery, page: pid, tags: processRating(provider, rating, tags) };
     const [data, { counts }] = await Promise.all([
       $danbooruFetch<DanbooruResponse[]>('/posts.json', { query }),
@@ -30,5 +26,9 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
       post: processBooruData(data),
       meta: { limit: +limit, count: counts.posts, offset: 0 },
     };
+  } else {
+    const query = { ...baseQuery, tags: processRating(provider, rating, tags) };
+    const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
+    return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   }
 });

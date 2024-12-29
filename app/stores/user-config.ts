@@ -6,7 +6,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   state: () =>
     <UserConfig>{
       rating: ['general'],
-      provider: 'danbooru',
+      provider: 'gelbooru',
     },
   actions: {
     populate() {
