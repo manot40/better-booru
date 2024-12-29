@@ -79,21 +79,6 @@ function handleImageError(e: Event, item: Post) {
     </template>
 
     <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>
-
     <Teleport to=".bottom-bar"><PostFilter :count="data?.meta?.count" :paginator /></Teleport>
-    <!-- <Teleport to=".prev-btn">
-      <Button
-        variant="ghost"
-        class="rounded-full px-2.5"
-        @click="updatePage('prev')"
-        :disabled="isNaN(+query.page) || query.page < 2">
-        <ChevronLeft class="w-6 h-6" />
-      </Button>
-    </Teleport>
-    <Teleport to=".next-btn">
-      <Button variant="ghost" class="rounded-full px-2.5" @click="updatePage('next')">
-        <ChevronRight class="w-6 h-6" />
-      </Button>
-    </Teleport> -->
   </div>
 </template>

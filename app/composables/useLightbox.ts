@@ -1,6 +1,9 @@
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 
+type Slide = NonNullable<InstanceType<typeof PhotoSwipeLightbox>['pswp']>['currSlide'];
+
 export function useLightbox(el: Ref<HTMLElement | null | undefined>) {
+  const current = shallowRef<Slide>();
   const lightbox = shallowRef<PhotoSwipeLightbox>();
   const rendered = shallowRef(false);
 
@@ -60,7 +63,14 @@ export function useLightbox(el: Ref<HTMLElement | null | undefined>) {
       setTimeout(() => (rendered.value = true), 50);
     });
 
-    lb.on('close', () => (rendered.value = false));
+    lb.on('change', function (this: PhotoSwipeLightbox['pswp']) {
+      current.value = this?.currSlide;
+    });
+
+    lb.on('close', () => {
+      current.value = undefined;
+      rendered.value = false;
+    });
 
     lb.init();
   }
@@ -71,5 +81,5 @@ export function useLightbox(el: Ref<HTMLElement | null | undefined>) {
     lightbox.value = undefined;
   }
 
-  return { lightbox, rendered };
+  return { lightbox, rendered, current };
 }

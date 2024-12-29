@@ -62,7 +62,9 @@ onUnmounted(unsub);
   <UseContentTemplate>
     <Command v-bind="$attrs" v-model:searchTerm="searchTerm">
       <CommandInput placeholder="Search Tags..." />
-      <!-- <div class="p-2 text-sm">TEST</div>
+      <!-- <div class="px-3 py-2 text-sm">
+        <div class="font-medium">Selected Tags</div>
+      </div>
       <CommandSeparator /> -->
       <CommandList>
         <CommandEmpty>Type tags name in searchbar</CommandEmpty>
@@ -77,7 +79,7 @@ onUnmounted(unsub);
               {{ startCase(item.label) }}
               <Badge
                 :variant="item.category === 'copyright' ? 'default' : 'outline'"
-                v-if="item.category && item.category != 'tag'">
+                v-if="typeof item.category == 'string' && item.category != 'tag'">
                 {{ startCase(item.category) }}
               </Badge>
             </div>

@@ -22,8 +22,7 @@ function updatePage(pageState: 'prev' | 'next' | number) {
 </script>
 
 <template>
-  <Card
-    class="flex justify-between items-center p-2 gap-2 max-w-lg max-md:px-4 mx-auto bg-card/80 backdrop-blur-lg">
+  <Card class="flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
     <Pagination :page="query.page" :total="totalPage" :siblingCount="2" @update:page="updatePage($event)">
       <template #default="{ page }">
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">
