@@ -27,10 +27,13 @@ export default defineNuxtConfig({
     fallback: 'dark',
   },
 
-  routeRules: {
-    '/api/**': {
-      swr: true,
-      cache: { maxAge: 60 * 5, varies: ['x-provider', 'x-rating'] },
+  $production: {
+    routeRules: {
+      '/api/**': {
+        swr: true,
+        cache: { maxAge: 60 * 5, varies: ['x-provider', 'x-rating'] },
+      },
+      '/api/note/**': { swr: false, cache: false },
     },
   },
 });

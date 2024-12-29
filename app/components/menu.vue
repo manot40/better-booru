@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Provider } from '~~/types/common';
 
-import { Sun, Moon, SwatchBook, Menu } from 'lucide-vue-next';
+import { Sun, Moon, SwatchBook, Settings } from 'lucide-vue-next';
 
 const colorMode = useColorMode();
 const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -24,7 +24,7 @@ const [RatingTemplate, RatingComponent] = createReusableTemplate();
 
   <TriggerTemplate>
     <Button variant="ghost" class="w-10 h-10 p-0">
-      <Menu class="w-8 h-8" />
+      <Settings class="w-8 h-8" />
     </Button>
   </TriggerTemplate>
 

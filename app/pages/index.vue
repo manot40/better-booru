@@ -3,30 +3,21 @@ import type { ListParams, Post } from '~~/types/common';
 
 import 'photoswipe/style.css';
 
-import { ChevronLeft, ChevronRight, SquareArrowOutUpRight } from 'lucide-vue-next';
+import { SquareArrowOutUpRight } from 'lucide-vue-next';
 
 const COLUMNS = 'columns-2 md:columns-3 xl:columns-4 gap-x-2 md:gap-x-3 lg:gap-x-4 p-2 md:p-3 lg:p-4';
 
 const userConfig = useUserConfig();
 
 const headers = computed(() => ({
-  'x-rating': userConfig.rating?.join('+') || '',
+  'x-rating': userConfig.rating?.join(' ') || '',
   'x-provider': userConfig.provider,
 }));
-const { query, update } = usePaginationQuery<ListParams>();
-const { data } = useFetch('/api/list', { query, headers });
+const paginator = usePaginationQuery<ListParams>();
+const { data } = useFetch('/api/post', { query: paginator.query, headers });
 
 const container = useTemplateRef('container');
 const { rendered } = useLightbox(container);
-
-function updatePage(pageState: 'prev' | 'next' | number) {
-  if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
-  if (typeof pageState == 'number') return update({ page: pageState });
-
-  const qValue = query.value.page;
-  if (isNaN(+qValue)) update({ page: 1 });
-  else update({ page: pageState == 'prev' ? qValue - 1 : qValue + 1 });
-}
 
 function handleImageError(e: Event, item: Post) {
   const el = <HTMLImageElement>e.currentTarget;
@@ -89,7 +80,8 @@ function handleImageError(e: Event, item: Post) {
 
     <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>
 
-    <Teleport to=".prev-btn">
+    <Teleport to=".bottom-bar"><PostFilter :count="data?.meta?.count" :paginator /></Teleport>
+    <!-- <Teleport to=".prev-btn">
       <Button
         variant="ghost"
         class="rounded-full px-2.5"
@@ -102,6 +94,6 @@ function handleImageError(e: Event, item: Post) {
       <Button variant="ghost" class="rounded-full px-2.5" @click="updatePage('next')">
         <ChevronRight class="w-6 h-6" />
       </Button>
-    </Teleport>
+    </Teleport> -->
   </div>
 </template>

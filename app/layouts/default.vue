@@ -10,27 +10,26 @@ watch(scrollUp, (v) => !v && (openSearch.value = false));
     class="sticky z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg"
     :data-show="top < 300 || scrollUp">
     <div class="flex items-center justify-between gap-4 px-4 py-2">
-      <div class="md:hidden w-6"></div>
-      <NuxtLink :to="{ name: 'index' }">
-        <h1 class="uppercase select-none tracking-wider text-lg md:text-xl">
-          <strong>Better</strong>
-          Booru
-        </h1>
+      <NuxtLink :to="{ name: 'index' }" class="shrink-0 uppercase select-none">
+        <div class="max-md:hidden text-xl tracking-wider">
+          <strong>Booru</strong>
+          <span>Gator</span>
+        </div>
+        <div class="md:hidden text-lg">
+          <strong>B</strong>
+          <span>G</span>
+        </div>
       </NuxtLink>
-      <Menu />
+      <div class="flex items-center gap-4 shrink-0">
+        <PostSearch class="flex-1" v-model:open="openSearch" />
+        <Menu />
+      </div>
     </div>
   </Card>
   <slot />
   <div
-    class="sticky z-30 bottom-2 lg:bottom-4 w-full max-md:px-4"
-    :data-show="top < 300 || isBottom || scrollUp">
-    <Card
-      class="flex justify-between items-center p-2 gap-2 max-w-sm md:max-w-md mx-auto bg-card/80 backdrop-blur-lg">
-      <div class="prev-btn" />
-      <Searchbar class="flex-1" v-model:open="openSearch" />
-      <div class="next-btn" />
-    </Card>
-  </div>
+    :data-show="top < 300 || isBottom || scrollUp"
+    class="bottom-bar flex sticky z-30 bottom-2 lg:bottom-4" />
 </template>
 
 <style scoped>

@@ -2,8 +2,6 @@ import type { DanbooruResponse } from '~~/types/danbooru';
 import type { GelbooruResponse } from '~~/types/gelbooru';
 import type { BooruData, PostList, Provider } from '~~/types/common';
 
-import { withQuery } from 'ufo';
-
 export default defineEventHandler(async (evt): Promise<PostList> => {
   const headers = getHeaders(evt);
   const userConfig = getUserConfig(evt);
@@ -12,21 +10,25 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
   const { tags, page: pid, limit = '50', last_id } = routeQuery;
   const baseQuery = { s: 'post', q: 'index', pid, json: '1', page: 'dapi', last_id, limit };
   const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
-  const rating = headers['x-rating'] || userConfig?.rating?.join('+');
+  const rating = headers['x-rating'] || userConfig?.rating?.join(' ');
 
   if (provider === 'safebooru') {
     const query = { ...baseQuery, tags };
-    const data = await $safebooruFetch<BooruData[]>(withQuery('/index.php', query).replace('%2B', '+'));
+    const data = await $safebooruFetch<BooruData[]>('/index.php', { query });
     return { post: processBooruData(data) };
   } else if (provider === 'gelbooru') {
     const query = { ...baseQuery, tags: processRating(provider, rating, tags) };
-    const url = withQuery('/index.php', query).replaceAll('%2B', '+');
-    const data = await $gelbooruFetch<GelbooruResponse>(url);
+    const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
     const query = { ...baseQuery, page: pid, tags: processRating(provider, rating, tags) };
-    const url = withQuery('/posts.json', query).replaceAll('%2B', '+');
-    const data = await $danbooruFetch<DanbooruResponse[]>(url);
-    return { post: processBooruData(data) };
+    const [data, { counts }] = await Promise.all([
+      $danbooruFetch<DanbooruResponse[]>('/posts.json', { query }),
+      $danbooruFetch<{ counts: { posts: number } }>('/counts/posts.json', { query: { tags: query.tags } }),
+    ]);
+    return {
+      post: processBooruData(data),
+      meta: { limit: +limit, count: counts.posts, offset: 0 },
+    };
   }
 });
