@@ -8,6 +8,7 @@ const open = defineModel<boolean>('open');
 const route = useRoute();
 const router = useRouter();
 const isDesktop = useMediaQuery('(min-width: 768px)');
+const userConfig = useUserConfig();
 
 const [UseTriggerTemplate, Trigger] = createReusableTemplate();
 const [UseContentTemplate, Content] = createReusableTemplate();
@@ -17,7 +18,11 @@ const searchTerm = ref('');
 
 const q = debouncedRef(searchTerm, 600);
 const query = computed(() => ({ q: q.value }));
-const { data: searchTags } = useFetch('/api/autocomplete', { query });
+const { data: searchTags } = useFetch('/api/autocomplete', {
+  query,
+  watch: [() => userConfig.provider],
+  headers: { 'x-provider': userConfig.provider },
+});
 
 const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.includes(a.value)) || []);
 
