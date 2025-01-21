@@ -30,8 +30,11 @@ export default defineNuxtConfig({
   $production: {
     routeRules: {
       '/api/**': {
-        swr: true,
-        cache: { maxAge: 60 * 5, varies: ['x-provider', 'x-rating'] },
+        cache: {
+          swr: false,
+          maxAge: 60 * 5,
+          varies: ['x-provider', 'x-rating'],
+        },
       },
       '/api/note/**': { swr: false, cache: false },
     },
