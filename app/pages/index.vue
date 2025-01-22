@@ -78,7 +78,10 @@ async function createMasonry() {
           :style="`height: ${randomInt(300, 600)}px`" />
       </template>
       <template v-else>
-        <div v-for="item in data.post" :key="item.hash" class="item mb-2 md:mb-3 overflow-hidden rounded-xl">
+        <div
+          :key="item.hash"
+          v-for="(item, i) in data.post"
+          class="item mb-2 md:mb-3 overflow-hidden rounded-xl">
           <NuxtLink
             external
             target="_blank"
@@ -96,6 +99,7 @@ async function createMasonry() {
               :src="item.sample_url || item.file_url"
               :width="item.sample_width || item.width"
               :height="item.sample_height || item.height"
+              :loading="i > 20 ? 'lazy' : 'eager'"
               :data-hires="item.file_url"
               @error="handleImageError($event, item)" />
           </NuxtLink>
