@@ -11,7 +11,7 @@ const STORE_FMT: BufferEncoding = 'base64';
  * */
 export function createCache(cacheDir: string, defaultTTL = 86400) {
   const store = createStorage<string>({ driver: fsDriver({ base: cacheDir }) });
-  const timers = new Map<string, NodeJS.Timeout>();
+  const timers = new Map<string, Timer>();
   return <CacheStorage>{
     async get(path) {
       const raw = await store.getItem(path);

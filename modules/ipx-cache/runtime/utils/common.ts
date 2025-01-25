@@ -7,5 +7,8 @@ export async function generateFileHash(filePath: string): Promise<string> {
 }
 
 export function generateBufferHash(buffer: Buffer): string {
-  return crypto.createHash('sha256').update(buffer).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(buffer as unknown as Uint8Array<ArrayBuffer>)
+    .digest('hex');
 }
