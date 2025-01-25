@@ -1,5 +1,7 @@
 import type { Provider } from '~~/types/common';
 
+import { parseURL, stringifyParsedURL } from 'ufo';
+
 export const processRating = (provider: Provider, rating: string | undefined, tags = '') => {
   if (!rating) return tags;
   const tagAppend = tags ? tags + ' ' : '';
@@ -19,3 +21,12 @@ export const processRating = (provider: Provider, rating: string | undefined, ta
     return processed ? `${tagAppend}${processed}` : tags;
   }
 };
+
+export function imgAlias(url_: string, provider: Provider) {
+  if (!url_) return url_;
+  const url = parseURL(url_);
+  url.host = undefined;
+  url.protocol = undefined;
+  url.pathname = `/${provider}` + url.pathname;
+  return stringifyParsedURL(url);
+}

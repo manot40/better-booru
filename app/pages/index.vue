@@ -21,8 +21,10 @@ const masonry = shallowRef<Masonry>();
 const container = useTemplateRef('container');
 const { rendered } = useLightbox(container);
 
-function handleImageError(e: Event, item: Post) {
+function handleImageError(e: Event | string, item: Post) {
+  if (typeof e === 'string') return;
   const el = <HTMLImageElement>e.currentTarget;
+  if (!el) return;
   const retry = isNaN(+el.dataset.retry!) ? 0 : +el.dataset.retry!;
   const userConfig = useUserConfig();
 
@@ -56,6 +58,16 @@ watch(data, (_1, _2, onCleanup) => {
     masonry.value = undefined;
   });
 });
+
+function reduceSize(item: Post): [string, number, number] {
+  const src = item.sample_url || item.file_url;
+  const width = item.sample_width || item.width;
+  const height = item.sample_height || item.height;
+
+  const square = width * height;
+  const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
+  return [src, Math.round(width / division), Math.round(height / division)];
+}
 
 async function createMasonry() {
   if (!container.value) return;
@@ -92,16 +104,18 @@ async function createMasonry() {
             :data-pswp-width="item.width"
             :data-pswp-height="item.height"
             :to="createBooruURL(item.id)">
-            <img
-              class="w-full transition-all duration-200"
-              :key="item.hash"
-              :alt="item.tags"
-              :src="item.sample_url || item.file_url"
-              :width="item.sample_width || item.width"
-              :height="item.sample_height || item.height"
-              :loading="i > 20 ? 'lazy' : 'eager'"
-              :data-hires="item.file_url"
-              @error="handleImageError($event, item)" />
+            <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
+              <NuxtImg
+                :src
+                :width
+                :height
+                :key="item.hash"
+                :alt="item.tags"
+                :loading="i > 20 ? 'lazy' : 'eager'"
+                :data-hires="item.file_url"
+                class="w-full transition-all duration-200"
+                @error="handleImageError($event, item)" />
+            </UtilMapObj>
           </NuxtLink>
         </div>
       </template>

@@ -15,7 +15,27 @@ export default defineNuxtConfig({
     danbooruApiKey: '',
   },
 
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
+  modules: [
+    '@nuxt/image',
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/color-mode',
+    '@pinia/nuxt',
+    '@vueuse/nuxt',
+    'shadcn-nuxt',
+  ],
+
+  image: {
+    format: ['webp', 'jpg'],
+    ipx: { modifiers: { format: 'webp' } },
+    domains: ['safebooru.org', 'img3.gelbooru.com', 'cdn.donmai.us'],
+    alias: {
+      danbooru: 'https://cdn.donmai.us',
+      gelbooru: 'https://img3.gelbooru.com',
+      safebooru: 'https://safebooru.org',
+    },
+  },
+
+  ipxCache: { maxAge: 60 * 60 * 24 * 30 },
 
   shadcn: {
     prefix: '',
