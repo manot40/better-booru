@@ -1,4 +1,4 @@
-FROM oven/bun:1-alpine AS base
+FROM node:22.13-alpine AS base
 
 FROM base AS builder
 WORKDIR /usr/app
@@ -6,8 +6,8 @@ WORKDIR /usr/app
 ENV CI=true
 COPY . .
 
-RUN bun install
-RUN bun run build
+RUN npm ci
+RUN node --run build
 
 # Runtime image
 FROM base AS runtime
@@ -17,4 +17,4 @@ ENV NODE_ENV=production
 COPY --from=builder /usr/app/.output ./
 
 EXPOSE 3000
-CMD ["bun", "server/index.mjs"]
+CMD ["node", "server/index.mjs"]
