@@ -12,7 +12,7 @@ const totalPage = computed(() =>
 );
 
 function updatePage(pageState: 'prev' | 'next' | number) {
-  if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+  if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
   if (typeof pageState == 'number') return update({ page: pageState });
 
   const qValue = query.value.page;

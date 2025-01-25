@@ -49,6 +49,7 @@ export default defineNuxtConfig({
 
   $production: {
     routeRules: {
+      '/': { prerender: true },
       '/api/**': {
         cache: {
           swr: false,

@@ -15,7 +15,7 @@ const headers = computed(() => ({
   'x-provider': userConfig.provider,
 }));
 const paginator = usePaginationQuery<ListParams>();
-const { data } = useFetch('/api/post', { query: paginator.query, headers });
+const { data } = useLazyFetch('/api/post', { server: false, query: paginator.query, headers });
 
 const masonry = shallowRef<Masonry>();
 const container = useTemplateRef('container');

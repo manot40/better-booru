@@ -18,8 +18,9 @@ const searchTerm = ref('');
 
 const q = debouncedRef(searchTerm, 600);
 const query = computed(() => ({ q: q.value }));
-const { data: searchTags } = useFetch('/api/autocomplete', {
+const { data: searchTags } = useLazyFetch('/api/autocomplete', {
   query,
+  server: false,
   watch: [() => userConfig.provider],
   headers: { 'x-provider': userConfig.provider },
 });
