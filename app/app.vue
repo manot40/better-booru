@@ -2,12 +2,10 @@
 import '@fontsource-variable/rubik';
 
 const colorMode = useColorMode();
-const userConfig = useUserConfig();
 
 const htmlAttrs = computed(() => ({ class: colorMode.value }));
 
 useHead({ title: 'Better Safebooru', htmlAttrs });
-callOnce('populate-config', () => userConfig.populate());
 </script>
 
 <template>

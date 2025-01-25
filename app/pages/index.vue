@@ -8,6 +8,14 @@ import { SquareArrowOutUpRight } from 'lucide-vue-next';
 
 const COLUMNS = 'flex flex-wrap overflow-hidden p-2 md:p-3 xl:p-4 translate-x-1 md:translate-x-1.5';
 
+definePageMeta({
+  middleware() {
+    const nuxt = useNuxtApp();
+    const ucfg = useUserConfig();
+    if (import.meta.server || nuxt.isHydrating) ucfg.populate();
+  },
+});
+
 const userConfig = useUserConfig();
 
 const headers = computed(() => ({
