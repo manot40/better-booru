@@ -1,18 +1,14 @@
 import type { ServerResponse } from 'http';
-import type { ModuleOptions } from '../../index';
 
-import { createCache } from '../utils/cache';
+import { cacheStore } from './cache';
 
 import { CaptureStream } from '../utils/capture-stream';
 import { PassThrough, Readable } from 'node:stream';
 
+import { defineNitroPlugin } from 'nitropack/runtime';
 import { sendStream, setHeaders, getHeader } from 'h3';
-import { defineNitroPlugin, useRuntimeConfig } from 'nitropack/runtime';
 
 export default defineNitroPlugin((nitroApp) => {
-  const config = <Required<ModuleOptions>>useRuntimeConfig().ipx;
-  const cacheStore = createCache(config.cacheDir, config.maxAge);
-
   nitroApp.hooks.hook('request', async function (event) {
     if (!event.path.startsWith('/_ipx/')) return;
 
@@ -25,7 +21,7 @@ export default defineNitroPlugin((nitroApp) => {
       if (cached) {
         const readable = new Readable();
         readable._read = () => void 0;
-        readable.push(cached.buffer), readable.push(null);
+        readable.push(cached.data), readable.push(null);
 
         setHeaders(event, { ...(<{}>cached.meta), 'cache-status': 'HIT' });
         originalRes.setHeader = (_key, _val) => originalRes;
@@ -68,9 +64,9 @@ export default defineNitroPlugin((nitroApp) => {
 
       if (originalRes.statusCode !== 200) return originalRes;
 
-      const buffer = captureStream.getBuffer();
-      const meta = { ...originalRes.getHeaders(), 'content-length': buffer.byteLength };
-      cacheStore.set(reqUrl, { buffer, meta });
+      const data = captureStream.getBuffer();
+      const meta = { ...originalRes.getHeaders(), 'content-length': data.byteLength };
+      cacheStore.set(reqUrl, { data, meta });
 
       return originalRes;
     };

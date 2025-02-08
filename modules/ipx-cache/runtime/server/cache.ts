@@ -1,9 +1,8 @@
 import type { OutgoingHttpHeaders } from 'http';
+import type { ModuleOptions } from '../../index';
 
 import { createStorage } from 'unstorage';
 import fsDriver from 'unstorage/drivers/fs';
-
-const STORE_FMT: BufferEncoding = 'base64';
 
 /**
  * @param cacheDir Persistance cache directory.
@@ -14,8 +13,8 @@ export function createCache(cacheDir: string, defaultTTL = 86400) {
   const timers = new Map<string, Timer>();
   return <CacheStorage>{
     async get(path) {
-      const raw = await store.getItem(path);
-      if (!raw) return;
+      const raw = await store.getItemRaw(path);
+      if (!Buffer.isBuffer(raw)) return;
 
       if (!timers.has(path)) {
         const timeout = setTimeout(() => this.del(path), defaultTTL);
@@ -23,7 +22,7 @@ export function createCache(cacheDir: string, defaultTTL = 86400) {
       }
 
       const meta = await store.getItem(`${path}.json`);
-      return { meta, buffer: Buffer.from(raw, STORE_FMT) };
+      return { meta, data: new Blob([raw]) };
     },
 
     async set(path, v, ttl = defaultTTL) {
@@ -31,7 +30,7 @@ export function createCache(cacheDir: string, defaultTTL = 86400) {
       const timeout = setTimeout(() => this.del(path), ttl * 1000);
 
       await Promise.all([
-        store.setItem(path, v.buffer.toString(STORE_FMT)),
+        store.setItemRaw(path, Buffer.isBuffer(v.data) ? v.data : await v.data.arrayBuffer()),
         store.setItem(`${path}.json`, JSON.stringify(v.meta)),
       ]).catch(console.error);
 
@@ -54,13 +53,18 @@ export function createCache(cacheDir: string, defaultTTL = 86400) {
   };
 }
 
+const config = <Required<ModuleOptions>>useRuntimeConfig().ipx;
+export const cacheStore = createCache(config.cacheDir, config.maxAge);
+
 interface CachedData {
+  data: Blob;
   meta: OutgoingHttpHeaders;
-  buffer: Buffer;
 }
 
+type PayloadData = Omit<CachedData, 'data'> & { data: Blob | Buffer };
+
 interface CacheStorage {
-  set: (path: string, val: CachedData, ttl?: number) => Promise<void>;
+  set: (path: string, val: PayloadData, ttl?: number) => Promise<void>;
   get: (path: string) => Promise<CachedData | undefined>;
   del: (path: string) => Promise<void>;
   clear: () => void;

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import defu from 'defu';
 
-import { addServerPlugin, createResolver, defineNuxtModule } from '@nuxt/kit';
+import { addServerPlugin, createResolver, defineNuxtModule, addServerImports } from '@nuxt/kit';
 
 export interface ModuleOptions {
   maxAge?: number;
@@ -32,5 +32,6 @@ export default defineNuxtModule<ModuleOptions>({
     });
 
     addServerPlugin(resolve('./runtime/server/plugin.ts'));
+    addServerImports([{ name: 'cacheStore', from: resolve('./runtime/server/cache.ts') }]);
   },
 });
