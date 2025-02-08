@@ -13,5 +13,5 @@ export default defineEventHandler(async (evt) => {
 
   setResponseHeader(evt, 'content-type', res.headers.get('content-type') || 'application/octet-stream');
   setResponseHeader(evt, 'Cache-Control', 'public, max-age=31536000');
-  return res.arrayBuffer();
+  return res.blob();
 });
