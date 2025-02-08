@@ -27,45 +27,7 @@ const { data } = useLazyFetch('/api/post', { server: false, query: paginator.que
 
 const masonry = shallowRef<Masonry>();
 const container = useTemplateRef('container');
-const { rendered } = useLightbox(container);
-
-function handleImageError(e: Event | string, item: Post) {
-  if (typeof e === 'string') return;
-  const el = <HTMLImageElement>e.currentTarget;
-  if (!el) return;
-  const retry = isNaN(+el.dataset.retry!) ? 0 : +el.dataset.retry!;
-  const userConfig = useUserConfig();
-
-  if (userConfig.provider !== 'safebooru') return;
-
-  if (el.src === item.preview_url) return;
-  else if (retry > 4) {
-    el.src = item.preview_url;
-    return;
-  }
-
-  el.dataset.retry = `${retry + 1}`;
-  if (el.src === item.file_url) {
-    el.src = item.file_url.replace('org/image', 'org//image');
-  } else if (el.src.includes('org/sample')) {
-    el.src = item.sample_url.replace('org/sample', 'org//sample');
-  } else if (el.src.includes('org//')) {
-    el.src = el.src + `?${item.id}`;
-  } else if (el.src.includes('?')) {
-    el.src = el.src.replace('org//', 'org/');
-  }
-}
-
-onMounted(createMasonry);
-
-watch(data, (_1, _2, onCleanup) => {
-  if (masonry.value) masonry.value.destroy?.();
-  createMasonry();
-  onCleanup(() => {
-    masonry.value?.destroy?.();
-    masonry.value = undefined;
-  });
-});
+const { lightbox, rendered } = useLightbox(container);
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -86,6 +48,29 @@ async function createMasonry() {
     percentPosition: true,
   });
 }
+
+onMounted(() => {
+  createMasonry();
+  lightbox.value?.on('loadError', function ({ content, slide }) {
+    const el = <HTMLAnchorElement>content.data.element;
+    const src = '/image?proxy=' + content.data.src;
+    if (content.data.proxied || el.dataset.proxied) return;
+
+    el.dataset.pswpSrc = src;
+    el.dataset.proxied = 'true';
+    content.data = { ...content.data, src, proxied: true };
+    slide.pswp.refreshSlideContent(slide.index);
+  });
+});
+
+watch(data, (_1, _2, onCleanup) => {
+  if (masonry.value) masonry.value.destroy?.();
+  createMasonry();
+  onCleanup(() => {
+    masonry.value?.destroy?.();
+    masonry.value = undefined;
+  });
+});
 </script>
 
 <template>
@@ -121,8 +106,7 @@ async function createMasonry() {
                 :alt="item.tags"
                 :loading="i > 20 ? 'lazy' : 'eager'"
                 :data-hires="item.file_url"
-                class="w-full transition-all duration-200"
-                @error="handleImageError($event, item)" />
+                class="w-full transition-all duration-200" />
             </UtilMapObj>
           </NuxtLink>
         </div>
