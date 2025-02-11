@@ -2,30 +2,26 @@ import type { ServerResponse } from 'http';
 
 import { cacheStore } from './cache';
 
+import { PassThrough } from 'node:stream';
 import { CaptureStream } from '../utils/capture-stream';
-import { PassThrough, Readable } from 'node:stream';
 
 import { defineNitroPlugin } from 'nitropack/runtime';
 import { sendStream, setHeaders, getHeader } from 'h3';
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.hooks.hook('request', async function (event) {
-    if (!event.path.startsWith('/_ipx/')) return;
+  nitroApp.hooks.hook('request', async function (evt) {
+    if (!evt.path.startsWith('/_ipx/')) return;
 
-    const reqUrl = (event.path || '').replace(/\/_ipx\/|,|http(s?):\/\//g, '').replace('&', '-');
-    const originalRes = event.node.res;
+    const reqUrl = (evt.path || '').replace(/\/_ipx\/|,|http(s?):\/\//g, '').replace('&', '-');
+    const originalRes = evt.node.res;
 
-    if (!getHeader(event, 'cache-control')?.includes('ipx-purge')) {
+    if (!getHeader(evt, 'cache-control')?.includes('ipx-purge')) {
       /** Load from cache if there is any */
       const cached = await cacheStore.get(reqUrl);
       if (cached) {
-        const readable = new Readable();
-        readable._read = () => void 0;
-        readable.push(cached.data), readable.push(null);
-
-        setHeaders(event, { ...(<{}>cached.meta), 'cache-status': 'HIT' });
+        setHeaders(evt, { ...(<{}>cached.meta), 'cache-status': 'HIT' });
         originalRes.setHeader = (_key, _val) => originalRes;
-        return sendStream(event, readable);
+        return sendStream(evt, cached.data.stream());
       }
     }
 
@@ -33,34 +29,17 @@ export default defineNitroPlugin((nitroApp) => {
     const captureStream = new CaptureStream();
     passThrough.pipe(captureStream);
 
-    const originalWrite = originalRes.write.bind(originalRes) as (
-      chunk: any,
-      encoding?: BufferEncoding | ((error: Error | null | undefined) => void),
-      callback?: (error: Error | null | undefined) => void
-    ) => boolean;
-    const originalEnd = originalRes.end.bind(originalRes) as (
-      chunk?: any,
-      encoding?: BufferEncoding | ((error: Error | null | undefined) => void),
-      callback?: () => void
-    ) => ServerResponse;
+    const originalWrite = originalRes.write.bind(originalRes) as CustomStream<boolean>;
+    const originalEnd = originalRes.end.bind(originalRes) as CustomStream<ServerResponse>;
 
-    originalRes.write = (
-      chunk: any,
-      encodingOrCallback?: BufferEncoding | ((error: Error | null | undefined) => void),
-      callback?: (error: Error | null | undefined) => void
-    ): boolean => {
-      passThrough.write(chunk, encodingOrCallback as BufferEncoding, callback);
-      return originalWrite(chunk, encodingOrCallback as BufferEncoding, callback);
-    };
-
-    originalRes.end = (
-      chunk?: any,
-      encodingOrCallback?: BufferEncoding | ((error: Error | null | undefined) => void),
-      callback?: () => void
-    ): ServerResponse => {
-      if (chunk) passThrough.write(chunk, encodingOrCallback as BufferEncoding, callback);
-      setHeaders(event, { 'cache-status': 'MISS' });
-      originalEnd(chunk, encodingOrCallback, callback);
+    originalRes.write = <CustomStream<boolean>>((chunk, encoding, callback) => {
+      passThrough.write(chunk, <BufferEncoding>encoding, callback);
+      return originalWrite(chunk, <BufferEncoding>encoding, callback);
+    });
+    originalRes.end = <CustomStream<ServerResponse>>((chunk, encoding, callback) => {
+      if (chunk) passThrough.write(chunk, encoding as BufferEncoding, callback);
+      setHeaders(evt, { 'cache-status': 'MISS' });
+      originalEnd(chunk, encoding, callback);
 
       if (originalRes.statusCode !== 200) return originalRes;
 
@@ -69,6 +48,12 @@ export default defineNitroPlugin((nitroApp) => {
       cacheStore.set(reqUrl, { data, meta });
 
       return originalRes;
-    };
+    });
   });
 });
+
+type CustomStream<T> = (
+  chunk: any,
+  encoding?: BufferEncoding | ((error: Error | null | undefined) => void),
+  callback?: (error: Error | null | undefined) => void
+) => T;
