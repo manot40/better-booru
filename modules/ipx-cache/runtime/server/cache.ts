@@ -10,28 +10,33 @@ import fsDriver from 'unstorage/drivers/fs';
  * */
 export function createCache(cacheDir: string, defaultTTL = 86400) {
   const store = createStorage<string>({ driver: fsDriver({ base: cacheDir }) });
-  const timers = new Map<string, Timer>();
+  const timers = new Map<string, NodeJS.Timeout>();
   return <CacheStorage>{
     async get(path) {
       const raw = await store.getItemRaw(path);
       if (!Buffer.isBuffer(raw)) return;
 
+      const meta = await store.getItem<OutgoingHttpHeaders>(`${path}.json`);
+      const lastMod = new Date(meta?.['last-modified'] || 0).getTime();
+      const expiresIn = lastMod + defaultTTL * 1000;
+      // Check if blob is expired using staled HTTP headers
+      if (Date.now() > expiresIn) return;
+
       if (!timers.has(path)) {
-        const timeout = setTimeout(() => this.del(path), defaultTTL);
+        const timeout = setTimeout(() => this.del(path), expiresIn - Date.now());
         timers.set(path, timeout);
       }
 
-      const meta = await store.getItem(`${path}.json`);
       return { meta, data: new Blob([raw]) };
     },
 
-    async set(path, v, ttl = defaultTTL) {
+    async set(path, { data, meta }, ttl = defaultTTL) {
       if (timers.has(path)) clearTimeout(timers.get(path));
       const timeout = setTimeout(() => this.del(path), ttl * 1000);
 
       await Promise.all([
-        store.setItemRaw(path, Buffer.isBuffer(v.data) ? v.data : await v.data.arrayBuffer()),
-        store.setItem(`${path}.json`, JSON.stringify(v.meta)),
+        store.setItemRaw(path, Buffer.isBuffer(data) ? data : await data.arrayBuffer()),
+        store.setItem(`${path}.json`, JSON.stringify(meta)),
       ]).catch(console.error);
 
       timers.set(path, timeout);

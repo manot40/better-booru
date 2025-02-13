@@ -9,11 +9,12 @@ export default defineEventHandler(async (evt) => {
   const cached = await cacheStore.get(cacheKey);
   if (cached) {
     Object.entries(cached.meta).forEach(([key, value]) => setResponseHeader(evt, key, value));
+    setResponseHeader(evt, 'cache-status', 'HIT');
     return cached.data;
   }
 
   const res = await fetch(proxy);
-  if (!res.ok)
+  if (!res.ok || !res.body)
     return createError({
       data: await res.text(),
       statusCode: res.status,
@@ -23,7 +24,24 @@ export default defineEventHandler(async (evt) => {
   setResponseHeader(evt, 'content-type', res.headers.get('content-type') || 'application/octet-stream');
   setResponseHeader(evt, 'Cache-Control', 'public, max-age=31536000');
 
-  const buffer = Buffer.from(await res.arrayBuffer());
-  cacheStore.set(cacheKey, { data: buffer, meta: evt.node.res.getHeaders() });
-  return new Blob([buffer]);
+  const [toSend, toSave] = res.body.tee();
+
+  new Promise<void>((resolve) => {
+    const reader = toSave.getReader();
+    const chunks = <Uint8Array<ArrayBufferLike>[]>[];
+    reader.read().then(handleChunks);
+    function handleChunks({ value, done }: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>>) {
+      if (done) {
+        const data = Buffer.concat(chunks);
+        const meta = { 'content-length': data.byteLength, 'last-modified': new Date().toUTCString() };
+        cacheStore.set(cacheKey, { data, meta }).then(resolve);
+      } else {
+        chunks.push(value);
+        reader.read().then(handleChunks);
+      }
+    }
+  });
+
+  setResponseHeader(evt, 'cache-status', 'MISS');
+  return sendStream(evt, toSend);
 });

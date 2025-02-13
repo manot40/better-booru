@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     },
   },
 
-  ipxCache: { maxAge: 60 * 60 * 24 * 30 },
+  ipxCache: { maxAge: 60 * 60 * 24 * 7 },
 
   shadcn: {
     prefix: '',

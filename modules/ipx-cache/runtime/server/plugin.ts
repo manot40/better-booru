@@ -44,9 +44,13 @@ export default defineNitroPlugin((nitroApp) => {
       if (originalRes.statusCode !== 200) return originalRes;
 
       const data = captureStream.getBuffer();
-      const meta = { ...originalRes.getHeaders(), 'content-length': data.byteLength };
-      cacheStore.set(reqUrl, { data, meta });
+      const meta = {
+        ...originalRes.getHeaders(),
+        'last-modified': new Date().toUTCString(),
+        'content-length': data.byteLength,
+      };
 
+      cacheStore.set(reqUrl, { data, meta });
       return originalRes;
     });
   });
