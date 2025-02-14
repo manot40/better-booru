@@ -21,6 +21,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@pinia/nuxt',
     '@vueuse/nuxt',
+    'nuxt-ipx-cache',
     'shadcn-nuxt',
   ],
 
