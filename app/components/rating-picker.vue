@@ -25,7 +25,7 @@ function handleFilter(...[ev]: ComboboxItemEmits['select']) {
 
   if (userConfig.provider === 'danbooru') {
     const userRatings = cachedRating.value ?? [];
-    if (rating === 'all') return (cachedRating.value = undefined);
+    if (rating === 'all') return (cachedRating.value = ['all']);
     else if (userRatings.includes(rating))
       return (cachedRating.value = userRatings.filter((r) => r !== rating));
     return (cachedRating.value = [...userRatings, rating]);

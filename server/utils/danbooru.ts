@@ -2,7 +2,7 @@ import type { Post, Rating } from '~~/types/common';
 import type { DanbooruResponse } from '~~/types/danbooru';
 
 export const isDanbooru = (data: BooruResponse): data is DanbooruResponse[] =>
-  'large_file_url' in (data[0] || {});
+  'media_asset' in (data[0] || {});
 
 export const convertDanbooruRating = (data: DanbooruResponse['rating']): Rating => {
   switch (data) {

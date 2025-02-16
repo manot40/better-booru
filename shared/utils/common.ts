@@ -3,7 +3,7 @@ import type { Provider } from '~~/types/common';
 import { parseURL, stringifyParsedURL } from 'ufo';
 
 export const processRating = (provider: Provider, rating: string | undefined, tags = '') => {
-  if (!rating) return tags;
+  if (!rating || rating === 'all') return tags;
   const tagAppend = tags ? tags + ' ' : '';
 
   if (provider === 'danbooru') {
