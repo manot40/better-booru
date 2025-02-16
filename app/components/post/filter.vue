@@ -23,9 +23,15 @@ function updatePage(pageState: 'prev' | 'next' | number) {
 
 <template>
   <Card class="flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
-    <Pagination :page="query.page" :total="totalPage" :siblingCount="2" @update:page="updatePage($event)">
+    <Pagination
+      :total="count"
+      :siblingCount="2"
+      :itemsPerPage="query.limit"
+      :page="query.page"
+      @update:page="updatePage($event)">
       <template #default="{ page }">
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">
+          <PaginationFirst class="max-md:hidden" v-if="page > 1" />
           <PaginationPrev />
 
           <template v-if="typeof count == 'number'" v-for="(item, index) in items">
@@ -39,6 +45,7 @@ function updatePage(pageState: 'prev' | 'next' | number) {
           <div class="font-medium mx-4" v-else>Page {{ query.page }}</div>
 
           <PaginationNext />
+          <PaginationLast class="max-md:hidden" v-if="page < totalPage" />
           <Popover>
             <PopoverTrigger>
               <Button variant="ghost"><SlidersHorizontal class="w-5 h-5" /></Button>
