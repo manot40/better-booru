@@ -5,6 +5,7 @@ const maxAge = 365 * 24 * 60 * 60;
 export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   state: () =>
     <UserConfig>{
+      perRow: undefined,
       rating: ['general'],
       provider: 'gelbooru',
     },

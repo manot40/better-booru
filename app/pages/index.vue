@@ -6,7 +6,7 @@ import 'photoswipe/style.css';
 
 import { SquareArrowOutUpRight } from 'lucide-vue-next';
 
-const COLUMNS = 'flex flex-wrap overflow-hidden p-2 md:p-3 xl:p-4 translate-x-1 md:translate-x-1.5';
+const COLUMNS = 'flex flex-wrap overflow-hidden p-2 lg:p-3 2xl:p-4 translate-x-1 lg:translate-x-1.5';
 
 definePageMeta({
   middleware() {
@@ -126,7 +126,7 @@ watch(data, (_1, _2, onCleanup) => {
 .item:not(:nth-child(2n)) {
   margin-right: var(--margin);
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .item {
     --margin: 0.75rem;
     --offset: 1.25rem;
@@ -136,7 +136,7 @@ watch(data, (_1, _2, onCleanup) => {
     margin-right: var(--margin);
   }
 }
-@media (min-width: 1280px) {
+@media (min-width: 1536px) {
   .item {
     width: calc(25% - var(--offset));
   }

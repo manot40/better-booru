@@ -6,6 +6,7 @@ export type FileExt = 'jpg' | 'png' | 'webp';
 export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
 
 export interface UserConfig {
+  perRow?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
   provider: Provider;
 }
