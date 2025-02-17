@@ -1,14 +1,17 @@
 import type { IncomingHttpHeaders } from 'node:http';
 
 const MAX_AGE = 60 * 60 * 24;
+const BOORU_CDN = ['safebooru.org', 'img3.gelbooru.com', 'cdn.donmai.us'];
 const cacheStore = createIPXCache(process.cwd() + '/.cache/ipx/original', MAX_AGE);
 
 export default defineEventHandler(async (evt) => {
   const { proxy } = getQuery(evt);
   if (typeof proxy != 'string') return createError({ statusCode: 404 });
-  if (!proxy.includes('booru')) return createError({ statusCode: 400 });
 
   const url = new URL(proxy);
+  if (!BOORU_CDN.includes(url.hostname))
+    return createError({ statusCode: 400, message: 'Only Boorus CDN URI are supported' });
+
   const cacheKey = `/${url.hostname}/${url.pathname.split('/').pop()}`;
 
   const cached = await cacheStore.get(cacheKey);
