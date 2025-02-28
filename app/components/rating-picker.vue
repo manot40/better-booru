@@ -10,9 +10,9 @@ import {
   ComboboxAnchor,
   ComboboxInput,
   type ComboboxItemEmits,
-} from 'radix-vue';
+} from 'reka-ui';
 
-const open = defineModel<boolean>('open');
+const open = defineModel<boolean>('open', { default: false });
 const RATING = <RatingQuery[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];
 
 const userConfig = useUserConfig();
@@ -58,22 +58,20 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
 </script>
 
 <template>
-  <ComboboxRoot v-model:open="open" class="w-full [&>input]:w-full">
-    <ComboboxAnchor asChild>
-      <ComboboxInput placeholder="Filter Content Rating" asChild>
-        <Input readonly @keydown.prevent @click="open = !open" class="cursor-default" />
-      </ComboboxInput>
-    </ComboboxAnchor>
+  <Popover v-model:open="open" class="w-full [&>input]:w-full">
+    <PopoverTrigger asChild>
+      <Button
+        role="combobox"
+        variant="outline"
+        :aria-expanded="open"
+        class="w-full font-normal text-muted-foreground justify-between">
+        Filter Content Rating
+      </Button>
+    </PopoverTrigger>
 
-    <ComboboxPortal>
-      <ComboboxContent>
-        <CommandList
-          avoidCollisions
-          position="popper"
-          :class="[
-            'z-50 w-[--radix-popper-anchor-width] rounded-md mt-2 border bg-popover text-popover-foreground shadow-md outline-none',
-            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-          ]">
+    <PopoverContent avoidCollisions class="p-0 max-md:w-[calc(100dvw-2rem)]">
+      <Command>
+        <CommandList>
           <CommandEmpty />
           <CommandGroup>
             <UtilMapObj
@@ -100,7 +98,7 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
             </UtilMapObj>
           </CommandGroup>
         </CommandList>
-      </ComboboxContent>
-    </ComboboxPortal>
-  </ComboboxRoot>
+      </Command>
+    </PopoverContent>
+  </Popover>
 </template>

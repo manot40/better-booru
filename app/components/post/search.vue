@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { ComboboxItemEmits } from 'radix-vue';
+import { VisuallyHidden, type ComboboxItemEmits } from 'reka-ui';
 
 import { debounce } from 'perfect-debounce';
 
+defineOptions({ inheritAttrs: false });
 const open = defineModel<boolean>('open');
 
 const route = useRoute();
@@ -11,9 +12,10 @@ const isDesktop = useMediaQuery('(min-width: 768px)');
 const userConfig = useUserConfig();
 
 const [UseTriggerTemplate, Trigger] = createReusableTemplate();
+const [UseTagsListTemplate, TagsList] = createReusableTemplate();
 const [UseContentTemplate, Content] = createReusableTemplate();
 
-const tags = ref((<string | undefined>route.query.tags)?.split(' ') || []);
+const tags = computed(() => (route.query.tags && (<string>route.query.tags).split(' ')) || []);
 const searchTerm = ref('');
 
 const q = debouncedRef(searchTerm, 600);
@@ -30,9 +32,7 @@ const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.incl
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
   const value = ev.detail.value;
   if (typeof value != 'string') return;
-  if (tags.value.includes(value)) tags.value.splice(tags.value.indexOf(value), 1);
-  else tags.value.push(value);
-  updateQuery(tags.value);
+  updateQuery(tags.value.includes(value) ? tags.value.filter((a) => a !== value) : [...tags.value, value]);
 }
 
 const updateQuery = debounce((tags: string[]) => {
@@ -41,9 +41,8 @@ const updateQuery = debounce((tags: string[]) => {
 
 const unsub = router.afterEach(({ query }) => {
   const qTags = (<string | undefined>query.tags)?.split(' ');
-  if (!qTags) tags.value.length > 0 && (tags.value = []);
+  if (!qTags) tags.value.length > 0 && updateQuery([]);
   else if (qTags.length != tags.value.length && qTags.every((a) => tags.value.includes(a))) {
-    tags.value = qTags;
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   }
 });
@@ -65,15 +64,25 @@ onUnmounted(unsub);
     </Button>
   </UseTriggerTemplate>
 
+  <UseTagsListTemplate>
+    <TagsInput
+      :modelValue="tags"
+      @removeTag="updateQuery(tags.filter((a) => a !== $event))"
+      class="font-normal rounded-b-none border-0 border-b py-2.5">
+      <TagsInputItem v-for="tag in tags" :key="tag" :value="tag" class="rounded-sm py-3">
+        <TagsInputItemText />
+        <TagsInputItemDelete />
+      </TagsInputItem>
+    </TagsInput>
+  </UseTagsListTemplate>
+
   <UseContentTemplate>
-    <Command v-bind="$attrs" v-model:searchTerm="searchTerm">
-      <CommandInput placeholder="Search Tags..." />
-      <!-- <div class="px-3 py-2 text-sm">
-        <div class="font-medium">Selected Tags</div>
-      </div>
-      <CommandSeparator /> -->
-      <CommandList>
-        <CommandEmpty>Type tags name in searchbar</CommandEmpty>
+    <Command :modelValue="tags" v-bind="$attrs">
+      <CommandInput placeholder="Search Tags..." v-model="searchTerm" />
+      <TagsList v-if="tags.length" />
+      <div class="px-4 py-6 text-center text-sm" v-if="!searchTerm">Type tags name in searchbar</div>
+      <CommandList v-else>
+        <CommandEmpty>Tags not found</CommandEmpty>
         <CommandGroup>
           <CommandItem
             :key="item.value"
@@ -97,11 +106,19 @@ onUnmounted(unsub);
 
   <Dialog v-if="isDesktop" v-model:open="open">
     <DialogTrigger asChild><Trigger /></DialogTrigger>
-    <DialogContent class="p-0"><Content /></DialogContent>
+    <DialogContent class="p-0">
+      <DialogDescription hidden />
+      <DialogTitle hidden>Tags List</DialogTitle>
+      <Content />
+    </DialogContent>
   </Dialog>
 
   <Drawer v-else v-model="open">
     <DrawerTrigger asChild><Trigger /></DrawerTrigger>
-    <DrawerContent><Content /></DrawerContent>
+    <DrawerContent>
+      <DrawerDescription hidden />
+      <DrawerTitle hidden>Tags List</DrawerTitle>
+      <Content />
+    </DrawerContent>
   </Drawer>
 </template>

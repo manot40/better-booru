@@ -26,12 +26,11 @@ function updatePage(pageState: 'prev' | 'next' | number) {
     <Pagination
       :total="count"
       :siblingCount="2"
-      :itemsPerPage="query.limit"
       :page="query.page"
+      :itemsPerPage="query.limit || 50"
       @update:page="updatePage($event)">
       <template #default="{ page }">
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">
-          <PaginationFirst class="max-md:hidden" v-if="page > 1" />
           <PaginationPrev />
 
           <template v-if="typeof count == 'number'" v-for="(item, index) in items">
@@ -45,7 +44,6 @@ function updatePage(pageState: 'prev' | 'next' | number) {
           <div class="font-medium mx-4" v-else>Page {{ query.page }}</div>
 
           <PaginationNext />
-          <PaginationLast class="max-md:hidden" v-if="page < totalPage" />
           <Popover>
             <PopoverTrigger>
               <Button variant="ghost"><SlidersHorizontal class="w-5 h-5" /></Button>
@@ -55,7 +53,7 @@ function updatePage(pageState: 'prev' | 'next' | number) {
                 <label class="block font-medium text-sm mb-2.5 ml-1">Limit</label>
                 <Select
                   :modelValue="`${query.limit || '50'}`"
-                  @update:modelValue="update({ limit: +$event })">
+                  @update:modelValue="typeof $event !== 'object' && update({ limit: Number($event) })">
                   <SelectTrigger class="w-full">
                     <SelectValue placeholder="Post per page" />
                     <SelectContent>
