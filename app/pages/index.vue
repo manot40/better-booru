@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ListParams, Post } from '~~/types/common';
+import type { ListParams } from '~~/types/common';
 
 import 'photoswipe/style.css';
 
@@ -25,16 +25,6 @@ const { data } = useLazyFetch('/api/post', { server: false, query: paginator.que
 const masonry = shallowRef<import('masonry-layout')>();
 const container = useTemplateRef('container');
 const { lightbox, rendered } = useLightbox(container);
-
-function reduceSize(item: Post): [string, number, number] {
-  const src = item.sample_url || item.file_url;
-  const width = item.sample_width || item.width;
-  const height = item.sample_height || item.height;
-
-  const square = width * height;
-  const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
-  return [src, Math.round(width / division), Math.round(height / division)];
-}
 
 async function createMasonry() {
   if (!container.value) return;
@@ -85,28 +75,8 @@ watch([data, () => userConfig.column], (_1, _2, onCleanup) => {
       </template>
 
       <div :key="item.hash" class="item overflow-hidden rounded-xl" v-for="(item, i) in data.post" v-else>
-        <NuxtLink
-          external
-          target="_blank"
-          class="ps__item"
-          data-cropped="true"
-          :id="item.id"
-          :data-pswp-src="item.file_url"
-          :data-pswp-width="item.width"
-          :data-pswp-height="item.height"
-          :to="createBooruURL(item.id)">
-          <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
-            <NuxtImg
-              :src
-              :width
-              :height
-              :key="item.hash"
-              :alt="item.tags"
-              :loading="i > 20 ? 'lazy' : 'eager'"
-              :data-hires="item.file_url"
-              class="w-full transition-all duration-200" />
-          </UtilMapObj>
-        </NuxtLink>
+        <PostListItemImage :item :index="i" v-if="!['webm', 'mp4'].includes(item.file_ext)" />
+        <PostListItemVideo :item v-else />
       </div>
 
       <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>

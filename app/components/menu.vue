@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Provider, UserConfig } from '~~/types/common';
+import type { UserConfig } from '~~/types/common';
 
 import { Sun, Moon, SwatchBook, Settings } from 'lucide-vue-next';
 
@@ -16,6 +16,10 @@ const [RatingTemplate, RatingComponent] = createReusableTemplate();
 const column = computed({
   get: () => (userConfig.column ? +userConfig.column : 0),
   set: (e) => userConfig.mutate({ column: typeof e != 'number' ? undefined : <UserConfig['column']>e }),
+});
+const provider = computed({
+  get: () => userConfig.provider,
+  set: (e) => userConfig.changeProvider(e),
 });
 </script>
 
@@ -36,9 +40,7 @@ const column = computed({
   <ContentTemplate>
     <div class="form-control">
       <Label class="block mb-2 text-xs">Booru Source</Label>
-      <Tabs
-        :modelValue="userConfig.provider"
-        @update:modelValue="userConfig.changeProvider(<Provider>$event)">
+      <Tabs v-model="provider">
         <TabsList class="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="danbooru">Dan</TabsTrigger>
           <TabsTrigger value="gelbooru">Gel</TabsTrigger>

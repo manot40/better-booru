@@ -21,6 +21,7 @@ export function processBooruData(data: BooruResponse): Post[] {
         tags: raw.tag_string,
         source: raw.source,
         status: raw.is_deleted ? 'deleted' : 'active',
+        file_ext: raw.file_ext,
         has_notes: 0,
         comment_count: 0,
         ...getDanbooruImage(raw),

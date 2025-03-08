@@ -1,7 +1,7 @@
 export type Rating = 'general' | 'explicit' | 'sensitive' | 'questionable';
 export type RatingQuery = Rating | `-${Rating}` | 'all';
 
-export type FileExt = 'jpg' | 'png' | 'webp';
+export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
 
 export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
 
@@ -17,6 +17,7 @@ export interface BooruData {
   preview_height: number;
   sample_url: string;
   file_url: string;
+  file_ext: FileExt;
   directory: number;
   hash: string;
   width: number;

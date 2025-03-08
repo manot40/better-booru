@@ -7,24 +7,22 @@ const props = defineProps<{ count?: number; paginator: UsePagination<ListParams>
 
 const { query, update } = props.paginator;
 
-function updatePage(pageState: 'prev' | 'next' | number) {
-  if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
-  if (typeof pageState == 'number') return update({ page: pageState });
+const page = computed({
+  get: () => query.value.page,
+  set(state: 'prev' | 'next' | number) {
+    if (state !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
+    if (typeof state == 'number') return update({ page: state });
 
-  const qValue = query.value.page;
-  if (isNaN(+qValue)) update({ page: 1 });
-  else update({ page: pageState == 'prev' ? qValue - 1 : qValue + 1 });
-}
+    const qValue = query.value.page;
+    if (isNaN(+qValue)) update({ page: 1 });
+    else update({ page: state == 'prev' ? qValue - 1 : qValue + 1 });
+  },
+});
 </script>
 
 <template>
   <Card class="flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
-    <Pagination
-      :total="count"
-      :siblingCount="2"
-      :page="query.page"
-      :itemsPerPage="query.limit || 50"
-      @update:page="updatePage($event)">
+    <Pagination :total="count" :siblingCount="2" v-model:page="page" :itemsPerPage="query.limit || 50">
       <template #default="{ page }">
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">
           <PaginationPrev />

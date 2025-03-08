@@ -7,7 +7,7 @@ watch(scrollUp, (v) => !v && (openSearch.value = false));
 
 <template>
   <Card
-    class="sticky z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg"
+    class="nav-root fixed w-dvw z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg"
     :data-show="top < 300 || scrollUp">
     <div class="flex items-center justify-between gap-4 px-4 py-2">
       <NuxtLink :to="{ name: 'index' }" class="shrink-0 uppercase select-none">
@@ -26,20 +26,21 @@ watch(scrollUp, (v) => !v && (openSearch.value = false));
       </div>
     </div>
   </Card>
-  <slot />
+  <div style="padding-top: 3.75rem"><slot /></div>
   <div
     :data-show="top < 300 || isBottom || scrollUp"
     class="bottom-bar flex sticky z-30 bottom-2 lg:bottom-4 mt-4" />
 </template>
 
 <style scoped>
-.sticky {
+.nav-root,
+.bottom-bar {
   transition: all 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
-.sticky.top-0[data-show='false'] {
+.nav-root[data-show='false'] {
   transform: translate3d(0, -100%, 0);
 }
-.sticky.bottom-2[data-show='false'] {
+.bottom-bar[data-show='false'] {
   transform: translate3d(0, 130%, 0);
 }
 </style>
