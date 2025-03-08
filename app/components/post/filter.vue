@@ -7,10 +7,6 @@ const props = defineProps<{ count?: number; paginator: UsePagination<ListParams>
 
 const { query, update } = props.paginator;
 
-const totalPage = computed(() =>
-  Math.ceil((props.count || Number.MAX_SAFE_INTEGER) / (query.value.limit || 50))
-);
-
 function updatePage(pageState: 'prev' | 'next' | number) {
   if (pageState !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
   if (typeof pageState == 'number') return update({ page: pageState });

@@ -29,7 +29,7 @@ watch(scrollUp, (v) => !v && (openSearch.value = false));
   <slot />
   <div
     :data-show="top < 300 || isBottom || scrollUp"
-    class="bottom-bar flex sticky z-30 bottom-2 lg:bottom-4" />
+    class="bottom-bar flex sticky z-30 bottom-2 lg:bottom-4 mt-4" />
 </template>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Provider } from '~~/types/common';
+import type { Provider, UserConfig } from '~~/types/common';
 
 import { Sun, Moon, SwatchBook, Settings } from 'lucide-vue-next';
 
@@ -12,12 +12,17 @@ const drawerOpen = ref(false);
 const [TriggerTemplate, TriggerComponent] = createReusableTemplate();
 const [ContentTemplate, ContentComponent] = createReusableTemplate();
 const [RatingTemplate, RatingComponent] = createReusableTemplate();
+
+const column = computed({
+  get: () => (userConfig.column ? +userConfig.column : 0),
+  set: (e) => userConfig.mutate({ column: typeof e != 'number' ? undefined : <UserConfig['column']>e }),
+});
 </script>
 
 <template>
   <RatingTemplate>
     <div class="form-control">
-      <label class="block text-xs font-medium ml-1 mb-2" for="rating-picker">Rating</label>
+      <Label class="block mb-2 text-xs" for="rating-picker">Rating</Label>
       <RatingPicker />
     </div>
   </RatingTemplate>
@@ -29,8 +34,8 @@ const [RatingTemplate, RatingComponent] = createReusableTemplate();
   </TriggerTemplate>
 
   <ContentTemplate>
-    <div>
-      <div class="block text-xs font-medium ml-1 mb-2">Booru Source</div>
+    <div class="form-control">
+      <Label class="block mb-2 text-xs">Booru Source</Label>
       <Tabs
         :modelValue="userConfig.provider"
         @update:modelValue="userConfig.changeProvider(<Provider>$event)">
@@ -43,9 +48,17 @@ const [RatingTemplate, RatingComponent] = createReusableTemplate();
         <TabsContent value="gelbooru"><RatingComponent /></TabsContent>
       </Tabs>
     </div>
-    <Separator />
+    <Separator class="mt-1.5" />
+    <NumberField :min="0" :max="4" v-model="column" id="columns">
+      <Label class="text-xs mb-1" for="columns">Column per Row</Label>
+      <NumberFieldContent>
+        <NumberFieldDecrement />
+        <NumberFieldInput />
+        <NumberFieldIncrement />
+      </NumberFieldContent>
+    </NumberField>
     <div class="form-control">
-      <label class="block text-xs font-medium ml-1 mb-2" for="theme-picker">Theme</label>
+      <Label class="block mb-2 text-xs" for="theme-picker">Theme</Label>
       <Select id="theme-picker" v-model:modelValue="colorMode.preference">
         <SelectTrigger class="w-full">
           <SelectValue placeholder="Choose Theme" />
