@@ -1,16 +1,8 @@
 <script setup lang="ts">
 import type { RatingQuery } from '~~/types/common';
+import type { ComboboxItemEmits } from 'reka-ui';
 
 import { X, Check } from 'lucide-vue-next';
-
-import {
-  ComboboxPortal,
-  ComboboxContent,
-  ComboboxRoot,
-  ComboboxAnchor,
-  ComboboxInput,
-  type ComboboxItemEmits,
-} from 'reka-ui';
 
 const open = defineModel<boolean>('open', { default: false });
 const RATING = <RatingQuery[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];

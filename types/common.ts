@@ -9,6 +9,7 @@ export interface UserConfig {
   column?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
   provider: Provider;
+  fetchMode?: 'infinite' | 'paginated';
 }
 
 export interface BooruData {
@@ -43,9 +44,10 @@ export type Post = Omit<
   BooruData,
   'directory' | 'change' | 'owner' | 'parent_id' | 'status' | 'has_notes' | 'comment_count'
 >;
+export type BooruMeta = { limit: number; offset: number; count: number };
 
 export interface PostList {
-  meta?: { limit: number; offset: number; count: number };
+  meta?: BooruMeta;
   post: Post[];
 }
 

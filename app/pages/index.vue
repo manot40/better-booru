@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { ListParams } from '~~/types/common';
-
 import 'photoswipe/style.css';
 
-import { SquareArrowOutUpRight } from 'lucide-vue-next';
+import { SquareArrowOutUpRight, LoaderCircle, Bean, Angry } from 'lucide-vue-next';
 
 definePageMeta({
   middleware() {
@@ -14,17 +12,11 @@ definePageMeta({
 });
 
 const userConfig = useUserConfig();
-
-const headers = computed(() => ({
-  'x-rating': userConfig.rating?.join(' ') || '',
-  'x-provider': userConfig.provider,
-}));
-const paginator = usePaginationQuery<ListParams>();
-const { data, error, status } = useLazyFetch('/api/post', { server: false, query: paginator.query, headers });
+const { post, meta, error, paginator } = useBooruFetch();
 
 const dataSource = computed(() => {
-  if (!data.value) return [];
-  return data.value.post.map((item) => ({
+  if (!post.value) return [];
+  return post.value.map((item) => ({
     alt: item.tags,
     src: item.file_url,
     width: item.width,
@@ -36,7 +28,7 @@ const { lightbox, rendered } = useLightbox(dataSource);
 const gap = 8;
 const masonry = useTemplateRef('masonry');
 function estimateSize(index: number, lane: number) {
-  const item = data.value?.post[index];
+  const item = post.value?.[index];
   if (!item) return 0;
 
   const [x, y] = imageAspectRatio(item.width, item.height);
@@ -45,7 +37,7 @@ function estimateSize(index: number, lane: number) {
   return Math.ceil(relativeWidth * y);
 }
 
-watch(data, () => masonry.value?.virtualizer.measure());
+watch(post, () => masonry.value?.virtualizer.measure());
 onMounted(() => {
   lightbox.value?.on('loadError', function ({ content, slide }) {
     const el = <HTMLAnchorElement>content.data.element;
@@ -61,18 +53,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <PostListSkeleton v-if="isPend(status)" />
-  <div v-else-if="error"></div>
+  <div class="grid text-center place-content-center py-8 px-4 h-[80dvh]" v-if="error">
+    <Angry class="w-14 h-14 mx-auto mb-8" />
+    <h2 class="text-2xl font-semibold mb-2.5">Ouch...</h2>
+    <p>Something definitely wrong.</p>
+  </div>
+  <PostListSkeleton v-else-if="!post" />
   <VirtualMasonry
     :gap
     :estimateSize
-    :count="data.post.length"
+    :count="post.length"
     ref="masonry"
     class="overflow-auto px-1 lg:px-2 mt-1.5 lg:mt-3"
-    v-else-if="data?.post.length">
+    v-else-if="post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden">
-        <UtilMapObj :data :fn="(d) => d.post[row.index]!" v-slot="{ result: item }">
+        <UtilMapObj :data="post" :fn="(p) => p[row.index]!" v-slot="{ result: item }">
           <PostListItemImage
             :item
             @click="lightbox?.loadAndOpen(row.index)"
@@ -82,8 +78,19 @@ onMounted(() => {
       </div>
     </template>
   </VirtualMasonry>
-  <div class="" v-else></div>
+  <div class="grid text-center place-content-center py-8 px-4 h-[80dvh]" v-else>
+    <Bean class="w-14 h-14 mx-auto mb-8" />
+    <h2 class="text-2xl font-semibold mb-2.5">Nothing Found</h2>
+    <p>Try searching for something else or readjust your tags.</p>
+  </div>
+
+  <template v-if="post?.length">
+    <div v-if="userConfig.isInfinite" class="grid place-content-center py-8 px-4">
+      <LoaderCircle class="animate-spin w-8 h-8 mx-auto mb-3" />
+      <p>Loading more image for you... Hang tight.</p>
+    </div>
+    <Teleport to=".bottom-bar" v-else><PostFilter :count="meta?.count" :paginator /></Teleport>
+  </template>
 
   <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>
-  <Teleport to=".bottom-bar"><PostFilter :count="data?.meta?.count" :paginator /></Teleport>
 </template>

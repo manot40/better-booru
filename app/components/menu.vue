@@ -21,6 +21,10 @@ const provider = computed({
   get: () => userConfig.provider,
   set: (e) => userConfig.changeProvider(e),
 });
+const infiScroll = computed({
+  get: () => userConfig.fetchMode === 'infinite',
+  set: (e) => userConfig.mutate({ fetchMode: e ? 'infinite' : 'paginated' }),
+});
 </script>
 
 <template>
@@ -50,9 +54,10 @@ const provider = computed({
         <TabsContent value="gelbooru"><RatingComponent /></TabsContent>
       </Tabs>
     </div>
-    <Separator class="mt-1.5" />
-    <div class="flex md:flex-col max-md:items-center gap-4 md:gap-3">
-      <NumberField :min="0" :max="4" v-model="column" id="columns" class="max-md:w-1/2">
+    <Separator class="mt-1.5 mb-0.5" />
+
+    <div class="flex items-end gap-6 lg:gap-4 mb-1.5">
+      <NumberField :min="0" :max="4" v-model="column" id="columns" class="w-full">
         <Label class="text-xs mb-1" for="columns">Column per Row</Label>
         <NumberFieldContent>
           <NumberFieldDecrement />
@@ -60,24 +65,29 @@ const provider = computed({
           <NumberFieldIncrement />
         </NumberFieldContent>
       </NumberField>
-      <div class="form-control max-md:w-1/2">
-        <Label class="block mb-2 text-xs" for="theme-picker">Theme</Label>
-        <Select id="theme-picker" v-model:modelValue="colorMode.preference">
-          <SelectTrigger class="w-full">
-            <SelectValue placeholder="Choose Theme" />
-            <SelectContent>
-              <SelectItem :key="value" :value v-for="value in ['system', 'light', 'dark']">
-                <div class="flex items-center">
-                  <SwatchBook class="w-5 h-5 mr-3" v-if="value === 'system'" />
-                  <Sun class="w-5 h-5 mr-3" v-else-if="value === 'light'" />
-                  <Moon class="w-5 h-5 mr-3" v-else />
-                  {{ startCase(value) }}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </SelectTrigger>
-        </Select>
+      <div v-if="userConfig.provider === 'danbooru'" class="flex items-center space-x-2 shrink-0 mb-2">
+        <Switch v-model="infiScroll" id="infi-scroll" />
+        <Label for="infi-scroll">Infinite Scroll</Label>
       </div>
+    </div>
+
+    <div class="form-control">
+      <Label class="block mb-2 text-xs" for="theme-picker">Theme</Label>
+      <Select id="theme-picker" v-model:modelValue="colorMode.preference">
+        <SelectTrigger class="w-full">
+          <SelectValue placeholder="Choose Theme" />
+          <SelectContent>
+            <SelectItem :key="value" :value v-for="value in ['system', 'light', 'dark']">
+              <div class="flex items-center">
+                <SwatchBook class="w-5 h-5 mr-3" v-if="value === 'system'" />
+                <Sun class="w-5 h-5 mr-3" v-else-if="value === 'light'" />
+                <Moon class="w-5 h-5 mr-3" v-else />
+                {{ startCase(value) }}
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </SelectTrigger>
+      </Select>
     </div>
   </ContentTemplate>
 

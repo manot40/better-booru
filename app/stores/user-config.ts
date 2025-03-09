@@ -8,7 +8,13 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
       column: undefined,
       rating: ['general'],
       provider: 'gelbooru',
+      fetchMode: 'paginated',
     },
+
+  getters: {
+    isInfinite: (state) => state.fetchMode === 'infinite' && state.provider === 'danbooru',
+  },
+
   actions: {
     populate() {
       const config = useCookie<UserConfig>(STATIC.keys.userConfig, { maxAge });

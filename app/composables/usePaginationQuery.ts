@@ -5,9 +5,9 @@ type ModifiedQuery<T extends object> = Partial<Query<T>> & Record<string, Primit
 
 export interface UsePagination<T extends object> {
   query: Ref<Query<T>>;
-  set: (newQuery: Query<T>) => void;
+  set: (newQuery: Query<T>, replace?: boolean) => void;
   reset: () => void;
-  update: (newQuery: ModifiedQuery<T>) => void;
+  update: (newQuery: ModifiedQuery<T>, replace?: boolean) => void;
   getTotalPage: (count: number, perPage: number) => number;
 }
 
@@ -20,7 +20,10 @@ export const usePaginationQuery = <T extends object>(initial = {} as Query<T>): 
   const query = <Ref<Query<T>>>ref(structuredClone(_init));
 
   const unsub = router.afterEach((to, from) => {
-    if (to.path !== from.path) return;
+    if (to.path !== from.path) {
+      if (to.path === '/') reset();
+      return;
+    }
 
     /** When router query empty, fallback to initial query state */
     if (!Object.keys(to.query).length) {
@@ -32,21 +35,21 @@ export const usePaginationQuery = <T extends object>(initial = {} as Query<T>): 
     query.value = processed as T & { page: number };
   });
 
-  function set(newQuery: T) {
+  function set(newQuery: T, replace = false) {
     const nq = newQuery as { page: number };
     nq.page ??= 1;
     const query = nq as unknown as LocationQuery;
-    router.push({ query });
+    router[replace ? 'replace' : 'push']({ query });
   }
 
   function reset() {
     router.push({ query: _init });
   }
 
-  function update(newQuery: ModifiedQuery<T>) {
+  function update(newQuery: ModifiedQuery<T>, replace = false) {
     const result = Object.assign({ ...query.value }, newQuery);
     if (query.value.page < 0) delete (result as { page?: number }).page;
-    router.push({ query: result });
+    router[replace ? 'replace' : 'push']({ query: result });
   }
 
   function getTotalPage(count: number, perPage: number) {

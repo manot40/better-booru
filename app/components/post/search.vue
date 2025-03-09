@@ -43,7 +43,7 @@ const unsub = router.afterEach(({ query }) => {
   const qTags = (<string | undefined>query.tags)?.split(' ');
   if (!qTags) tags.value.length > 0 && updateQuery([]);
   else if (qTags.length != tags.value.length && qTags.every((a) => tags.value.includes(a))) {
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 100);
   }
 });
 
