@@ -1,29 +1,33 @@
-import PhotoSwipeLightbox from 'photoswipe/lightbox';
+import PhotoSwipeLightbox, { type DataSource, type PhotoSwipeOptions } from 'photoswipe/lightbox';
 
 type Slide = NonNullable<InstanceType<typeof PhotoSwipeLightbox>['pswp']>['currSlide'];
 
-export function useLightbox(el: Ref<HTMLElement | null | undefined>) {
+export function useLightbox(el: Ref<HTMLElement | null | undefined | DataSource>) {
   const current = shallowRef<Slide>();
   const lightbox = shallowRef<PhotoSwipeLightbox>();
   const rendered = shallowRef(false);
 
   const userConfig = useUserConfig();
 
-  onMounted(createLightbox);
   onUnmounted(destroyLightbox);
-  watch([() => userConfig.provider], createLightbox);
+  watch([el, () => userConfig.provider], createLightbox, { immediate: true });
 
   function createLightbox() {
-    if (!el.value) return;
+    if (!el.value || import.meta.server) return;
     if (lightbox.value) destroyLightbox();
 
-    const lb = (lightbox.value = new PhotoSwipeLightbox({
+    const options = <PhotoSwipeOptions>{
       preload: [1, 1],
-      gallery: el.value,
       children: '.ps__item',
       pswpModule: () => import('photoswipe'),
       initialZoomLevel: 'fit',
-    }));
+    };
+
+    if (el.value instanceof Element) options.gallery = el.value;
+    else if (Array.isArray(el.value)) options.dataSource = el.value;
+    else return;
+
+    const lb = (lightbox.value = new PhotoSwipeLightbox(options));
 
     if (userConfig.provider === 'safebooru')
       lb.on('loadComplete', function (this: PhotoSwipeLightbox['pswp'], { content }) {
@@ -56,8 +60,8 @@ export function useLightbox(el: Ref<HTMLElement | null | undefined>) {
         isButton: true,
         className: 'pswp__open text-white',
         onClick(_1, _2, pswp) {
-          const el = pswp.currSlide?.content.data.element;
-          if (el instanceof HTMLAnchorElement) el.click();
+          const el = document.querySelector(`div[data-index="${pswp.currIndex}"] a`);
+          if (el instanceof HTMLAnchorElement) window.open(el.href, '_blank', 'noreferrer noopener');
         },
       });
       setTimeout(() => (rendered.value = true), 50);

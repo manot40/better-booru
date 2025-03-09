@@ -30,3 +30,10 @@ export function imgAlias(url_: string, provider: Provider) {
   url.pathname = `/${provider}` + url.pathname;
   return stringifyParsedURL(url);
 }
+
+export function imageAspectRatio(width: number, height: number): [number, number] {
+  if (width <= 0 || height <= 0) throw new Error('Width and height must be positive numbers');
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const divisor = gcd(width, height);
+  return [width / divisor, height / divisor];
+}

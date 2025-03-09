@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Post } from '~~/types/common';
 
-defineProps<{ item: Post; index: number }>();
+defineProps<{ item: Post }>();
+const emit = defineEmits<{ click: [e: MouseEvent] }>();
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -12,19 +13,21 @@ function reduceSize(item: Post): [string, number, number] {
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
   return [src, Math.round(width / division), Math.round(height / division)];
 }
+
+function onClick(e: MouseEvent) {
+  e.preventDefault();
+  emit('click', e);
+}
 </script>
 
 <template>
   <NuxtLink
     external
-    target="_blank"
     class="ps__item"
-    data-cropped="true"
+    target="_blank"
     :id="item.id"
-    :data-pswp-src="item.file_url"
-    :data-pswp-width="item.width"
-    :data-pswp-height="item.height"
-    :to="createBooruURL(item.id)">
+    :to="createBooruURL(item.id)"
+    @click="onClick">
     <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
       <NuxtImg
         :src
@@ -32,9 +35,8 @@ function reduceSize(item: Post): [string, number, number] {
         :height
         :key="item.hash"
         :alt="item.tags"
-        :loading="index > 20 ? 'lazy' : 'eager'"
         :data-hires="item.file_url"
-        class="w-full transition-all duration-200" />
+        class="w-full h-full object-cover" />
     </UtilMapObj>
   </NuxtLink>
 </template>

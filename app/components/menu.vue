@@ -51,31 +51,33 @@ const provider = computed({
       </Tabs>
     </div>
     <Separator class="mt-1.5" />
-    <NumberField :min="0" :max="4" v-model="column" id="columns">
-      <Label class="text-xs mb-1" for="columns">Column per Row</Label>
-      <NumberFieldContent>
-        <NumberFieldDecrement />
-        <NumberFieldInput />
-        <NumberFieldIncrement />
-      </NumberFieldContent>
-    </NumberField>
-    <div class="form-control">
-      <Label class="block mb-2 text-xs" for="theme-picker">Theme</Label>
-      <Select id="theme-picker" v-model:modelValue="colorMode.preference">
-        <SelectTrigger class="w-full">
-          <SelectValue placeholder="Choose Theme" />
-          <SelectContent>
-            <SelectItem :key="value" :value v-for="value in ['system', 'light', 'dark']">
-              <div class="flex items-center">
-                <SwatchBook class="w-5 h-5 mr-3" v-if="value === 'system'" />
-                <Sun class="w-5 h-5 mr-3" v-else-if="value === 'light'" />
-                <Moon class="w-5 h-5 mr-3" v-else />
-                {{ startCase(value) }}
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </SelectTrigger>
-      </Select>
+    <div class="flex md:flex-col max-md:items-center gap-4 md:gap-3">
+      <NumberField :min="0" :max="4" v-model="column" id="columns" class="max-md:w-1/2">
+        <Label class="text-xs mb-1" for="columns">Column per Row</Label>
+        <NumberFieldContent>
+          <NumberFieldDecrement />
+          <NumberFieldInput />
+          <NumberFieldIncrement />
+        </NumberFieldContent>
+      </NumberField>
+      <div class="form-control max-md:w-1/2">
+        <Label class="block mb-2 text-xs" for="theme-picker">Theme</Label>
+        <Select id="theme-picker" v-model:modelValue="colorMode.preference">
+          <SelectTrigger class="w-full">
+            <SelectValue placeholder="Choose Theme" />
+            <SelectContent>
+              <SelectItem :key="value" :value v-for="value in ['system', 'light', 'dark']">
+                <div class="flex items-center">
+                  <SwatchBook class="w-5 h-5 mr-3" v-if="value === 'system'" />
+                  <Sun class="w-5 h-5 mr-3" v-else-if="value === 'light'" />
+                  <Moon class="w-5 h-5 mr-3" v-else />
+                  {{ startCase(value) }}
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </SelectTrigger>
+        </Select>
+      </div>
     </div>
   </ContentTemplate>
 
