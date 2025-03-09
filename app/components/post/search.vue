@@ -113,12 +113,17 @@ onUnmounted(unsub);
     </DialogContent>
   </Dialog>
 
-  <Drawer v-else v-model="open">
+  <Drawer v-else v-model:open="open">
     <DrawerTrigger asChild><Trigger /></DrawerTrigger>
     <DrawerContent>
       <DrawerDescription hidden />
       <DrawerTitle hidden>Tags List</DrawerTitle>
       <Content />
+      <DrawerFooter>
+        <DrawerClose as-child>
+          <Button variant="outline">Dismiss</Button>
+        </DrawerClose>
+      </DrawerFooter>
     </DrawerContent>
   </Drawer>
 </template>
