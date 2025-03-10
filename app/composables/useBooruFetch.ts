@@ -22,8 +22,8 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
   const { workerFn } = useWebWorkerFn(dedupe);
 
   useInfiniteScroll(el, useThrottleFn(fetchBooru, 3000), {
-    distance: 1200,
-    canLoadMore: () => canNext.value,
+    distance: 800,
+    canLoadMore: () => canNext.value && !noUpdate.value,
   });
 
   const post = shallowRef<Post[]>();
@@ -32,19 +32,23 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 
   const canNext = ref(true);
   const loading = ref(false);
-  const noFetch = ref(false);
+  const noUpdate = ref(false);
 
-  async function fetchBooru(state?: InfiScrollState, reset = false) {
-    if (reset) paginator.reset();
-
+  function resetPage(page: number) {
+    noUpdate.value = true;
+    paginator.update({ page }, true);
+  }
+  async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
-    const query = <PageAsString>{ ...paginator.query.value, limit: 25 };
+    const query = <PageAsString>{ ...paginator.query.value, limit: 30 };
+
+    if (reset) query.page = 1;
     const headers = {
       'x-rating': config.rating?.join(' ') || '',
       'x-provider': config.provider,
     };
 
-    if (noFetch.value || (state && !config.isInfinite)) return;
+    if (state && !config.isInfinite) return;
     if (config.isInfinite) {
       if (!post.value) query.page ||= 1;
       else query.page = `b${post.value.at(-1)!.id}`;
@@ -64,34 +68,34 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     if (!config.isInfinite || !post.value || reset) {
       post.value = res.post;
       meta.value = res.meta;
+      if (reset) resetPage(1);
       return;
     }
 
-    const deduped = await workerFn(post.value, res.post);
+    const a = [post.value, res.post] as const;
+    const deduped = post.value.length > 300 ? await workerFn(...a) : dedupe(...a);
     if (!deduped.length) return;
 
     meta.value = res.meta;
     post.value = post.value.concat(deduped);
-    if ((canNext.value = res.post.length > 0)) {
-      noFetch.value = true;
-      paginator.update({ page: <number>query.page }, true);
-    }
+    if ((canNext.value = res.post.length > 0)) resetPage(<number>query.page);
   }
 
-  function checkForUpdate(a: ListParams, b?: ListParams) {
-    if (noFetch.value) return (noFetch.value = false);
+  const checkForUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
+    if (noUpdate.value) return (noUpdate.value = false);
     if (typeof b == 'undefined') return fetchBooru();
     else if (deepCompare(a, b)) return;
 
     const { page: _1, ...restA } = a;
     const { page: _2, ...restB } = b;
-    fetchBooru(undefined, Object.values(restA).join('') !== Object.values(restB).join(''));
-  }
+    fetchBooru(undefined, !deepCompare(restA, restB));
+  }, 200);
 
   watch(paginator.query, checkForUpdate, { immediate: true });
   watch([() => `${config.provider}-${config.isInfinite}-${config.rating}`], () => {
     post.value &&= undefined;
-    fetchBooru();
+    noUpdate.value = true;
+    fetchBooru(undefined, true);
   });
 
   return { post, meta, loading, error, paginator };
