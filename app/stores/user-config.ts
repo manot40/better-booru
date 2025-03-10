@@ -7,12 +7,12 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     <UserConfig>{
       column: undefined,
       rating: ['general'],
-      provider: 'gelbooru',
-      fetchMode: 'paginated',
+      provider: 'danbooru',
+      browseMode: 'paginated',
     },
 
   getters: {
-    isInfinite: (state) => state.fetchMode === 'infinite' && state.provider !== 'gelbooru',
+    isInfinite: (state) => state.browseMode === 'infinite' && state.provider !== 'gelbooru',
   },
 
   actions: {

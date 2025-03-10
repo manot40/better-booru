@@ -22,8 +22,8 @@ const provider = computed({
   set: (e) => userConfig.changeProvider(e),
 });
 const infiScroll = computed({
-  get: () => userConfig.fetchMode === 'infinite',
-  set: (e) => userConfig.mutate({ fetchMode: e ? 'infinite' : 'paginated' }),
+  get: () => userConfig.browseMode === 'infinite',
+  set: (e) => userConfig.mutate({ browseMode: e ? 'infinite' : 'paginated' }),
 });
 </script>
 

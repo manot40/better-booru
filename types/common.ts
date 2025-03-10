@@ -9,7 +9,7 @@ export interface UserConfig {
   column?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
   provider: Provider;
-  fetchMode?: 'infinite' | 'paginated';
+  browseMode?: 'infinite' | 'paginated';
 }
 
 export interface BooruData {

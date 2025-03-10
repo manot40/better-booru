@@ -2,7 +2,6 @@
 import type { Post } from '~~/types/common';
 
 defineProps<{ item: Post }>();
-const emit = defineEmits<{ click: [e: MouseEvent] }>();
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -13,11 +12,6 @@ function reduceSize(item: Post): [string, number, number] {
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
   return [src, Math.round(width / division), Math.round(height / division)];
 }
-
-function onClick(e: MouseEvent) {
-  e.preventDefault();
-  emit('click', e);
-}
 </script>
 
 <template>
@@ -27,7 +21,9 @@ function onClick(e: MouseEvent) {
     target="_blank"
     :id="item.id"
     :to="createBooruURL(item.id)"
-    @click="onClick">
+    :data-pswp-src="item.file_url"
+    :data-pswp-width="item.width"
+    :data-pswp-height="item.height">
     <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
       <NuxtImg
         :src
@@ -36,7 +32,7 @@ function onClick(e: MouseEvent) {
         :key="item.hash"
         :alt="item.tags"
         :data-hires="item.file_url"
-        class="w-full h-full object-cover" />
+        class="w-full h-full object-cover max-h-[900px]" />
     </UtilMapObj>
   </NuxtLink>
 </template>

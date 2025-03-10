@@ -2,56 +2,52 @@ import type { FetchError } from 'ofetch';
 import type { ListParams, Post, BooruMeta } from '~~/types/common';
 
 type BooruResult = {
-  post: Ref<Post[] | undefined>;
-  meta: Ref<BooruMeta | undefined>;
+  data: Ref<Result | undefined>;
   error: Ref<FetchError | undefined>;
+  hasNext: Ref<boolean>;
   loading: Ref<boolean>;
   paginator: UsePagination<ListParams>;
 };
-
+type Result = { post: Post[]; meta: BooruMeta };
 type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
 
-function dedupe(oldList: Post[], newList: Post[]) {
-  const oldIds = oldList.map(({ id }) => id);
-  return newList.filter((post) => !oldIds.includes(post.id));
-}
+const LIMIT = 50;
 
 export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResult => {
   const config = useUserConfig();
   const paginator = usePaginationQuery<ListParams>();
-  const { workerFn } = useWebWorkerFn(dedupe);
 
   useInfiniteScroll(el, useThrottleFn(fetchBooru, 3000), {
     distance: 800,
-    canLoadMore: () => canNext.value && !noUpdate.value,
+    canLoadMore: () => hasNext.value && !noUpdate.value && !loading.value,
   });
 
-  const post = shallowRef<Post[]>();
-  const meta = shallowRef<BooruMeta>();
+  const data = shallowRef<Result>();
   const error = shallowRef<FetchError>();
 
-  const canNext = ref(true);
+  const hasNext = ref(true);
   const loading = ref(false);
   const noUpdate = ref(false);
 
-  function resetPage(page: number) {
+  function resetPage(page: number, replace = false) {
     noUpdate.value = true;
-    paginator.update({ page }, true);
+    paginator.update({ page }, replace);
   }
   async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
-    type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
-    const query = <PageAsString>{ ...paginator.query.value, limit: 30 };
-
-    if (reset) query.page = 1;
-    const headers = {
-      'x-rating': config.rating?.join(' ') || '',
-      'x-provider': config.provider,
-    };
-
     if (state && !config.isInfinite) return;
+    type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
+
+    const query = <PageAsString>{ ...paginator.query.value };
+    const headers = { 'x-rating': config.rating?.join(' ')!, 'x-provider': config.provider };
+
     if (config.isInfinite) {
-      if (!post.value) query.page ||= 1;
-      else query.page = `b${post.value.at(-1)!.id}`;
+      query.limit = LIMIT;
+      if (!data.value) query.page ||= 1;
+      else query.page = `b${data.value.post.at(-1)!.id}`;
+    }
+    if (reset) {
+      query.page = 1;
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
     loading.value = true;
@@ -61,31 +57,30 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 
     if (!res || err) {
       error.value = <FetchError>err;
+      hasNext.value = loading.value = false;
       return;
     }
 
     // Infinte scroll disabled or initial state
-    if (!config.isInfinite || !post.value || reset) {
-      post.value = res.post;
-      meta.value = res.meta;
+    if (!config.isInfinite || !data.value || reset) {
+      data.value = res;
       if (reset) resetPage(1);
       return;
     }
 
-    const a = [post.value, res.post] as const;
-    const deduped = post.value.length > 300 ? await workerFn(...a) : dedupe(...a);
+    const sliceAmt = Math.floor(LIMIT * -(data.value.post.length > LIMIT ? 1.2 : 1));
+    const deduped = dedupe(data.value.post.slice(sliceAmt), res.post);
     if (!deduped.length) return;
 
-    meta.value = res.meta;
-    post.value = post.value.concat(deduped);
-    if ((canNext.value = res.post.length > 0)) resetPage(<number>query.page);
+    data.value = { meta: res.meta, post: data.value.post.concat(deduped) };
+    if ((hasNext.value = res.post.length > 0)) resetPage(<number>query.page, true);
   }
 
   const checkForUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
     if (noUpdate.value) return (noUpdate.value = false);
-    if (typeof b == 'undefined') return fetchBooru();
-    else if (deepCompare(a, b)) return;
+    if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
 
+    if (deepCompare(a, b)) return;
     const { page: _1, ...restA } = a;
     const { page: _2, ...restB } = b;
     fetchBooru(undefined, !deepCompare(restA, restB));
@@ -93,13 +88,18 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 
   watch(paginator.query, checkForUpdate, { immediate: true });
   watch([() => `${config.provider}-${config.isInfinite}-${config.rating}`], () => {
-    post.value &&= undefined;
+    data.value &&= undefined;
     noUpdate.value = true;
     fetchBooru(undefined, true);
   });
 
-  return { post, meta, loading, error, paginator };
+  return { data, loading, error, hasNext, paginator };
 };
+
+function dedupe(oldList: Post[], newList: Post[]) {
+  const oldIds = oldList.map(({ id }) => id);
+  return newList.filter((post) => !oldIds.includes(post.id));
+}
 
 type InfiScrollState = {
   x: number;

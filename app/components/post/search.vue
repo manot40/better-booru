@@ -30,7 +30,8 @@ const { data: searchTags } = useLazyFetch('/api/autocomplete', {
 const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.includes(a.value)) || []);
 
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
-  const value = ev.detail.value;
+  const exclude = (<HTMLElement>ev.target).innerHTML === 'Exclude';
+  const value = exclude ? `-${ev.detail.value}` : ev.detail.value;
   if (typeof value != 'string') return;
   updateQuery(tags.value.includes(value) ? tags.value.filter((a) => a !== value) : [...tags.value, value]);
 }
@@ -69,8 +70,12 @@ onUnmounted(unsub);
       :modelValue="tags"
       @removeTag="updateQuery(tags.filter((a) => a !== $event))"
       class="font-normal rounded-b-none border-0 border-b py-2.5">
-      <TagsInputItem v-for="tag in tags" :key="tag" :value="tag" class="rounded-sm py-3">
-        <TagsInputItemText />
+      <TagsInputItem
+        v-for="tag in tags"
+        :key="tag"
+        :value="tag"
+        :class="['rounded-sm py-3', tag.startsWith('-') && 'bg-red-900']">
+        <div class="ml-2 mr-1 mb-1">{{ tag.replace(/^-/, '') }}</div>
         <TagsInputItemDelete />
       </TagsInputItem>
     </TagsInput>
@@ -91,12 +96,15 @@ onUnmounted(unsub);
             v-for="item in filtered"
             @select.prevent="handleFilter">
             <div class="flex items-center justify-between gap-2 w-full">
-              {{ startCase(item.label) }}
-              <Badge
-                :variant="item.category === 'copyright' ? 'default' : 'outline'"
-                v-if="typeof item.category == 'string' && item.category != 'tag'">
-                {{ startCase(item.category) }}
-              </Badge>
+              <div class="flex gap-2 items-center">
+                {{ startCase(item.label) }}
+                <Badge
+                  :variant="item.category === 'copyright' ? 'default' : 'outline'"
+                  v-if="typeof item.category == 'string' && item.category != 'tag'">
+                  {{ startCase(item.category) }}
+                </Badge>
+              </div>
+              <Badge variant="destructive">Exclude</Badge>
             </div>
           </CommandItem>
         </CommandGroup>
