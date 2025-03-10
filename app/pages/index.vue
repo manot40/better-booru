@@ -14,15 +14,7 @@ definePageMeta({
 const userConfig = useUserConfig();
 const { post, meta, error, paginator } = useBooruFetch();
 
-const dataSource = computed(() => {
-  if (!post.value) return [];
-  return post.value.map((item) => ({
-    alt: item.tags,
-    src: item.file_url,
-    width: item.width,
-    height: item.height,
-  }));
-});
+const dataSource = shallowRef<ReturnType<typeof formatDataSource>>();
 const { lightbox, rendered } = useLightbox(dataSource);
 
 const gap = 8;
@@ -37,7 +29,25 @@ function estimateSize(index: number, lane: number) {
   return Math.ceil(relativeWidth * y);
 }
 
-watch(post, () => masonry.value?.virtualizer.measure());
+const { workerStatus, workerFn, workerTerminate } = useWebWorkerFn(formatDataSource);
+function formatDataSource(data?: typeof post.value) {
+  if (!data) return [];
+  return data.map((item) => ({
+    alt: item.tags,
+    src: item.file_url,
+    width: item.width,
+    height: item.height,
+  }));
+}
+
+watch(post, (data, _, onCleanup) => {
+  masonry.value?.virtualizer.measure();
+  if (!data) return;
+  if (data.length < 500) return (dataSource.value = formatDataSource(data));
+  workerFn(data).then((data) => (dataSource.value = data));
+  onCleanup(() => workerStatus.value === 'RUNNING' && workerTerminate(workerStatus.value));
+});
+
 onMounted(() => {
   lightbox.value?.on('loadError', function ({ content, slide }) {
     const el = <HTMLAnchorElement>content.data.element;

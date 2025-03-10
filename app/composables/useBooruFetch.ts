@@ -11,15 +11,22 @@ type BooruResult = {
   paginator: UsePagination<ListParams>;
 };
 
-export const useBooruFetch = (): BooruResult => {
+type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
+
+export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResult => {
   const userConfig = useUserConfig();
   const paginator = usePaginationQuery<ListParams>();
 
-  useInfiniteScroll(() => window, debounce(fetchBooru, 200), { distance: 420 });
-  const post = useState('post-index', () => shallowRef<Post[]>());
+  useInfiniteScroll(el, debounce(fetchBooru, 200), {
+    distance: 500,
+    canLoadMore: () => canNext.value,
+  });
+
+  const post = shallowRef<Post[]>();
   const meta = shallowRef<BooruMeta>();
   const error = shallowRef<FetchError>();
 
+  const canNext = ref(true);
   const loading = ref(false);
   const noFetch = ref(false);
 
@@ -48,11 +55,16 @@ export const useBooruFetch = (): BooruResult => {
     }
 
     if (userConfig.isInfinite) {
-      post.value = !post.value || reset ? res.post : [...post.value, ...res.post];
       meta.value = res.meta;
-      if (!reset && res.post.length > 0) {
-        noFetch.value = true;
-        paginator.update({ page: query.page }, true);
+      if (!post.value || reset) {
+        post.value = res.post;
+      } else {
+        const next = (canNext.value = res.post.length > 0);
+        post.value = post.value?.concat(res.post);
+        if (next) {
+          noFetch.value = true;
+          paginator.update({ page: query.page }, true);
+        }
       }
     } else {
       post.value = res.post;
@@ -60,19 +72,17 @@ export const useBooruFetch = (): BooruResult => {
     }
   }
 
-  watch([() => `${userConfig.provider}-${userConfig.rating?.join('')}`], () => fetchBooru(undefined, true));
-  watch(
-    paginator.query,
-    (a, b) => {
-      if (noFetch.value) return (noFetch.value = false);
-      if (typeof b == 'undefined') return fetchBooru();
+  function checkForUpdate(a: ListParams, b?: ListParams) {
+    if (noFetch.value) return (noFetch.value = false);
+    if (typeof b == 'undefined') return fetchBooru();
+    const { page: _1, ...restA } = a;
+    const { page: _2, ...restB } = b;
+    fetchBooru(undefined, Object.values(restA).join('') !== Object.values(restB).join(''));
+  }
 
-      const { page: _1, ...restA } = a;
-      const { page: _2, ...restB } = b;
-      fetchBooru(undefined, Object.values(restA).join('') !== Object.values(restB).join(''));
-    },
-    { immediate: true }
-  );
+  const cfg = () => `${userConfig.provider}-${userConfig.isInfinite}-${userConfig.rating}`;
+  watch(cfg, () => fetchBooru());
+  watch(paginator.query, checkForUpdate, { immediate: true });
 
   return { post, meta, loading, error, paginator };
 };

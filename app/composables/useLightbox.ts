@@ -29,30 +29,6 @@ export function useLightbox(el: Ref<HTMLElement | null | undefined | DataSource>
 
     const lb = (lightbox.value = new PhotoSwipeLightbox(options));
 
-    if (userConfig.provider === 'safebooru')
-      lb.on('loadComplete', function (this: PhotoSwipeLightbox['pswp'], { content }) {
-        const el = <HTMLAnchorElement | undefined>content.data.element;
-        if (content.state !== 'error' || !el || el.dataset.pswpSrc?.includes('thumbnail')) return;
-
-        const src = content.data.src || '';
-        const data = content.data;
-        if (!src.includes('org//') && el.dataset.end !== '1') {
-          var updated = (data.src = src.replace('org/', 'org//'));
-        } else if (!src.includes('?')) {
-          var updated = (data.src = src + `?${el.id}`);
-        } else if (/org\/\/.*.\?/.test(src)) {
-          el.dataset.end = '1';
-          var updated = (data.src = src.replace('org//', 'org/'));
-        } else {
-          const [child] = el.childNodes;
-          if (!(child instanceof HTMLImageElement) || el.dataset.pswpSrc === child.src) return;
-          var updated = (data.src = child.src);
-        }
-
-        el.dataset.pswpSrc = updated;
-        this?.refreshSlideContent(content.index);
-      });
-
     lb.on('uiRegister', function (this: PhotoSwipeLightbox['pswp']) {
       this?.ui?.registerElement({
         name: 'open-btn',
