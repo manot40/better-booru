@@ -28,11 +28,10 @@ export default defineNuxtConfig({
   image: {
     format: ['webp', 'jpg'],
     ipx: { modifiers: { format: 'webp' } },
-    domains: ['safebooru.org', 'img3.gelbooru.com', 'cdn.donmai.us'],
+    domains: ['img3.gelbooru.com', 'cdn.donmai.us'],
     alias: {
       danbooru: 'https://cdn.donmai.us',
       gelbooru: 'https://img3.gelbooru.com',
-      safebooru: 'https://safebooru.org',
     },
   },
 

@@ -1,6 +1,4 @@
-import { createFetch } from 'ofetch';
-
-export const $safebooruFetch = createFetch({ defaults: { baseURL: 'https://safebooru.org' } });
+import { createFetch, type FetchContext } from 'ofetch';
 
 export const $gelbooruFetch = createFetch({
   defaults: {
@@ -13,13 +11,14 @@ export const $gelbooruFetch = createFetch({
   },
 });
 
+function onDonmaiReq({ options }: FetchContext) {
+  const config = useRuntimeConfig();
+  const query = { login: config.danbooruUserId, api_key: config.danbooruApiKey };
+  Object.assign((options.query ??= {}), query);
+}
 export const $danbooruFetch = createFetch({
-  defaults: {
-    baseURL: 'https://danbooru.donmai.us',
-    onRequest({ options }) {
-      const config = useRuntimeConfig();
-      const query = { login: config.danbooruUserId, api_key: config.danbooruApiKey };
-      Object.assign((options.query ??= {}), query);
-    },
-  },
+  defaults: { baseURL: 'https://danbooru.donmai.us', onRequest: onDonmaiReq },
+});
+export const $safebooruFetch = createFetch({
+  defaults: { baseURL: 'https://safebooru.donmai.us', onRequest: onDonmaiReq },
 });

@@ -7,22 +7,19 @@ export default defineEventHandler(async (evt): Promise<Autocomplete[]> => {
 
   const { q } = <Record<string, string>>getQuery(evt);
 
-  if (provider === 'safebooru') {
-    const data = await $safebooruFetch<Autocomplete[] | string>('/autocomplete.php', { query: { q } });
-    if (typeof data === 'string') return JSON.parse(data);
-    return data;
-  } else if (provider === 'danbooru') {
-    return $danbooruFetch<Autocomplete[]>('/autocomplete.json', {
+  if (provider === 'gelbooru') {
+    return $gelbooruFetch<Autocomplete[]>('/index.php', {
+      query: { page: 'autocomplete2', term: q, type: 'tag_query', limit: '10' },
+    });
+  } else {
+    const fetcher = provider === 'safebooru' ? $safebooruFetch : $danbooruFetch;
+    return fetcher<Autocomplete[]>('/autocomplete.json', {
       query: {
         limit: '20',
         version: '1',
         'search[type]': 'tag_query',
         'search[query]': q,
       },
-    });
-  } else {
-    return $gelbooruFetch<Autocomplete[]>('/index.php', {
-      query: { page: 'autocomplete2', term: q, type: 'tag_query', limit: '10' },
     });
   }
 });

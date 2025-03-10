@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from 'node:http';
 
 const MAX_AGE = 60 * 60 * 24;
-const BOORU_CDN = ['safebooru.org', 'img3.gelbooru.com', 'cdn.donmai.us'];
+const BOORU_CDN = ['img3.gelbooru.com', 'cdn.donmai.us'];
 const cacheStore = createIPXCache(process.cwd() + '/.cache/ipx/original', MAX_AGE);
 
 export default defineEventHandler(async (evt) => {

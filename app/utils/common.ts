@@ -10,9 +10,8 @@ export const unwrapRef = <T = any>(v: MaybeRef<T>) => (isRef(v) ? v.value : v);
 
 export const createBooruURL = (id: number) => {
   const config = useUserConfig();
-  if (config.provider === 'danbooru') return `https://danbooru.donmai.us/posts/${id}`;
-  const hostname = config.provider === 'safebooru' ? 'safebooru.org' : 'gelbooru.com';
-  return `https://${hostname}/index.php?page=post&s=view&id=${id}`;
+  if (config.provider === 'gelbooru') return `https://gelbooru.com/index.php?page=post&s=view&id=${id}`;
+  return `https://${config.provider}.donmai.us/posts/${id}`;
 };
 
 export const getWeservURL = (src: string, opts = {}) =>

@@ -12,7 +12,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
 
   getters: {
-    isInfinite: (state) => state.fetchMode === 'infinite' && state.provider === 'danbooru',
+    isInfinite: (state) => state.fetchMode === 'infinite' && state.provider !== 'gelbooru',
   },
 
   actions: {

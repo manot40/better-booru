@@ -29,9 +29,8 @@ export function processBooruData(data: BooruResponse): Post[] {
   return data.map((raw) => {
     const { directory, change, owner, parent_id, status, has_notes, comment_count, ...rest } = raw;
     const hash = 'md5' in rest ? rest.md5 : rest.hash;
-    const isGel = rest.preview_url.includes('gelbooru.com');
-    rest.sample_url = imgAlias(rest.sample_url, isGel ? 'gelbooru' : 'safebooru');
-    rest.preview_url = imgAlias(rest.preview_url, isGel ? 'gelbooru' : 'safebooru');
+    rest.sample_url = imgAlias(rest.sample_url, 'gelbooru');
+    rest.preview_url = imgAlias(rest.preview_url, 'gelbooru');
     return { ...rest, hash };
   });
 }

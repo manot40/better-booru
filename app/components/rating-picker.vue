@@ -15,7 +15,7 @@ watchDebounced(cachedRating, (rating) => userConfig.mutate({ rating }), { deboun
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
   const rating = <RatingQuery>ev.detail.value;
 
-  if (userConfig.provider === 'danbooru') {
+  if (userConfig.provider !== 'gelbooru') {
     const userRatings = cachedRating.value ?? [];
     if (rating === 'all') return (cachedRating.value = ['all']);
     else if (userRatings.includes(rating))
@@ -32,19 +32,19 @@ function handleFilter(...[ev]: ComboboxItemEmits['select']) {
 }
 
 function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverted: boolean } {
-  if (userConfig.provider === 'danbooru') {
-    const userRatings = cachedRating.value;
-    return {
-      isInverted: false,
-      isSelected: (item === 'all' && !userRatings) || !!userRatings?.includes(item),
-    };
-  } else {
+  if (userConfig.provider === 'gelbooru') {
     const [userRating] = cachedRating.value ?? [];
     if (!userRating) return { isSelected: item === 'all', isInverted: false };
 
     const isSelected = item === userRating || item === userRating.slice(1);
     const isInverted = item === userRating.slice(1);
     return { isSelected, isInverted };
+  } else {
+    const userRatings = cachedRating.value;
+    return {
+      isInverted: false,
+      isSelected: (item === 'all' && !userRatings) || !!userRatings?.includes(item),
+    };
   }
 }
 </script>

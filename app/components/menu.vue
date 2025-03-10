@@ -29,7 +29,7 @@ const infiScroll = computed({
 
 <template>
   <RatingTemplate>
-    <div class="form-control">
+    <div class="form-control mb-2">
       <Label class="block mb-2 text-xs" for="rating-picker">Rating</Label>
       <RatingPicker />
     </div>
@@ -45,16 +45,16 @@ const infiScroll = computed({
     <div class="form-control">
       <Label class="block mb-2 text-xs">Booru Source</Label>
       <Tabs v-model="provider">
-        <TabsList class="grid w-full grid-cols-3 mb-4">
+        <TabsList class="grid w-full grid-cols-3">
           <TabsTrigger value="danbooru">Dan</TabsTrigger>
-          <TabsTrigger value="gelbooru">Gel</TabsTrigger>
           <TabsTrigger value="safebooru">Safe</TabsTrigger>
+          <TabsTrigger value="gelbooru">Gel</TabsTrigger>
         </TabsList>
         <TabsContent value="danbooru"><RatingComponent /></TabsContent>
         <TabsContent value="gelbooru"><RatingComponent /></TabsContent>
       </Tabs>
     </div>
-    <Separator class="mt-1.5 mb-0.5" />
+    <Separator class="mt-2 mb-0.5" />
 
     <div class="flex items-end gap-6 lg:gap-4 mb-1.5">
       <NumberField :min="0" :max="4" v-model="column" id="columns" class="w-full">
@@ -65,7 +65,7 @@ const infiScroll = computed({
           <NumberFieldIncrement />
         </NumberFieldContent>
       </NumberField>
-      <div v-if="userConfig.provider === 'danbooru'" class="flex items-center space-x-2 shrink-0 mb-2">
+      <div v-if="userConfig.provider !== 'gelbooru'" class="flex items-center space-x-2 shrink-0 mb-2">
         <Switch v-model="infiScroll" id="infi-scroll" />
         <Label for="infi-scroll">Infinite Scroll</Label>
       </div>
