@@ -1,8 +1,6 @@
 import type { FetchError } from 'ofetch';
 import type { ListParams, Post, BooruMeta } from '~~/types/common';
 
-import { debounce } from 'perfect-debounce';
-
 type BooruResult = {
   post: Ref<Post[] | undefined>;
   meta: Ref<BooruMeta | undefined>;
@@ -13,11 +11,18 @@ type BooruResult = {
 
 type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
 
+function dedupe(oldList: Post[], newList: Post[]) {
+  const oldIds = oldList.map(({ id }) => id);
+  return newList.filter((post) => !oldIds.includes(post.id));
+}
+
 export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResult => {
   const config = useUserConfig();
   const paginator = usePaginationQuery<ListParams>();
-  useInfiniteScroll(el, debounce(fetchBooru, 200), {
-    distance: 500,
+  const { workerFn } = useWebWorkerFn(dedupe);
+
+  useInfiniteScroll(el, useThrottleFn(fetchBooru, 3000), {
+    distance: 1200,
     canLoadMore: () => canNext.value,
   });
 
@@ -33,14 +38,17 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     if (reset) paginator.reset();
 
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
-    const query = <PageAsString>{ ...paginator.query.value };
+    const query = <PageAsString>{ ...paginator.query.value, limit: 25 };
     const headers = {
       'x-rating': config.rating?.join(' ') || '',
       'x-provider': config.provider,
     };
 
     if (noFetch.value || (state && !config.isInfinite)) return;
-    if (config.isInfinite) query.page = reset ? query.page : post.value ? `b${post.value.at(-1)!.id}` : 1;
+    if (config.isInfinite) {
+      if (!post.value) query.page ||= 1;
+      else query.page = `b${post.value.at(-1)!.id}`;
+    }
 
     loading.value = true;
     const promise = $fetch<{ post: Post[]; meta: BooruMeta }>('/api/post', { query, headers });
@@ -52,21 +60,21 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
       return;
     }
 
-    if (config.isInfinite) {
-      meta.value = res.meta;
-      if (!post.value || reset) {
-        post.value = res.post;
-      } else {
-        const next = (canNext.value = res.post.length > 0);
-        post.value = post.value?.concat(res.post);
-        if (next) {
-          noFetch.value = true;
-          paginator.update({ page: <number>query.page }, true);
-        }
-      }
-    } else {
+    // Infinte scroll disabled or initial state
+    if (!config.isInfinite || !post.value || reset) {
       post.value = res.post;
       meta.value = res.meta;
+      return;
+    }
+
+    const deduped = await workerFn(post.value, res.post);
+    if (!deduped.length) return;
+
+    meta.value = res.meta;
+    post.value = post.value.concat(deduped);
+    if ((canNext.value = res.post.length > 0)) {
+      noFetch.value = true;
+      paginator.update({ page: <number>query.page }, true);
     }
   }
 
@@ -83,7 +91,7 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
   watch(paginator.query, checkForUpdate, { immediate: true });
   watch([() => `${config.provider}-${config.isInfinite}-${config.rating}`], () => {
     post.value &&= undefined;
-    fetchBooru(undefined, true);
+    fetchBooru();
   });
 
   return { post, meta, loading, error, paginator };
