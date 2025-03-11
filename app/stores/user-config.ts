@@ -13,8 +13,8 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
 
   getters: {
-    nonce: (state) => btoa(`${state.provider}-${state.browseMode}-${state.rating}`),
-    isInfinite: (state) => state.browseMode === 'infinite' && state.provider !== 'gelbooru',
+    nonce: (state) => stringNonce(`${state.provider}-${state.browseMode}-${state.rating}`),
+    isInfinite: (state) => state.browseMode === 'infinite',
   },
 
   actions: {
@@ -47,3 +47,13 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
   },
 });
+
+function stringNonce(text: string) {
+  let nonce = 0;
+  if (text.length === 0) return nonce;
+  for (let i = 0; i < text.length; i++) {
+    nonce = (nonce << 5) - nonce + text.charCodeAt(i);
+    nonce |= 0;
+  }
+  return nonce.toString(16);
+}

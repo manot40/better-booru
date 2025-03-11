@@ -22,6 +22,12 @@ export const processRating = (provider: Provider, rating: string | undefined, ta
   }
 };
 
+export async function stringDigest(text: string, algo = 'SHA-1') {
+  const encoded = new TextEncoder().encode(text);
+  const data = new Uint8Array(await crypto.subtle.digest(algo, encoded));
+  return Array.from(data, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export function imgAlias(url_: string, provider: Provider) {
   if (!url_) return url_;
   const url = parseURL(url_);

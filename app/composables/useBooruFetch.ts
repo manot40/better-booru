@@ -37,7 +37,9 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) query.page ||= 1;
-      else query.page = `b${data.value.post.at(-1)!.id}`;
+      else if (config.provider == 'danbooru') query.page = `b${data.value.post.at(-1)!.id}`;
+      else if (typeof query.page == 'number') query.page++;
+      else query.page = 1;
     }
 
     loading.value = true;

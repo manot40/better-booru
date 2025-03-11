@@ -76,7 +76,7 @@ const blurNSFW = computed({
           <NumberFieldIncrement />
         </NumberFieldContent>
       </NumberField>
-      <div v-if="userConfig.provider !== 'gelbooru'" class="flex items-center space-x-2 shrink-0 mb-2">
+      <div class="flex items-center space-x-2 shrink-0 mb-2">
         <Switch v-model="infiScroll" id="infi-scroll" />
         <Label for="infi-scroll">Infinite Scroll</Label>
       </div>
