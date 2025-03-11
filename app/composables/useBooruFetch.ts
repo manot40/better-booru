@@ -1,15 +1,7 @@
 import type { FetchError } from 'ofetch';
 import type { ListParams, Post, BooruMeta } from '~~/types/common';
 
-type BooruResult = {
-  data: Ref<Result | undefined>;
-  error: Ref<FetchError | undefined>;
-  hasNext: Ref<boolean>;
-  loading: Ref<boolean>;
-  paginator: UsePagination<ListParams>;
-};
-type Result = { post: Post[]; meta: BooruMeta };
-type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
+import { isEqual } from 'ohash';
 
 const LIMIT = 50;
 
@@ -34,20 +26,18 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     paginator.update({ page }, replace);
   }
   async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
-    if (state && !config.isInfinite) return;
+    if (import.meta.server || (state && !config.isInfinite)) return;
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
 
     const query = <PageAsString>{ ...paginator.query.value };
     const headers = { 'x-rating': config.rating?.join(' ')!, 'x-provider': config.provider };
-
-    if (config.isInfinite) {
-      query.limit = LIMIT;
-      if (!data.value) query.page ||= 1;
-      else query.page = `b${data.value.post.at(-1)!.id}`;
-    }
     if (reset) {
       query.page = 1;
       window.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (config.isInfinite) {
+      query.limit = LIMIT;
+      if (!data.value) query.page ||= 1;
+      else query.page = `b${data.value.post.at(-1)!.id}`;
     }
 
     loading.value = true;
@@ -65,33 +55,35 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     if (!config.isInfinite || !data.value || reset) {
       data.value = res;
       if (reset) resetPage(1);
-      return;
+      return (error.value = undefined);
     }
 
     const sliceAmt = Math.floor(LIMIT * -(data.value.post.length > LIMIT ? 1.2 : 1));
     const deduped = dedupe(data.value.post.slice(sliceAmt), res.post);
     if (!deduped.length) return;
 
+    error.value = undefined;
     data.value = { meta: res.meta, post: data.value.post.concat(deduped) };
     if ((hasNext.value = res.post.length > 0)) resetPage(<number>query.page, true);
   }
 
-  const checkForUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
-    if (noUpdate.value) return (noUpdate.value = false);
-    if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
-
-    if (deepCompare(a, b)) return;
-    const { page: _1, ...restA } = a;
-    const { page: _2, ...restB } = b;
-    fetchBooru(undefined, !deepCompare(restA, restB));
-  }, 200);
-
-  watch(paginator.query, checkForUpdate, { immediate: true });
-  watch([() => `${config.provider}-${config.isInfinite}-${config.rating}`], () => {
+  const onConfigUpdate = () => {
     data.value &&= undefined;
     noUpdate.value = true;
     fetchBooru(undefined, true);
-  });
+  };
+  watch(() => config.nonce, onConfigUpdate);
+
+  const onQueryUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
+    if (noUpdate.value) return (noUpdate.value = false);
+    if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
+
+    if (isEqual(a, b)) return;
+    const { page: _1, ...restA } = a;
+    const { page: _2, ...restB } = b;
+    fetchBooru(undefined, !isEqual(restA, restB));
+  }, 200);
+  watch(paginator.query, onQueryUpdate, { immediate: true });
 
   return { data, loading, error, hasNext, paginator };
 };
@@ -99,6 +91,16 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 function dedupe(oldList: Post[], newList: Post[]) {
   const oldIds = oldList.map(({ id }) => id);
   return newList.filter((post) => !oldIds.includes(post.id));
+}
+
+type Result = { post: Post[]; meta: BooruMeta };
+type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
+export interface BooruResult {
+  data: Ref<Result | undefined>;
+  error: Ref<FetchError | undefined>;
+  hasNext: Ref<boolean>;
+  loading: Ref<boolean>;
+  paginator: UsePagination<ListParams>;
 }
 
 type InfiScrollState = {

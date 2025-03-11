@@ -12,6 +12,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
 
   getters: {
+    nonce: (state) => btoa(`${state.provider}-${state.browseMode}-${state.rating}`),
     isInfinite: (state) => state.browseMode === 'infinite' && state.provider !== 'gelbooru',
   },
 

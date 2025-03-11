@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     compatibilityVersion: 4,
   },
 
-  compatibilityDate: '2024-12-25',
+  compatibilityDate: '2025-03-01',
 
   runtimeConfig: {
     gelbooruUserId: '',

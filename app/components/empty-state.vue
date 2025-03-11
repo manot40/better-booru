@@ -15,7 +15,7 @@ defineProps<Props>();
 </template>
 
 <style scoped>
-.grid :deep(svg) {
-  @apply mx-auto mb-8 w-16 h-16;
+.grid > :deep(svg) {
+  @apply mx-auto mb-6 w-16 h-16;
 }
 </style>

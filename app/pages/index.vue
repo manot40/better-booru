@@ -37,20 +37,21 @@ watch(data, () => masonry.value?.virtualizer.measure());
 
 watch(lightbox, (lightbox, _, onCleanup) => {
   if (!lightbox) return;
-  const checkError: EventCallback<'loadError'> = ({ content, slide }) => {
-    const el = <HTMLAnchorElement>content.data.element;
-    const src = '/image?proxy=' + content.data.src;
-    if (content.data.proxied || el.dataset.proxied) return;
-
-    el.dataset.pswpSrc = src;
-    el.dataset.proxied = 'true';
-    content.data = { ...content.data, src, proxied: true };
-    slide.pswp.refreshSlideContent(slide.index);
-  };
-  checkError.bind(lightbox.pswp);
-  lightbox?.on('loadError', checkError);
-  onCleanup(() => lightbox?.off('loadError', checkError));
+  onLightboxErr.bind(lightbox.pswp);
+  lightbox?.on('loadError', onLightboxErr);
+  onCleanup(() => lightbox?.off('loadError', onLightboxErr));
 });
+
+const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide }) => {
+  const el = data.element;
+  const src = '/image?proxy=' + data.src;
+  if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
+
+  el.dataset.pswpSrc = src;
+  el.dataset.proxied = 'true';
+  Object.assign(data, { src, proxied: true });
+  slide.pswp.refreshSlideContent(slide.index);
+};
 </script>
 
 <template>
@@ -86,8 +87,8 @@ watch(lightbox, (lightbox, _, onCleanup) => {
       <PostFilter :count="data.meta.count" :paginator />
     </Teleport>
     <EmptyState class="py-8 px-4" v-else-if="loading">
-      <template #icon><LoaderCircle class="animate-spin w-8 h-8 mb-3" /></template>
-      <p>Loading more image for you... Hang tight.</p>
+      <template #icon><LoaderCircle class="animate-spin !w-10 !h-10 !mb-3" /></template>
+      <p class="text-sm">Loading more image for you...</p>
     </EmptyState>
   </template>
 
