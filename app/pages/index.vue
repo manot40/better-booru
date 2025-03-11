@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { EventCallback } from 'photoswipe/lightbox';
+
 import 'photoswipe/style.css';
 
 import { SquareArrowOutUpRight, LoaderCircle, Bean, Angry } from 'lucide-vue-next';
@@ -33,8 +35,9 @@ function estimateSize(index: number, lane: number) {
 
 watch(data, () => masonry.value?.virtualizer.measure());
 
-onMounted(() => {
-  lightbox.value?.on('loadError', function ({ content, slide }) {
+watch(lightbox, (lightbox, _, onCleanup) => {
+  if (!lightbox) return;
+  const checkError: EventCallback<'loadError'> = ({ content, slide }) => {
     const el = <HTMLAnchorElement>content.data.element;
     const src = '/image?proxy=' + content.data.src;
     if (content.data.proxied || el.dataset.proxied) return;
@@ -43,13 +46,17 @@ onMounted(() => {
     el.dataset.proxied = 'true';
     content.data = { ...content.data, src, proxied: true };
     slide.pswp.refreshSlideContent(slide.index);
-  });
+  };
+  checkError.bind(lightbox.pswp);
+  lightbox?.on('loadError', checkError);
+  onCleanup(() => lightbox?.off('loadError', checkError));
 });
 </script>
 
 <template>
-  <EmptyState :icon="Angry" title="Ouch..." class="py-8 px-4 h-[80dvh]" v-if="error">
-    <p>Something definitely wrong.</p>
+  <EmptyState title="Ouch..." class="py-8 px-4 h-[80dvh]" v-if="error">
+    <template #icon><Angry /></template>
+    <p>Something definitely wrong. Try refreshing this page.</p>
   </EmptyState>
   <PostListSkeleton v-else-if="!data" />
   <VirtualMasonry
@@ -69,19 +76,17 @@ onMounted(() => {
       </div>
     </template>
   </VirtualMasonry>
-  <EmptyState title="Nothing Found" :icon="Bean" class="py-8 px-4 h-[80dvh]" v-else>
-    <p>Try searching for something else or readjust your tags.</p>
+  <EmptyState title="Nothing Found" class="py-8 px-4 h-[80dvh]" v-else>
+    <template #icon><Bean /></template>
+    <p>Try search for something else or readjust your tags.</p>
   </EmptyState>
 
   <template v-if="data?.post.length">
     <Teleport to=".bottom-bar" v-if="!userConfig.isInfinite">
       <PostFilter :count="data.meta.count" :paginator />
     </Teleport>
-    <EmptyState
-      :icon="LoaderCircle"
-      class="py-8 px-4"
-      iconClass="animate-spin w-8 h-8 !mb-3"
-      v-else-if="loading">
+    <EmptyState class="py-8 px-4" v-else-if="loading">
+      <template #icon><LoaderCircle class="animate-spin w-8 h-8 mb-3" /></template>
       <p>Loading more image for you... Hang tight.</p>
     </EmptyState>
   </template>
