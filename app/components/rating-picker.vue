@@ -16,11 +16,12 @@ function handleFilter(...[ev]: ComboboxItemEmits['select']) {
   const rating = <RatingQuery>ev.detail.value;
 
   if (userConfig.provider !== 'gelbooru') {
-    const userRatings = cachedRating.value ?? [];
-    if (rating === 'all') return (cachedRating.value = ['all']);
-    else if (userRatings.includes(rating))
-      return (cachedRating.value = userRatings.filter((r) => r !== rating));
-    return (cachedRating.value = [...userRatings, rating]);
+    const existing = cachedRating.value ?? [];
+    if (rating === 'all') cachedRating.value = ['all'];
+    else if (existing[0] === 'all') cachedRating.value = [rating];
+    else if (existing.includes(rating)) cachedRating.value = existing.filter((r) => r !== rating);
+    else cachedRating.value = [...existing, rating];
+    return;
   }
 
   const [userRating = 'all'] = cachedRating.value ?? [];
@@ -61,7 +62,7 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
       </Button>
     </PopoverTrigger>
 
-    <PopoverContent avoidCollisions class="p-0 max-md:w-[calc(100dvw-2rem)]">
+    <PopoverContent align="start" avoidCollisions class="p-0 max-md:w-[calc(100dvw-2rem)]">
       <Command>
         <CommandList>
           <CommandEmpty />

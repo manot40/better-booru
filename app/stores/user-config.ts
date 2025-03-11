@@ -8,6 +8,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
       column: undefined,
       rating: ['general'],
       provider: 'danbooru',
+      hideNSFW: true,
       browseMode: 'paginated',
     },
 
@@ -42,12 +43,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
 
     changeProvider(provider: UserConfig['provider']) {
-      const rating: UserConfig['rating'] =
-        (provider == 'gelbooru' && !!this.rating?.length) ||
-        (provider == 'danbooru' && this.rating?.some((r) => r.startsWith('-')))
-          ? ['general']
-          : this.rating;
-      this.mutate({ provider, rating });
+      this.mutate({ provider, rating: ['general'] });
     },
   },
 });

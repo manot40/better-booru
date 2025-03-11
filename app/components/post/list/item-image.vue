@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { Post } from '~~/types/common';
 
-defineProps<{ item: Post }>();
+const props = defineProps<{ item: Post }>();
+
+const config = useUserConfig();
+
+const hideNSFW = computed(() => config.hideNSFW && ['explicit', 'questionable'].includes(props.item.rating));
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -17,13 +21,13 @@ function reduceSize(item: Post): [string, number, number] {
 <template>
   <NuxtLink
     external
-    class="ps__item"
     target="_blank"
     :id="item.id"
     :to="createBooruURL(item.id)"
     :data-pswp-src="item.file_url"
     :data-pswp-width="item.width"
-    :data-pswp-height="item.height">
+    :data-pswp-height="item.height"
+    class="ps__item block relative z-0">
     <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
       <NuxtImg
         :src
@@ -33,6 +37,9 @@ function reduceSize(item: Post): [string, number, number] {
         :alt="item.tags"
         :data-hires="item.file_url"
         class="w-full h-full object-cover max-h-[900px]" />
+      <Transition name="blur-fade">
+        <div class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" v-if="hideNSFW" />
+      </Transition>
     </UtilMapObj>
   </NuxtLink>
 </template>

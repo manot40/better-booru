@@ -127,11 +127,6 @@ onUnmounted(unsub);
       <DrawerDescription hidden />
       <DrawerTitle hidden>Tags List</DrawerTitle>
       <Content />
-      <DrawerFooter>
-        <DrawerClose as-child>
-          <Button variant="outline">Dismiss</Button>
-        </DrawerClose>
-      </DrawerFooter>
     </DrawerContent>
   </Drawer>
 </template>

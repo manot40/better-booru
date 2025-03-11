@@ -9,6 +9,7 @@ export interface UserConfig {
   column?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
   provider: Provider;
+  hideNSFW?: boolean;
   browseMode?: 'infinite' | 'paginated';
 }
 

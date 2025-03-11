@@ -25,13 +25,24 @@ const infiScroll = computed({
   get: () => userConfig.browseMode === 'infinite',
   set: (e) => userConfig.mutate({ browseMode: e ? 'infinite' : 'paginated' }),
 });
+
+const blurNSFW = computed({
+  get: () => userConfig.hideNSFW,
+  set: (e) => userConfig.mutate({ hideNSFW: e }),
+});
 </script>
 
 <template>
   <RatingTemplate>
-    <div class="form-control mb-2">
-      <Label class="block mb-2 text-xs" for="rating-picker">Rating</Label>
-      <RatingPicker />
+    <div class="flex items-end gap-4 mt-4">
+      <div class="form-control flex-1">
+        <Label class="block mb-2 text-xs" for="rating-picker">Rating</Label>
+        <RatingPicker />
+      </div>
+      <div class="flex items-center space-x-2 shrink-0 mb-2">
+        <Switch v-model="blurNSFW" id="blur-nsfw" />
+        <Label for="blur-nsfw">Blur NSFW</Label>
+      </div>
     </div>
   </RatingTemplate>
 
@@ -56,7 +67,7 @@ const infiScroll = computed({
     </div>
     <Separator class="mt-2 mb-0.5" />
 
-    <div class="flex items-end gap-6 lg:gap-4 mb-1.5">
+    <div class="flex items-end gap-4 mb-1.5">
       <NumberField :min="0" :max="4" v-model="column" id="columns" class="w-full">
         <Label class="text-xs mb-1" for="columns">Column per Row</Label>
         <NumberFieldContent>
@@ -93,7 +104,7 @@ const infiScroll = computed({
 
   <Popover v-if="isDesktop">
     <PopoverTrigger as-child><TriggerComponent /></PopoverTrigger>
-    <PopoverContent class="w-80">
+    <PopoverContent class="w-96">
       <div class="grid gap-2.5">
         <ContentComponent />
       </div>
