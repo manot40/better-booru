@@ -7,9 +7,9 @@ type ModifiedQuery<T extends object> = Partial<Query<T>> & Record<string, Primit
 
 export interface QueryStore<T extends object> {
   query: Ref<Query<T>>;
-  set: (newQuery: Query<T>, opts: any) => void;
+  set: (newQuery: Query<T>, opts?: any) => void;
   reset: () => void;
-  update: (newQuery: ModifiedQuery<T>, opts: any) => void;
+  update: (newQuery: ModifiedQuery<T>, opts?: any) => void;
 }
 
 export const cookieStore: CreateStore = <T extends object>(initial?: T) => {
