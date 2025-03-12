@@ -98,9 +98,7 @@ onUnmounted(unsub);
             <div class="flex items-center justify-between gap-2 w-full">
               <div class="flex gap-2 items-center">
                 {{ startCase(item.label) }}
-                <Badge
-                  :variant="item.category === 'copyright' ? 'default' : 'outline'"
-                  v-if="typeof item.category == 'string' && item.category != 'tag'">
+                <Badge variant="outline" v-if="typeof item.category == 'string' && item.category != 'tag'">
                   {{ startCase(item.category) }}
                 </Badge>
               </div>

@@ -61,7 +61,10 @@ const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide })
     :title="`${error?.status === 503 ? 'Cloudflare' : 'Server'} Error`">
     <template #icon><CloudLightning /></template>
     <p>
-      {{ error.statusMessage || 'Something definitely wrong. Try refreshing this page.' }}
+      {{
+        (error.statusMessage != 'Server Error' && error.statusMessage) ||
+        'Something definitely wrong. Try refreshing this page.'
+      }}
     </p>
   </EmptyState>
   <PostListSkeleton v-else-if="!data" />

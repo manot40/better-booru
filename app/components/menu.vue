@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { UserRoundCog, Settings, Pin } from 'lucide-vue-next';
+import { Pin, Settings, Settings2 } from 'lucide-vue-next';
 
 const configOpen = ref(false);
 const checkpointOpen = ref(false);
@@ -13,14 +13,18 @@ const checkpointOpen = ref(false);
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent avoidCollisions align="end" class="w-48">
-      <DropdownMenuItem class="cursor-pointer" @click="configOpen = true">
-        <UserRoundCog class="w-4 h-4" />
-        <span>User Config</span>
-      </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer" @click="checkpointOpen = false">
-        <Pin class="w-4 h-4 -rotate-45" />
-        <span>Saved Checkpoint</span>
-      </DropdownMenuItem>
+      <DropdownMenuGroup>
+        <DropdownMenuItem class="cursor-pointer" @click="configOpen = true">
+          <Settings2 class="w-4 h-4" />
+          <span>Site Config</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem class="cursor-pointer" @click="checkpointOpen = false">
+          <Pin class="w-4 h-4 -rotate-45" />
+          <span>Saved Checkpoint</span>
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup class="p-1"><SettingThemeSwitcher /></DropdownMenuGroup>
     </DropdownMenuContent>
   </DropdownMenu>
 

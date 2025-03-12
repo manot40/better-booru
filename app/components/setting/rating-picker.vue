@@ -68,23 +68,24 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
           <CommandEmpty />
           <CommandGroup>
             <UtilMapObj
-              :key="item"
-              v-for="item in RATING"
-              :fn="() => processRatingEntry(item)"
+              :key="value"
+              v-for="value in RATING"
+              :fn="() => processRatingEntry(value)"
               v-slot="{ result: { isSelected, isInverted } }">
               <CommandItem
-                :value="item"
-                :class="{
-                  '!bg-red-600/80 hover:!bg-red-600/90': isInverted,
-                  '!bg-primary/90 hover:!bg-primary !text-primary-foreground': isSelected && !isInverted,
-                }"
+                :value
+                :class="[
+                  'cursor-pointer',
+                  isInverted && '!bg-red-600/80 hover:!bg-red-600/90',
+                  isSelected && !isInverted && '!bg-primary/90 hover:!bg-primary !text-primary-foreground',
+                ]"
                 @select.prevent="handleFilter">
-                <div class="flex items-center">
+                <div role="button" class="flex items-center">
                   <X v-if="isInverted" class="w-4 h-4 mr-2" />
                   <Check v-else-if="isSelected" class="w-4 h-4 mr-2" />
                   <div>
-                    {{ startCase(item) }}
-                    <strong v-if="item === 'explicit' || item === 'questionable'" class="ml-1">NSFW</strong>
+                    {{ startCase(value) }}
+                    <strong v-if="value === 'explicit' || value === 'questionable'" class="ml-1">NSFW</strong>
                   </div>
                 </div>
               </CommandItem>
