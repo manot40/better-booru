@@ -49,8 +49,8 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
 });
 
 function stringNonce(text: string) {
+  if (text.length === 0) return '000000';
   let nonce = 0;
-  if (text.length === 0) return nonce;
   for (let i = 0; i < text.length; i++) {
     nonce = (nonce << 5) - nonce + text.charCodeAt(i);
     nonce |= 0;

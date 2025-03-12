@@ -3,7 +3,7 @@ import type { EventCallback } from 'photoswipe/lightbox';
 
 import 'photoswipe/style.css';
 
-import { SquareArrowOutUpRight, LoaderCircle, Bean, Angry } from 'lucide-vue-next';
+import { Bean, CloudLightning, LoaderCircle, SquareArrowOutUpRight } from 'lucide-vue-next';
 
 definePageMeta({
   middleware() {
@@ -28,9 +28,7 @@ function estimateSize(index: number, lane: number) {
   const [x, y] = imageAspectRatio(item.width, item.height);
   const widthPerLane = +(window.innerWidth / lane) - gap;
   const relWidth = widthPerLane / x;
-  const relHeight = Math.round(relWidth * y);
-
-  return relHeight > 900 ? 900 : relHeight;
+  return Math.max(Math.round(relWidth * y), 900);
 }
 
 watch(data, () => masonry.value?.virtualizer.measure());
@@ -55,9 +53,14 @@ const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide })
 </script>
 
 <template>
-  <EmptyState title="Ouch..." class="py-8 px-4 h-[80dvh]" v-if="error">
-    <template #icon><Angry /></template>
-    <p>Something definitely wrong. Try refreshing this page.</p>
+  <EmptyState
+    v-if="error"
+    class="py-8 px-4 h-[80dvh]"
+    :title="`${error?.status === 503 ? 'Cloudflare' : 'Server'} Error`">
+    <template #icon><CloudLightning /></template>
+    <p>
+      {{ error.statusMessage || 'Something definitely wrong. Try refreshing this page.' }}
+    </p>
   </EmptyState>
   <PostListSkeleton v-else-if="!data" />
   <VirtualMasonry

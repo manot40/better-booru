@@ -60,7 +60,7 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
       return (error.value = undefined);
     }
 
-    const sliceAmt = Math.floor(LIMIT * -(data.value.post.length > LIMIT ? 1.2 : 1));
+    const sliceAmt = Math.floor(LIMIT * -(data.value.post.length > LIMIT ? 2 : 1));
     const deduped = dedupe(data.value.post.slice(sliceAmt), res.post);
     if (!deduped.length) return;
 

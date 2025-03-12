@@ -5,7 +5,7 @@ defineProps<Props>();
 </script>
 
 <template>
-  <div class="grid text-center place-content-center">
+  <div class="grid text-center place-content-center px-6">
     <slot name="icon" />
     <slot name="title">
       <h2 class="text-2xl font-semibold mb-2" v-if="title">{{ title }}</h2>
