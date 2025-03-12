@@ -28,7 +28,9 @@ function estimateSize(index: number, lane: number) {
   const [x, y] = imageAspectRatio(item.width, item.height);
   const widthPerLane = +(window.innerWidth / lane) - gap;
   const relWidth = widthPerLane / x;
-  return Math.max(Math.round(relWidth * y), 900);
+  const relHeight = Math.round(relWidth * y);
+
+  return relHeight > 900 ? 900 : relHeight;
 }
 
 watch(data, () => masonry.value?.virtualizer.measure());

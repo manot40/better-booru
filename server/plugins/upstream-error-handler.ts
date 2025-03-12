@@ -6,7 +6,7 @@ export default defineNitroPlugin((nitro) => {
 
     const error = e as FetchError;
     if (error.statusCode !== 403 || typeof error.data != 'string') return;
-    if (error.data.toLowerCase().includes('just a moment...')) {
+    if (error.data.includes?.('_cf_chl_opt') || error.data.includes('cRay')) {
       sendError(
         event,
         createError({
