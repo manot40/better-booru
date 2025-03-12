@@ -22,8 +22,8 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
   const noUpdate = ref(false);
 
   function resetPage(page: number, replace = false) {
-    noUpdate.value = true;
     paginator.update({ page }, replace);
+    if (config.historyMode == 'url_query') noUpdate.value = true;
   }
   async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
     if (import.meta.server || (state && !config.isInfinite)) return;

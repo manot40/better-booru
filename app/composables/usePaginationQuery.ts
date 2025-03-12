@@ -1,77 +1,30 @@
-import type { LocationQuery } from 'vue-router';
+import type { UserConfig } from '~~/types/common';
+import type { QueryStore } from '~/lib/query-store';
 
-type Query<T extends object> = T & { page: number };
-type ModifiedQuery<T extends object> = Partial<Query<T>> & Record<string, Primitive>;
+import { cookieStore, sessionStore, urlQueryStore, STORE_KEY } from '~/lib/query-store';
 
-export interface UsePagination<T extends object> {
-  query: Ref<Query<T>>;
-  set: (newQuery: Query<T>, replace?: boolean) => void;
-  reset: () => void;
-  update: (newQuery: ModifiedQuery<T>, replace?: boolean) => void;
+export interface UsePagination<T extends object> extends QueryStore<T> {
   getTotalPage: (count: number, perPage: number) => number;
 }
 
-export const usePaginationQuery = <T extends object>(initial = {} as Query<T>): UsePagination<T> => {
-  const route = useRoute();
-  const router = useRouter();
-
-  // @ts-ignore
-  const _init = processQuery({ page: 1, ...initial, ...route.query });
-  const query = <Ref<Query<T>>>ref(structuredClone(_init));
-
-  const unsub = router.afterEach((to, from) => {
-    if (to.path !== from.path) {
-      if (to.path === '/') reset();
-      return;
-    }
-
-    /** When router query empty, fallback to initial query state */
-    if (!Object.keys(to.query).length) {
-      query.value = _init;
-      return;
-    }
-
-    const processed = processQuery(to.query);
-    query.value = processed as T & { page: number };
-  });
-
-  function set(newQuery: T, replace = false) {
-    const nq = newQuery as { page: number };
-    nq.page ??= 1;
-    const query = nq as unknown as LocationQuery;
-    router[replace ? 'replace' : 'push']({ query });
-  }
-
-  function reset() {
-    router.push({ query: _init });
-  }
-
-  function update(newQuery: ModifiedQuery<T>, replace = false) {
-    const result = Object.assign({ ...query.value }, newQuery);
-    if (query.value.page < 0) delete (result as { page?: number }).page;
-    router[replace ? 'replace' : 'push']({ query: result });
-  }
+export const usePaginationQuery = <T extends object>(): UsePagination<T> => {
+  const config = useUserConfig();
 
   function getTotalPage(count: number, perPage: number) {
     return Math.ceil(count / perPage) || 1;
   }
 
-  onUnmounted(unsub);
+  const result = shallowReactive(<UsePagination<T>>{ getTotalPage });
 
-  return { query, set, reset, update, getTotalPage };
+  watch(() => config.historyMode, changeMode, { immediate: true });
+  function changeMode(mode: UserConfig['historyMode'], from: UserConfig['historyMode']) {
+    const currentQuery = result.query?.value;
+    const store = mode == 'cookie' ? cookieStore : mode == 'session' ? sessionStore : urlQueryStore;
+    Object.assign(result, store(currentQuery));
+
+    if (from === 'cookie') useCookie(STORE_KEY).value = null;
+    else if (from === 'session') sessionStorage.removeItem(STORE_KEY);
+  }
+
+  return result;
 };
-
-const processQuery = <T extends object>(query: T) =>
-  Object.entries(query).reduce(
-    (acc, [key, value]) => {
-      if (value === undefined || value === '') return acc;
-
-      if (value === 'null') acc[key] = null;
-      else if (value === 'true' || value === 'false') acc[key] = value === 'true';
-      else if (value !== null && !isNaN(+value)) acc[key] = +value;
-      else acc[key] = value;
-
-      return acc;
-    },
-    {} as Record<string, any>
-  ) as T;

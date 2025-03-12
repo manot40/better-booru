@@ -2,6 +2,7 @@
 import type { UserConfig } from '~~/types/common';
 
 const header: [string, string] = ['Site Configuration', 'Data source and site-wide experience configuration'];
+const HISTORY_MODE = ['url_query' as const, 'session' as const, 'cookie' as const];
 
 const open = defineModel('open', { default: false });
 
@@ -19,10 +20,13 @@ const infiScroll = computed({
   get: () => userConfig.browseMode === 'infinite',
   set: (e) => userConfig.mutate({ browseMode: e ? 'infinite' : 'paginated' }),
 });
-
 const blurNSFW = computed({
   get: () => userConfig.hideNSFW,
   set: (e) => userConfig.mutate({ hideNSFW: e }),
+});
+const historyMode = computed({
+  get: () => userConfig.historyMode,
+  set: (e) => userConfig.mutate({ historyMode: e }),
 });
 </script>
 
@@ -69,11 +73,11 @@ const blurNSFW = computed({
 
         <div class="form-control">
           <Label class="block mb-2 text-xs" for="history-mode">History Store</Label>
-          <Select id="history-mode" :defaultValue="'url_query'">
+          <Select id="history-mode" v-model:modelValue="historyMode">
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Choose History Store" />
               <SelectContent>
-                <SelectItem :key="value" :value v-for="value in ['url_query', 'session', 'cookies']">
+                <SelectItem :key="value" :value v-for="value in HISTORY_MODE">
                   {{ startCase(value.replace(/_|-/, ' ')) }}
                 </SelectItem>
               </SelectContent>

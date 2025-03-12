@@ -11,6 +11,7 @@ export interface UserConfig {
   provider: Provider;
   hideNSFW?: boolean;
   browseMode?: 'infinite' | 'paginated';
+  historyMode?: 'url_query' | 'session' | 'cookie';
 }
 
 export interface BooruData {

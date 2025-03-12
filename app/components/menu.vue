@@ -12,7 +12,7 @@ const checkpointOpen = ref(false);
         <Settings class="w-8 h-8" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent avoidCollisions align="end" class="w-48">
+    <DropdownMenuContent avoidCollisions align="end" class="w-52">
       <DropdownMenuGroup>
         <DropdownMenuItem class="cursor-pointer" @click="configOpen = true">
           <Settings2 class="w-4 h-4" />

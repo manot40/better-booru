@@ -10,6 +10,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
       provider: 'danbooru',
       hideNSFW: true,
       browseMode: 'paginated',
+      historyMode: 'url_query',
     },
 
   getters: {
