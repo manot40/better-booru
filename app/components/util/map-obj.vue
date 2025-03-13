@@ -3,5 +3,5 @@ defineProps<{ data?: T; fn: (data: T) => R }>();
 </script>
 
 <template>
-  <slot :result="fn(data as T)" />
+  <slot v-bind="fn(data as T)" />
 </template>

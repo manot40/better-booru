@@ -71,7 +71,7 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
               :key="value"
               v-for="value in RATING"
               :fn="() => processRatingEntry(value)"
-              v-slot="{ result: { isSelected, isInverted } }">
+              v-slot="{ isSelected, isInverted }">
               <CommandItem
                 :value
                 :class="[

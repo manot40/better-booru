@@ -78,7 +78,7 @@ const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide })
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
-        <UtilMapObj :data="data.post" :fn="(p) => p[row.index]!" v-slot="{ result: item }">
+        <UtilMapObj :data="data.post" :fn="(p) => p[row.index]!" v-slot="item">
           <PostListItemImage :item v-if="!['webm', 'mp4'].includes(item.file_ext)" />
           <PostListItemVideo :item v-else />
         </UtilMapObj>

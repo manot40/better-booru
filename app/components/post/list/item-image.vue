@@ -28,7 +28,7 @@ function reduceSize(item: Post): [string, number, number] {
     :data-pswp-width="item.width"
     :data-pswp-height="item.height"
     class="ps__item block relative z-0">
-    <UtilMapObj :data="item" :fn="reduceSize" v-slot="{ result: [src, width, height] }">
+    <UtilMapObj :data="item" :fn="reduceSize" v-slot="[src, width, height]">
       <NuxtImg
         :src
         :width
