@@ -22,8 +22,8 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
   const noUpdate = ref(false);
 
   function resetPage(page: number, replace = false) {
+    noUpdate.value = true;
     paginator.update({ page }, replace);
-    if (config.historyMode == 'url_query') noUpdate.value = true;
   }
   async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
     if (import.meta.server || (state && !config.isInfinite)) return;
@@ -68,6 +68,9 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     data.value = { meta: res.meta, post: data.value.post.concat(deduped) };
     if ((hasNext.value = res.post.length > 0)) resetPage(<number>query.page, true);
   }
+
+  const debOpts = { debounce: 3000 };
+  watchDebounced(noUpdate, () => (noUpdate.value &&= false), debOpts);
 
   const onConfigUpdate = () => {
     data.value &&= undefined;

@@ -21,7 +21,7 @@
     "@nuxtjs/tailwindcss": "6.12.2",
     "@pinia/nuxt": "^0.10.1",
     "@tanstack/vue-table": "^8.21.2",
-    "@tanstack/vue-virtual": "^3.13.2",
+    "@tanstack/vue-virtual": "^3.13.3",
     "@types/masonry-layout": "^4.2.8",
     "@vueuse/core": "^13.0.0",
     "@vueuse/nuxt": "^13.0.0",

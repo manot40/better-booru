@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { VisuallyHidden, type ComboboxItemEmits } from 'reka-ui';
+import type { ComboboxItemEmits } from 'reka-ui';
 
-import { debounce } from 'perfect-debounce';
+import { STORE_KEY } from '~/lib/query-store';
 
 defineOptions({ inheritAttrs: false });
 const open = defineModel<boolean>('open');
 
-const route = useRoute();
-const router = useRouter();
 const isDesktop = useMediaQuery('(min-width: 768px)');
 const userConfig = useUserConfig();
 
@@ -15,8 +13,9 @@ const [UseTriggerTemplate, Trigger] = createReusableTemplate();
 const [UseTagsListTemplate, TagsList] = createReusableTemplate();
 const [UseContentTemplate, Content] = createReusableTemplate();
 
-const tags = computed(() => (route.query.tags && (<string>route.query.tags).split(' ')) || []);
 const searchTerm = ref('');
+const queryState = useState<{ tags?: string }>(STORE_KEY);
+const tags = computed(() => queryState.value?.tags?.split(' ') || []);
 
 const q = debouncedRef(searchTerm, 600);
 const query = computed(() => ({ q: q.value }));
@@ -32,23 +31,13 @@ const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.incl
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
   const exclude = (<HTMLElement>ev.target).innerHTML === 'Exclude';
   const value = exclude ? `-${ev.detail.value}` : ev.detail.value;
-  if (typeof value != 'string') return;
-  updateQuery(tags.value.includes(value) ? tags.value.filter((a) => a !== value) : [...tags.value, value]);
+  if (typeof value == 'string')
+    updateQuery(tags.value.includes(value) ? tags.value.filter((a) => a !== value) : [...tags.value, value]);
 }
 
-const updateQuery = debounce((tags: string[]) => {
-  navigateTo({ name: 'index', query: { tags: tags.join(' ') } });
-}, 600);
-
-const unsub = router.afterEach(({ query }) => {
-  const qTags = (<string | undefined>query.tags)?.split(' ');
-  if (!qTags) tags.value.length > 0 && updateQuery([]);
-  else if (qTags.length != tags.value.length && qTags.every((a) => tags.value.includes(a))) {
-    setTimeout(() => window.scrollTo({ top: 0, behavior: 'instant' }), 100);
-  }
-});
-
-onUnmounted(unsub);
+const updateQuery = useThrottleFn((tags: string[]) => {
+  queryState.value = { ...queryState.value, tags: tags.join(' ') };
+}, 300);
 </script>
 
 <template>
