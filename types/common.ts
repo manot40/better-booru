@@ -5,6 +5,9 @@ export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
 
 export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
 
+export type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
+export type TagsGroup = Record<TagCategory, string>;
+
 export interface UserConfig {
   column?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
@@ -40,6 +43,7 @@ export interface BooruData {
   status: 'active';
   has_notes: boolean;
   comment_count: number;
+  tags_grouping?: TagsGroup;
 }
 
 export type Post = Omit<
@@ -64,6 +68,6 @@ export interface Autocomplete {
   type?: 'tag';
   label: string;
   value: string;
-  category?: 'character' | 'tag' | 'metadata' | 'artist' | 'copyright';
+  category: TagCategory;
   post_count?: string;
 }

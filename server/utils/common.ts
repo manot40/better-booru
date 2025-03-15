@@ -24,6 +24,13 @@ export function processBooruData(data: BooruResponse): Post[] {
         file_ext: raw.file_ext,
         has_notes: 0,
         comment_count: 0,
+        tags_grouping: {
+          tag: raw.tag_string_general,
+          meta: raw.tag_string_meta,
+          artist: raw.tag_string_artist,
+          character: raw.tag_string_character,
+          copyright: raw.tag_string_copyright,
+        },
         ...getDanbooruImage(raw),
       }));
   return data.map((raw) => {

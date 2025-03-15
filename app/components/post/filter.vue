@@ -21,7 +21,7 @@ const page = computed({
 </script>
 
 <template>
-  <Card class="flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
+  <Card class="!flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
     <Pagination :total="count" :siblingCount="2" v-model:page="page" :itemsPerPage="query.limit || 50">
       <template #default="{ page }">
         <PaginationList v-slot="{ items }" class="flex items-center gap-1">

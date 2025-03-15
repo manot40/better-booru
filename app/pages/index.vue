@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { EventCallback } from 'photoswipe/lightbox';
+import type { Post } from '~~/types/common';
 
 import 'photoswipe/style.css';
 
-import { Bean, CloudLightning, LoaderCircle, SquareArrowOutUpRight } from 'lucide-vue-next';
+import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
 definePageMeta({
   middleware() {
@@ -16,8 +16,8 @@ definePageMeta({
 const userConfig = useUserConfig();
 const { data, error, loading, paginator } = useBooruFetch();
 
+const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
-const { lightbox, rendered } = useLightbox(container);
 
 const gap = 8;
 const masonry = useTemplateRef('masonry');
@@ -33,25 +33,35 @@ function estimateSize(index: number, lane: number) {
   return relHeight > 900 ? 900 : relHeight;
 }
 
-watch(data, () => masonry.value?.virtualizer.measure());
-
-watch(lightbox, (lightbox, _, onCleanup) => {
-  if (!lightbox) return;
-  onLightboxErr.bind(lightbox.pswp);
-  lightbox?.on('loadError', onLightboxErr);
-  onCleanup(() => lightbox?.off('loadError', onLightboxErr));
+const { lightbox, rendered } = useLightbox(container, {
+  onClose: () => (post.value = undefined),
+  onSlideChange: (s) => registerPost(s?.index),
+  onLoadError({ content: { data }, slide }) {
+    const el = data.element;
+    const src = '/image?proxy=' + data.src;
+    if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
+    el.dataset.pswpSrc = src;
+    el.dataset.proxied = 'true';
+    Object.assign(data, { src, proxied: true });
+    slide.pswp.refreshSlideContent(slide.index);
+  },
+  onUiRegister: (pswp) =>
+    pswp.ui?.registerElement({
+      order: 9,
+      name: 'action',
+      className: 'pswp__button post-action !flex items-center justify-center',
+      onInit: (_, pswp) => nextTick(() => registerPost(pswp.currIndex)),
+    }),
 });
 
-const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide }) => {
-  const el = data.element;
-  const src = '/image?proxy=' + data.src;
-  if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
+function registerPost(index?: number) {
+  const virt = masonry.value?.virtualizer;
+  if (!data.value || !virt || typeof index != 'number') return;
+  const item = virt.getVirtualItems().at(index);
+  if (item) post.value = data.value.post[item.index];
+}
 
-  el.dataset.pswpSrc = src;
-  el.dataset.proxied = 'true';
-  Object.assign(data, { src, proxied: true });
-  slide.pswp.refreshSlideContent(slide.index);
-};
+watch(data, () => masonry.value?.virtualizer.measure());
 </script>
 
 <template>
@@ -100,5 +110,13 @@ const onLightboxErr: EventCallback<'loadError'> = ({ content: { data }, slide })
     </EmptyState>
   </template>
 
-  <Teleport to=".pswp__open" v-if="rendered"><SquareArrowOutUpRight class="w-5 h-5 mx-auto" /></Teleport>
+  <Teleport to=".post-action" v-if="rendered">
+    <PostContextTags :paginator v-model:post="post" @close="lightbox?.pswp?.close()" />
+  </Teleport>
 </template>
+
+<style>
+.pswp {
+  z-index: 30 !important;
+}
+</style>

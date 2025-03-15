@@ -13,7 +13,7 @@ export default defineEventHandler(async (evt): Promise<Autocomplete[]> => {
     });
   } else {
     const fetcher = provider === 'safebooru' ? $safebooruFetch : $danbooruFetch;
-    return fetcher<Autocomplete[]>('/autocomplete.json', {
+    const data = await fetcher<Autocomplete[]>('/autocomplete.json', {
       query: {
         limit: '20',
         version: '1',
@@ -21,5 +21,22 @@ export default defineEventHandler(async (evt): Promise<Autocomplete[]> => {
         'search[query]': q,
       },
     });
+
+    return data.map((tag) => ({ ...tag, category: booruCategory(tag.category as unknown as number) }));
   }
 });
+
+function booruCategory(cat: number): Autocomplete['category'] {
+  switch (cat) {
+    case 5:
+      return 'meta';
+    case 4:
+      return 'character';
+    case 3:
+      return 'copyright';
+    case 1:
+      return 'artist';
+    default:
+      return 'tag';
+  }
+}

@@ -1,8 +1,23 @@
-import PhotoSwipeLightbox, { type DataSource, type PhotoSwipeOptions } from 'photoswipe/lightbox';
+import PhotoSwipeLightbox, {
+  type DataSource,
+  type EventCallback,
+  type PhotoSwipeOptions,
+} from 'photoswipe/lightbox';
 
 type Slide = NonNullable<InstanceType<typeof PhotoSwipeLightbox>['pswp']>['currSlide'];
+type LightboxInstance = NonNullable<PhotoSwipeLightbox['pswp']>;
 
-export function useLightbox(el: Ref<HTMLElement | null | undefined | DataSource>) {
+type UseLightboxOptions = {
+  onClose?: () => void;
+  onLoadError?: EventCallback<'loadError'>;
+  onUiRegister?: (pswp: LightboxInstance) => void;
+  onSlideChange?: (slide: Slide, pswp: LightboxInstance) => void;
+};
+
+export function useLightbox(
+  el: Ref<HTMLElement | null | undefined | DataSource>,
+  opts = {} as UseLightboxOptions
+) {
   const current = shallowRef<Slide>();
   const lightbox = shallowRef<PhotoSwipeLightbox>();
   const rendered = shallowRef(false);
@@ -30,24 +45,19 @@ export function useLightbox(el: Ref<HTMLElement | null | undefined | DataSource>
     const lb = (lightbox.value = new PhotoSwipeLightbox(options));
 
     lb.on('uiRegister', function (this: PhotoSwipeLightbox['pswp']) {
-      this?.ui?.registerElement({
-        name: 'open-btn',
-        order: 9,
-        isButton: true,
-        className: 'pswp__open text-white',
-        onClick(_1, _2, pswp) {
-          const el = document.querySelector(`div[data-index="${pswp.currIndex}"] a`);
-          if (el instanceof HTMLAnchorElement) window.open(el.href, '_blank', 'noreferrer noopener');
-        },
-      });
+      if (this) opts.onUiRegister?.(this);
       setTimeout(() => (rendered.value = true), 50);
     });
 
     lb.on('change', function (this: PhotoSwipeLightbox['pswp']) {
+      if (this) opts.onSlideChange?.(this.currSlide, this);
       current.value = this?.currSlide;
     });
 
+    if (opts.onLoadError) lb.on('loadError', opts.onLoadError);
+
     lb.on('close', () => {
+      opts.onClose?.();
       current.value = undefined;
       rendered.value = false;
     });

@@ -65,8 +65,8 @@ onMounted(() => (rootOffset.value = root.value?.offsetTop ?? 0));
     <div :ref="containerRef" class="w-full relative overflow-hidden" :style="{ height: `${totalSize}px` }">
       <div
         :key="row.index"
-        :data-row="i"
-        :data-index="row.index"
+        :data-index="i"
+        :data-content-index="row.index"
         class="absolute top-0 transition-all duration-300"
         :style="{
           left: `calc(${row.lane * width}% + ${row.lane * (gap / 2)}px)`,
