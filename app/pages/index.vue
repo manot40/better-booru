@@ -49,7 +49,7 @@ const { lightbox, rendered } = useLightbox(container, {
     pswp.ui?.registerElement({
       order: 9,
       name: 'action',
-      className: 'pswp__button post-action !flex items-center justify-center',
+      className: 'pswp__button post-action !flex items-center justify-center text-white',
       onInit: (_, pswp) => nextTick(() => registerPost(pswp.currIndex)),
     }),
 });
