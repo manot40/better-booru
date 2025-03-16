@@ -33,7 +33,7 @@ function estimateSize(index: number, lane: number) {
   return relHeight > 900 ? 900 : relHeight;
 }
 
-const { lightbox, rendered } = useLightbox(container, {
+const { lightbox, opened } = useLightbox(container, {
   onClose: () => (post.value = undefined),
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
@@ -53,7 +53,6 @@ const { lightbox, rendered } = useLightbox(container, {
       onInit: (_, pswp) => nextTick(() => registerPost(pswp.currIndex)),
     }),
 });
-
 function registerPost(index?: number) {
   const virt = masonry.value?.virtualizer;
   if (!data.value || !virt || typeof index != 'number') return;
@@ -110,7 +109,7 @@ watch(data, () => masonry.value?.virtualizer.measure());
     </EmptyState>
   </template>
 
-  <Teleport to=".post-action" v-if="rendered">
+  <Teleport to=".post-action" v-if="opened">
     <PostContextTags :paginator v-model:post="post" @close="lightbox?.pswp?.close()" />
   </Teleport>
 </template>

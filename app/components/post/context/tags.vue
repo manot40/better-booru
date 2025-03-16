@@ -23,12 +23,13 @@ const toTagList = (tags: string, category?: TagCategory) =>
 const metaTag = computed(() => {
   const group = post.value?.tags_grouping;
   if (!group) return [];
-  return [
+  const tags = [
     ...toTagList(group.character, 'character'),
-    ...toTagList(group.copyright, 'copyright'),
     ...toTagList(group.artist, 'artist'),
+    ...toTagList(group.copyright, 'copyright'),
     ...toTagList(group.meta, 'meta'),
   ];
+  return tags.filter((t) => Boolean(t.key));
 });
 
 function changeTag(tags: string) {

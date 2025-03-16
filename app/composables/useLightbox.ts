@@ -9,6 +9,7 @@ type LightboxInstance = NonNullable<PhotoSwipeLightbox['pswp']>;
 
 type UseLightboxOptions = {
   onClose?: () => void;
+  onDestroy?: () => void;
   onLoadError?: EventCallback<'loadError'>;
   onUiRegister?: (pswp: LightboxInstance) => void;
   onSlideChange?: (slide: Slide, pswp: LightboxInstance) => void;
@@ -18,14 +19,12 @@ export function useLightbox(
   el: Ref<HTMLElement | null | undefined | DataSource>,
   opts = {} as UseLightboxOptions
 ) {
+  const opened = shallowRef(false);
   const current = shallowRef<Slide>();
   const lightbox = shallowRef<PhotoSwipeLightbox>();
-  const rendered = shallowRef(false);
-
-  const userConfig = useUserConfig();
 
   onUnmounted(destroyLightbox);
-  watch([el, () => userConfig.provider], createLightbox, { immediate: true });
+  watch(el, createLightbox, { immediate: true });
 
   function createLightbox() {
     if (!el.value || import.meta.server) return;
@@ -44,9 +43,11 @@ export function useLightbox(
 
     const lb = (lightbox.value = new PhotoSwipeLightbox(options));
 
+    const debounceOpen = useDebounceFn(() => (opened.value = true), 1);
+    lb.on('uiElementCreate', debounceOpen);
+
     lb.on('uiRegister', function (this: PhotoSwipeLightbox['pswp']) {
       if (this) opts.onUiRegister?.(this);
-      setTimeout(() => (rendered.value = true), 50);
     });
 
     lb.on('change', function (this: PhotoSwipeLightbox['pswp']) {
@@ -54,13 +55,14 @@ export function useLightbox(
       current.value = this?.currSlide;
     });
 
-    if (opts.onLoadError) lb.on('loadError', opts.onLoadError);
-
-    lb.on('close', () => {
-      opts.onClose?.();
+    lb.on('destroy', () => {
+      opts.onDestroy?.();
+      opened.value = false;
       current.value = undefined;
-      rendered.value = false;
     });
+
+    if (opts.onClose) lb.on('close', opts.onClose);
+    if (opts.onLoadError) lb.on('loadError', opts.onLoadError);
 
     lb.init();
   }
@@ -71,5 +73,5 @@ export function useLightbox(
     lightbox.value = undefined;
   }
 
-  return { lightbox, rendered, current };
+  return { lightbox, opened, current };
 }

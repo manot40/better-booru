@@ -34,7 +34,7 @@ function checkGrowing(next: number, prev: number) {
     <div
       ref="foldRef"
       :class="{
-        'overflow-hidden': folded,
+        'overflow-hidden mb-1': folded,
         'line-clamp-3': isToggleable && folded,
         shadow: isToggleable && folded && !noShadow,
       }">
@@ -44,7 +44,7 @@ function checkGrowing(next: number, prev: number) {
       size="xs"
       variant="ghost"
       @click="folded = !folded"
-      :class="['shrink-0', !folded ? 'mt-2' : '-mt-1']"
+      :class="['shrink-0', !folded ? 'mt-2' : 'mt-1']"
       v-if="isToggleable">
       {{ folded ? 'Expand' : 'Fold' }}
     </Button>
