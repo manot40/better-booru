@@ -56,8 +56,9 @@ const totalSize = computed(() => virtualizer.value.getTotalSize());
 const virtualRows = computed(() => virtualizer.value.getVirtualItems());
 
 defineExpose({ virtualizer });
-watch([width, windowW], () => virtualizer.value.measure());
+
 onMounted(() => (rootOffset.value = root.value?.offsetTop ?? 0));
+watchDebounced([width, windowW], () => virtualizer.value.measure(), { debounce: 100 });
 </script>
 
 <template>
