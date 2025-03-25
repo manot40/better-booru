@@ -5,6 +5,7 @@ export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
 
 export type Provider = 'danbooru' | 'gelbooru';
 
+export type TagCategoryID = 0 | 1 | 2 | 3 | 4 | 5;
 export type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
 export type TagsGroup = Record<TagCategory, string>;
 
@@ -18,29 +19,26 @@ export interface UserConfig {
 }
 
 export interface BooruData {
-  preview_url: string;
-  preview_width: number;
-  preview_height: number;
-  sample_url: string;
-  file_url: string;
-  file_ext: FileExt;
-  directory: number;
+  id: number;
+  tags: string;
   hash: string;
+  score: Nullable<number>;
+  rating: Rating;
+  source: string;
+  pixiv_id?: number;
+  parent_id?: number;
+
   width: number;
   height: number;
-  id: number;
-  image: string;
-  change: number;
-  owner: 'danbooru';
-  parent_id?: number;
-  rating: Rating;
-  sample: boolean;
+  file_url: string;
+  file_ext: FileExt;
+  sample_url: string;
   sample_height: number;
   sample_width: number;
-  score: Nullable<number>;
-  tags: string;
-  source: string;
-  status: 'active';
+  preview_url?: string | null;
+  preview_width?: number | null;
+  preview_height?: number | null;
+
   has_notes: boolean;
   comment_count: number;
   tags_grouping?: TagsGroup;

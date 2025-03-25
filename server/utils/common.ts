@@ -4,7 +4,8 @@ import type { GelbooruData } from '~~/types/gelbooru';
 import type { BooruData, Post, UserConfig } from '~~/types/common';
 
 export function processBooruData(data: BooruResponse): Post[] {
-  if (isDanbooru(data)) return data.map((raw) => ({ ...raw, rating: convertDanbooruRating(raw.rating), image }));
+  if (isDanbooru(data))
+    return data.map((raw) => ({ ...raw, rating: convertDanbooruRating(raw.rating), image }));
   return data.map((raw) => {
     const { directory, change, owner, parent_id, status, has_notes, comment_count, ...rest } = raw;
     const hash = 'md5' in rest ? rest.md5 : rest.hash;
