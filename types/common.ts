@@ -3,7 +3,7 @@ export type RatingQuery = Rating | `-${Rating}` | 'all';
 
 export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
 
-export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
+export type Provider = 'danbooru' | 'gelbooru';
 
 export type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
 export type TagsGroup = Record<TagCategory, string>;
@@ -48,7 +48,15 @@ export interface BooruData {
 
 export type Post = Omit<
   BooruData,
-  'directory' | 'change' | 'owner' | 'parent_id' | 'status' | 'has_notes' | 'comment_count'
+  | 'directory'
+  | 'change'
+  | 'owner'
+  | 'image'
+  | 'sample'
+  | 'parent_id'
+  | 'status'
+  | 'has_notes'
+  | 'comment_count'
 >;
 export type BooruMeta = { limit: number; offset: number; count: number };
 
