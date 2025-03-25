@@ -5,7 +5,7 @@ const props = defineProps<{ item: Post }>();
 
 const config = useUserConfig();
 
-const hideNSFW = computed(() => config.hideNSFW && ['explicit', 'questionable'].includes(props.item.rating));
+const hideNSFW = computed(() => config.hideNSFW && ['e', 'q'].includes(props.item.rating));
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;

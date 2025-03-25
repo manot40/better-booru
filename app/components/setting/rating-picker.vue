@@ -5,7 +5,7 @@ import type { ComboboxItemEmits } from 'reka-ui';
 import { X, Check } from 'lucide-vue-next';
 
 const open = defineModel<boolean>('open', { default: false });
-const RATING = <RatingQuery[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];
+const RATING = <RatingQuery[]>['all', 'g', 's', 'q', 'e'];
 
 const userConfig = useUserConfig();
 const cachedRating = ref<RatingQuery[] | undefined>(userConfig.rating);
@@ -85,7 +85,7 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
                   <Check v-else-if="isSelected" class="w-4 h-4 mr-2" />
                   <div>
                     {{ startCase(value) }}
-                    <strong v-if="value === 'explicit' || value === 'questionable'" class="ml-1">NSFW</strong>
+                    <strong v-if="value === 'e' || value === 'q'" class="ml-1">NSFW</strong>
                   </div>
                 </div>
               </CommandItem>

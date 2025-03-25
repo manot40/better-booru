@@ -1,7 +1,7 @@
-export type Rating = 'general' | 'explicit' | 'sensitive' | 'questionable';
+export type Rating = 'g' | 's' | 'q' | 'e';
 export type RatingQuery = Rating | `-${Rating}` | 'all';
 
-export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
+export type FileExt = StringHint<'jpg' | 'png' | 'webp' | 'mp4' | 'webm'>;
 
 export type Provider = 'danbooru' | 'gelbooru';
 
@@ -19,14 +19,45 @@ export interface UserConfig {
 }
 
 export interface BooruData {
-  id: number;
-  tags: string;
+  preview_url: string;
+  preview_width: number;
+  preview_height: number;
+  sample_url: string;
+  file_url: string;
+  file_ext: FileExt;
+  directory: number;
   hash: string;
-  score: Nullable<number>;
-  rating: Rating;
-  source: string;
-  pixiv_id?: number;
+  width: number;
+  height: number;
+  id: number;
+  image: string;
+  change: number;
+  owner: 'danbooru';
   parent_id?: number;
+  rating: Rating;
+  sample: boolean;
+  sample_height: number;
+  sample_width: number;
+  score: Nullable<number>;
+  tags?: string;
+  source: string;
+  status: 'active';
+  has_notes: boolean;
+  comment_count: number;
+  tags_grouping?: TagsGroup;
+}
+
+export interface Post {
+  id: number;
+  hash: string;
+  tags?: Nullable<string>;
+  score?: Nullable<number>;
+  rating: Rating;
+  source?: Nullable<string>;
+  pixiv_id?: Nullable<number>;
+  parent_id?: Nullable<number>;
+  has_notes: boolean;
+  created_at?: Nullable<string | Date>;
 
   width: number;
   height: number;
@@ -35,27 +66,11 @@ export interface BooruData {
   sample_url: string;
   sample_height: number;
   sample_width: number;
-  preview_url?: string | null;
-  preview_width?: number | null;
-  preview_height?: number | null;
-
-  has_notes: boolean;
-  comment_count: number;
-  tags_grouping?: TagsGroup;
+  preview_url?: Nullable<string>;
+  preview_width?: Nullable<number>;
+  preview_height?: Nullable<number>;
 }
 
-export type Post = Omit<
-  BooruData,
-  | 'directory'
-  | 'change'
-  | 'owner'
-  | 'image'
-  | 'sample'
-  | 'parent_id'
-  | 'status'
-  | 'has_notes'
-  | 'comment_count'
->;
 export type BooruMeta = { limit: number; offset: number; count: number };
 
 export interface PostList {
