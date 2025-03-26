@@ -6,6 +6,7 @@ const props = defineProps<{ item: Post }>();
 const config = useUserConfig();
 
 const hideNSFW = computed(() => config.hideNSFW && ['e', 'q'].includes(props.item.rating));
+const canonical = computed(() => unshortenUrl(props.item.file_url));
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -24,7 +25,7 @@ function reduceSize(item: Post): [string, number, number] {
     target="_blank"
     :id="item.id"
     :to="createBooruURL(item.id)"
-    :data-pswp-src="item.file_url"
+    :data-pswp-src="canonical"
     :data-pswp-width="item.width"
     :data-pswp-height="item.height"
     class="ps__item block relative z-0">

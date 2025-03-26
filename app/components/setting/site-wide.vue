@@ -37,9 +37,9 @@ const historyMode = computed({
         <div class="form-control">
           <Label class="block mb-2 text-xs">Booru Source</Label>
           <Tabs v-model="provider">
-            <TabsList class="grid w-full grid-cols-3">
-              <TabsTrigger value="danbooru">Dan</TabsTrigger>
-              <TabsTrigger value="gelbooru">Gel</TabsTrigger>
+            <TabsList class="grid w-full grid-cols-2">
+              <TabsTrigger value="danbooru">Danbooru</TabsTrigger>
+              <TabsTrigger value="gelbooru">Gelbooru</TabsTrigger>
             </TabsList>
             <div class="flex items-end gap-4 mt-3">
               <div class="form-control flex-1">

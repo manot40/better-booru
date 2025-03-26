@@ -4,7 +4,7 @@ import type { DBPostData } from '~~/server/db/schema';
 import { db, schema as $s } from '~~/server/db';
 
 import { and, desc, gt, lt, asc, getTableColumns, eq, inArray } from 'drizzle-orm';
-import { generateTagsFilter, getCountFromTags } from './helpers';
+import { generateTagsFilter, getPostCount } from './helpers';
 
 import { file_url, preview_url, sample_url } from './file-url-builder';
 
@@ -50,7 +50,7 @@ export async function queryPosts(qOpts: QueryOptions) {
       .limit(opts.limit)
       .offset(offset);
 
-    return { post: op.all(), count: getCountFromTags(tx, opts.tags) };
+    return { post: op.all(), count: getPostCount(tx, opts.tags, opts.rating as 'g') };
   });
 
   return { meta: { limit: opts.limit, count, offset }, post };

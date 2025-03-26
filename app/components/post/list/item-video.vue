@@ -12,7 +12,7 @@ defineProps<{ item: Post }>();
     playsinline
     :width="item.width"
     :height="item.height"
-    :poster="item.preview_url || item.sample_url">
+    :poster="unshortenUrl(item.preview_url || item.sample_url || '')">
     <source :src="item.file_url" />
   </video>
 </template>

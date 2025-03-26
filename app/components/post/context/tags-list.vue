@@ -12,7 +12,7 @@ withDefaults(defineProps<{ tags?: Tag[]; title?: string; foldable?: boolean }>()
     <div class="text-xs md:text-sm font-bold md:font-medium mb-2">{{ startCase(title) }}</div>
     <Foldable :disable="!foldable" class="max-h-44">
       <div class="flex flex-wrap gap-1.5">
-        <Skeleton class="h-6" :style="{ width: `${randomInt(50, 100)}px` }" v-if="tags" />
+        <Skeleton class="h-6" :style="{ width: `${randomInt(50, 100)}px` }" v-if="!tags" v-for="_ in 20" />
         <a
           :key
           :href="`/?tags=${key}`"

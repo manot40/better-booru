@@ -55,43 +55,60 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
   return params;
 }
 
-export function getCountFromTags(tx: Transaction, tags: string[]) {
-  const tagsFilter = deserializeTags(tags);
+export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' | 's' | 'q' | 'e'>) {
+  if (!tags.length && !rating?.length) return postsCount;
 
   let countEq = 0;
   let countNe: number | undefined;
-  const flatTags = [...Object.values(tagsFilter.eq || {}), ...Object.values(tagsFilter.ne || {})].flat();
-  const cacheKey = `count_${flatTags.join(',')}`;
+  const hasRating = !!rating?.length && (!Array.isArray(rating) || rating.length <= 4);
 
-  if (tags.length && cache.has(cacheKey)) return cache.get<number>(cacheKey);
+  const cacheKey = `rating_${hasRating ? rating : 'all'}|count_${[...tags].sort()}`;
+  if ((tags.length || hasRating) && cache.has(cacheKey)) return cache.get<number>(cacheKey);
 
-  Object.entries(tagsFilter).forEach(([key, s]) => {
-    if (!s) return;
-    const params = <SQL[]>[];
-    const filterOp = Object.entries(s)
-      .map(([c, ids]) => {
-        const cat = +c as TagCategoryID;
-        if (!ids) return;
-        else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
-        else return createFilterEq(tx, cat, ids);
-      })
-      .filter(Boolean);
+  if (tags.length) {
+    Object.entries(deserializeTags(tags)).forEach(([key, s]) => {
+      if (!s && !hasRating) return;
+      const params = <SQL[]>[];
 
-    if (filterOp.length) {
-      // @ts-ignore
-      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
-      if (intersects) params.push(inArray($s.postTable.id, intersects));
-    }
+      if (s) {
+        const filterOp = Object.entries(s)
+          .map(([c, ids]) => {
+            const cat = +c as TagCategoryID;
+            if (!ids) return;
+            else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+            else return createFilterEq(tx, cat, ids);
+          })
+          .filter(Boolean);
 
-    const count = tx
+        if (!filterOp.length) {
+          // @ts-ignore
+          const intersects = filterOp.reduce((op, next) => op!.intersect(next));
+          if (intersects) params.push(inArray($s.postTable.id, intersects));
+        }
+      }
+
+      if (key === 'eq' && hasRating)
+        params.push(Array.isArray(rating) ? inArray($s.postTable, rating) : eq($s.postTable, rating));
+      const count = tx
+        .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
+        .from($s.postTable)
+        .where(and(...params))
+        .get()?.count;
+
+      if (key === 'ne') countNe = count;
+      else if (count) countEq = count;
+    });
+  }
+
+  if (hasRating && countEq === 0) {
+    const col = $s.postTable.rating;
+    const count = db
       .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
       .from($s.postTable)
-      .where(and(...params))
+      .where(Array.isArray(rating) ? inArray(col, rating) : eq(col, rating))
       .get()?.count;
-
-    if (key === 'ne') countNe = count;
-    else if (typeof count == 'number') countEq = count;
-  });
+    if (count) countEq = count;
+  }
 
   let count;
   if (typeof countNe == 'number') count = postsCount - countNe + countEq;

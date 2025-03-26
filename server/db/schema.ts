@@ -30,10 +30,12 @@ export const postTable = sqliteTable('posts', {
     .notNull()
     .references(() => tagsTable.id, { onDelete: 'cascade' }),
 
+  preview_ext: text(),
   preview_width: int(),
   preview_height: int(),
-  sample_width: int().notNull(),
-  sample_height: int().notNull(),
+  sample_ext: text(),
+  sample_width: int(),
+  sample_height: int(),
   width: int().notNull(),
   height: int().notNull(),
   file_ext: text().notNull(),

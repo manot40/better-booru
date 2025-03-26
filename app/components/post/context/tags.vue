@@ -20,18 +20,6 @@ onClickOutside(content, (e) => {
 const toTagList = (tags: string, category?: TagCategory) =>
   tags.split(' ').map((t) => ({ key: t, category }));
 
-// const metaTag = computed(() => {
-//   const group = post.value?.tags_grouping;
-//   if (!group) return [];
-//   const tags = [
-//     ...toTagList(group.character, 'character'),
-//     ...toTagList(group.artist, 'artist'),
-//     ...toTagList(group.copyright, 'copyright'),
-//     ...toTagList(group.meta, 'meta'),
-//   ];
-//   return tags.filter((t) => Boolean(t.key));
-// });
-
 function changeTag(tags: string) {
   emit('close');
   props.paginator.set({ page: 1, tags });
@@ -47,11 +35,7 @@ function changeTag(tags: string) {
     <PopoverContent avoidCollisions :align="isDesktop ? 'end' : 'center'" class="w-full max-w-sm">
       <div ref="content" class="w-full overflow-y-auto" style="max-height: calc(100dvh - 8rem)" v-if="post">
         <PostContextTagsList @tag="changeTag" :tags="toTagList(post.tags)" v-if="post.tags" />
-        <PostContextTagsList v-else-if="true" />
-        <!-- <template v-else>
-          <PostContextTagsList :tags="metaTag" class="mb-2.5" title="Meta" @tag="changeTag" />
-          <PostContextTagsList foldable :tags="toTagList(post.tags_grouping.tag)" @tag="changeTag" />
-        </template> -->
+        <PostContextTagsDanbooru :postId="post.id" @changeTag="changeTag" />
       </div>
     </PopoverContent>
   </Popover>
