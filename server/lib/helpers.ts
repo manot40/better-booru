@@ -12,36 +12,44 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
   const tagsFilter = deserializeTags(tags);
 
   if (tagsFilter.eq) {
-    const filterOp = Object.entries(tagsFilter.eq).map(([c, ids]) => {
-      const cat = +c as TagCategoryID;
-      if (!ids) return;
-      else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
-      else return createFilterEq(tx, cat, ids);
-    });
-    // @ts-ignore
-    const intersects = filterOp.filter(Boolean).reduce((op, next) => op!.intersect(next));
-    if (intersects) params.push(inArray($s.postTable.id, intersects));
+    const filterOp = Object.entries(tagsFilter.eq)
+      .map(([c, ids]) => {
+        const cat = +c as TagCategoryID;
+        if (!ids) return;
+        else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+        else return createFilterEq(tx, cat, ids);
+      })
+      .filter(Boolean);
+    if (filterOp.length) {
+      // @ts-ignore
+      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
+      if (intersects) params.push(inArray($s.postTable.id, intersects));
+    }
   }
 
   if (tagsFilter.ne) {
-    const filterOp = Object.entries(tagsFilter.ne).map(([c, ids]) => {
-      const cat = +c as TagCategoryID;
-      if (!ids) return;
+    const filterOp = Object.entries(tagsFilter.ne)
+      .map(([c, ids]) => {
+        const cat = +c as TagCategoryID;
+        if (!ids) return;
 
-      if (cat == 1) {
-        params.push(ne($s.postTable.artist_id, ids[0]));
-        return;
-      }
+        if (cat == 1) {
+          params.push(ne($s.postTable.artist_id, ids[0]));
+          return;
+        }
 
-      const rel = getPostTagsRel(cat);
-      return tx
-        .select({ '1': sql`1` })
-        .from(rel)
-        .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
-    });
-    // @ts-ignore
-    const union = filterOp.filter(Boolean).reduce((op, next) => op!.union(next));
-    if (union) params.push(notExists(union));
+        const rel = getPostTagsRel(cat);
+        return tx
+          .select({ '1': sql`1` })
+          .from(rel)
+          .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
+      })
+      .filter(Boolean);
+    if (filterOp.length) {
+      // @ts-ignore
+      const union = filterOp.reduce((op, next) => op!.union(next));
+      if (union) params.push(notExists(union));
+    }
   }
 
   return params;
@@ -60,15 +68,21 @@ export function getCountFromTags(tx: Transaction, tags: string[]) {
   Object.entries(tagsFilter).forEach(([key, s]) => {
     if (!s) return;
     const params = <SQL[]>[];
-    const filterOp = Object.entries(s).map(([c, ids]) => {
-      const cat = +c as TagCategoryID;
-      if (!ids) return;
-      else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
-      else return createFilterEq(tx, cat, ids);
-    });
-    // @ts-ignore
-    const intersects = filterOp.filter(Boolean).reduce((op, next) => op!.intersect(next));
-    if (intersects) params.push(inArray($s.postTable.id, intersects));
+    const filterOp = Object.entries(s)
+      .map(([c, ids]) => {
+        const cat = +c as TagCategoryID;
+        if (!ids) return;
+        else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+        else return createFilterEq(tx, cat, ids);
+      })
+      .filter(Boolean);
+
+    if (filterOp.length) {
+      // @ts-ignore
+      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
+      if (intersects) params.push(inArray($s.postTable.id, intersects));
+    }
+
     const count = tx
       .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
       .from($s.postTable)
@@ -85,6 +99,23 @@ export function getCountFromTags(tx: Transaction, tags: string[]) {
 
   if (tags.length) cache.set(cacheKey, count);
   return count;
+}
+
+export function queryPostTags(post_id: number) {
+  const unions = db
+    .select({ tag_id: $s.generalTags.tag_id })
+    .from($s.generalTags)
+    .where(eq($s.generalTags.post_id, post_id))
+    .union(
+      db.select({ tag_id: $s.metaTags.tag_id }).from($s.metaTags).where(eq($s.metaTags.post_id, post_id))
+    )
+    .union(
+      db
+        .select({ tag_id: $s.characterTags.tag_id })
+        .from($s.characterTags)
+        .where(eq($s.characterTags.post_id, post_id))
+    );
+  return db.query.tagsTable.findMany({ where: inArray($s.tagsTable.id, unions) }).sync();
 }
 
 function createFilterEq(tx: Transaction, cat: 0 | 2 | 3 | 4 | 5, ids: number[]) {

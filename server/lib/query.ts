@@ -3,7 +3,7 @@ import type { DBPostData } from '~~/server/db/schema';
 
 import { db, schema as $s } from '~~/server/db';
 
-import { and, desc, gt, lt, asc, getTableColumns, eq } from 'drizzle-orm';
+import { and, desc, gt, lt, asc, getTableColumns, eq, inArray } from 'drizzle-orm';
 import { generateTagsFilter, getCountFromTags } from './helpers';
 
 import { file_url, preview_url, sample_url } from './file-url-builder';
@@ -18,13 +18,22 @@ export async function queryPosts(qOpts: QueryOptions) {
   let offset = 0;
   const whereParams: SQL[] = [];
 
-  // Page filter
+  // Page Filter
   if (Number.isNaN(+opts.page)) {
     const pageNum = +opts.page.slice(1);
     isAsc = opts.page.startsWith('a');
     whereParams.push((isAsc ? gt : lt)($s.postTable.id, pageNum));
   } else if (+opts.page > 1 && +opts.page <= 200000) {
     offset = (+opts.page - 1) * opts.limit;
+  }
+
+  // Rating Filter
+  if (opts.rating) {
+    const rating = opts.rating as MaybeArray<DBPostData['rating']>;
+    const filter = Array.isArray(rating)
+      ? inArray($s.postTable.rating, rating)
+      : eq($s.postTable.rating, rating);
+    whereParams.push(filter);
   }
 
   const { post, count } = db.transaction((tx) => {
@@ -47,13 +56,11 @@ export async function queryPosts(qOpts: QueryOptions) {
   return { meta: { limit: opts.limit, count, offset }, post };
 }
 
-export async function queryPostTags(post_id: number) {}
-
 export interface QueryOptions {
   /** `a` for after and `b` for before specific id */
   page: `${number}` | `a${number}` | `b${number}`;
   tags: Array<`-${string}` | (string & {})>;
   /** default 50 */
   limit?: number;
-  rating?: MaybeArray<DBPostData['rating']>;
+  rating?: MaybeArray<StringHint<DBPostData['rating']>>;
 }

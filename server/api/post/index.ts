@@ -18,6 +18,6 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
     const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
-    return queryPosts({ limit: +limit, page: <any>pid, tags: tags?.split(' ') });
+    return queryPosts({ page: <any>pid, tags: tags?.split(' '), limit: +limit, rating });
   }
 });

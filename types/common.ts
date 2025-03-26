@@ -53,6 +53,7 @@ export interface Post {
   tags?: Nullable<string>;
   score?: Nullable<number>;
   rating: Rating;
+  artist?: Nullable<string>;
   source?: Nullable<string>;
   pixiv_id?: Nullable<number>;
   parent_id?: Nullable<number>;
