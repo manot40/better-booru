@@ -9,5 +9,10 @@ export default defineEventHandler(async (evt) => {
   const post = db.query.postTable.findFirst({ where: (post, { eq }) => eq(post.id, +id) }).sync();
   if (!post) return sendError(evt, createError({ statusCode: 404, statusMessage: 'Post Not Found' }));
 
-  return queryPostTags(post.id);
+  const tags = queryPostTags(post.id);
+  const artist = db.query.tagsTable
+    .findFirst({ where: (table, { eq }) => eq(table.id, post.artist_id) })
+    .sync()!;
+
+  return [artist, ...tags];
 });

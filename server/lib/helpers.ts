@@ -5,7 +5,7 @@ import type { SQL, ExtractTablesWithRelations } from 'drizzle-orm';
 import cache from './cache';
 import { db, schema as $s } from '../db';
 
-import { and, eq, notExists, sql, inArray, ne } from 'drizzle-orm';
+import { and, eq, notExists, sql, inArray, ne, notInArray } from 'drizzle-orm';
 
 export function generateTagsFilter(tx: Transaction, tags: string[]) {
   const params = <SQL[]>[];
@@ -58,63 +58,43 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
 export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' | 's' | 'q' | 'e'>) {
   if (!tags.length && !rating?.length) return postsCount;
 
-  let countEq = 0;
-  let countNe: number | undefined;
   const hasRating = !!rating?.length && (!Array.isArray(rating) || rating.length <= 4);
-
   const cacheKey = `rating_${hasRating ? rating : 'all'}|count_${[...tags].sort()}`;
-  if ((tags.length || hasRating) && cache.has(cacheKey)) return cache.get<number>(cacheKey);
+  if (cache.has(cacheKey)) return cache.get<number>(cacheKey);
 
+  const params = <SQL[]>[];
+
+  if (hasRating) {
+    const col = $s.postTable.rating;
+    params.push(Array.isArray(rating) ? inArray(col, rating) : eq(col, rating));
+  }
   if (tags.length) {
     Object.entries(deserializeTags(tags)).forEach(([key, s]) => {
-      if (!s && !hasRating) return;
-      const params = <SQL[]>[];
+      if (!s) return;
+      const filterOp = Object.entries(s)
+        .map(([c, ids]) => {
+          const cat = +c as TagCategoryID;
+          if (!ids) return;
+          else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+          else return createFilterEq(tx, cat, ids);
+        })
+        .filter(Boolean);
 
-      if (s) {
-        const filterOp = Object.entries(s)
-          .map(([c, ids]) => {
-            const cat = +c as TagCategoryID;
-            if (!ids) return;
-            else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
-            else return createFilterEq(tx, cat, ids);
-          })
-          .filter(Boolean);
-
-        if (!filterOp.length) {
-          // @ts-ignore
-          const intersects = filterOp.reduce((op, next) => op!.intersect(next));
-          if (intersects) params.push(inArray($s.postTable.id, intersects));
-        }
+      if (filterOp.length > 0) {
+        // @ts-ignore
+        const set = filterOp.reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
+        if (set) params.push((key == 'ne' ? notInArray : inArray)($s.postTable.id, set));
       }
-
-      if (key === 'eq' && hasRating)
-        params.push(Array.isArray(rating) ? inArray($s.postTable, rating) : eq($s.postTable, rating));
-      const count = tx
-        .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
-        .from($s.postTable)
-        .where(and(...params))
-        .get()?.count;
-
-      if (key === 'ne') countNe = count;
-      else if (count) countEq = count;
     });
   }
 
-  if (hasRating && countEq === 0) {
-    const col = $s.postTable.rating;
-    const count = db
-      .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
-      .from($s.postTable)
-      .where(Array.isArray(rating) ? inArray(col, rating) : eq(col, rating))
-      .get()?.count;
-    if (count) countEq = count;
-  }
+  const count = tx
+    .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
+    .from($s.postTable)
+    .where(and(...params))
+    .get()?.count;
 
-  let count;
-  if (typeof countNe == 'number') count = postsCount - countNe + countEq;
-  else count = countEq;
-
-  if (tags.length) cache.set(cacheKey, count);
+  cache.set(cacheKey, count);
   return count;
 }
 
