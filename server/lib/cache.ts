@@ -1,4 +1,4 @@
-const DEFAULT_TTL = 60 * 60 * 1 * 1000;
+const DEFAULT_TTL = 60 * 60 * 24 * 1000;
 
 const cache = {
   data: new Map(),
