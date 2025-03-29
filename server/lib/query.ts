@@ -9,10 +9,8 @@ import { generateTagsFilter, getPostCount } from './helpers';
 import { file_url, preview_url, sample_url } from './file-url-builder';
 
 export async function queryPosts(qOpts: QueryOptions) {
-  const opts = { limit: 50, ...qOpts };
-  opts.tags ||= [];
+  const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
   opts.page ||= '1';
-  opts.limit = Math.min(opts.limit, 500);
 
   let isAsc = false;
   let offset = 0;
@@ -59,7 +57,7 @@ export async function queryPosts(qOpts: QueryOptions) {
 export interface QueryOptions {
   /** `a` for after and `b` for before specific id */
   page: `${number}` | `a${number}` | `b${number}`;
-  tags: Array<`-${string}` | (string & {})>;
+  tags?: Array<`-${string}` | (string & {})>;
   /** default 50 */
   limit?: number;
   rating?: MaybeArray<StringHint<DBPostData['rating']>>;

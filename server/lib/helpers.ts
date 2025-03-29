@@ -16,7 +16,7 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
       .map(([c, ids]) => {
         const cat = +c as TagCategoryID;
         if (!ids) return;
-        else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+        else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
         else return createFilterEq(tx, cat, ids);
       })
       .filter(Boolean);
@@ -34,7 +34,7 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
         if (!ids) return;
 
         if (cat == 1) {
-          params.push(ne($s.postTable.artist_id, ids[0]));
+          params.push(ne($s.postTable.artist_id, <number>ids[0]));
           return;
         }
 
@@ -75,7 +75,7 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
         .map(([c, ids]) => {
           const cat = +c as TagCategoryID;
           if (!ids) return;
-          else if (cat == 1) params.push(eq($s.postTable.artist_id, ids[0]));
+          else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
           else return createFilterEq(tx, cat, ids);
         })
         .filter(Boolean);
@@ -92,7 +92,7 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
     .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
     .from($s.postTable)
     .where(and(...params))
-    .get()?.count;
+    .get()?.count!;
 
   cache.set(cacheKey, count);
   return count;
@@ -112,13 +112,19 @@ export function queryPostTags(post_id: number) {
         .from($s.characterTags)
         .where(eq($s.characterTags.post_id, post_id))
     );
-  return db.query.tagsTable.findMany({ where: inArray($s.tagsTable.id, unions) }).sync();
+
+  const query = db.query.tagsTable.findMany({
+    where: (t, { inArray }) => inArray(t.id, unions),
+    orderBy: (t, { asc }) => [asc(t.category), asc(t.name)],
+  });
+
+  return query.sync();
 }
 
 function createFilterEq(tx: Transaction, cat: 0 | 2 | 3 | 4 | 5, ids: number[]) {
   const rel = getPostTagsRel(cat);
   const selection = tx.select({ post_id: rel.post_id }).from(rel);
-  if (ids.length == 1) return selection.where(eq(rel.tag_id, ids[0]));
+  if (ids.length == 1) return selection.where(eq(rel.tag_id, <number>ids[0]));
   else
     return selection
       .where(inArray(rel.tag_id, ids))
@@ -126,8 +132,14 @@ function createFilterEq(tx: Transaction, cat: 0 | 2 | 3 | 4 | 5, ids: number[]) 
       .having(sql`count(${rel.tag_id}) = ${ids.length}`);
 }
 
-const deserializeTags = (tags: string[]) =>
-  tags
+function deserializeTags(tags: string[]) {
+  const tagByName = db
+    .select()
+    .from($s.tagsTable)
+    .where(eq($s.tagsTable.name, sql.placeholder('tag')))
+    .prepare();
+
+  return tags
     .map((t) => {
       const exc = /^-/.test(t);
       const tag = exc ? t.slice(1) : t;
@@ -148,17 +160,16 @@ const deserializeTags = (tags: string[]) =>
       },
       <Record<'eq' | 'ne', Record<TagCategoryID, number[] | undefined> | undefined>>{}
     );
+}
 
-const tagByName = db
-  .select()
-  .from($s.tagsTable)
-  .where(eq($s.tagsTable.name, sql.placeholder('tag')))
-  .prepare();
-
-const countPosts = db
-  .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
-  .from($s.postTable)
-  .prepare();
+export let postsCount = 0;
+setTimeout(() => {
+  if (!db) return;
+  const countPosts = db.select({ count: sql<number>`COUNT(${$s.postTable.id})` }).from($s.postTable);
+  const setCount = () => (postsCount = countPosts.get()?.count || 0);
+  setInterval(setCount, 60000);
+  setCount();
+}, 2000);
 
 const getPostTagsRel = <T extends 0 | 2 | 3 | 4 | 5>(category: T) =>
   ({
@@ -168,8 +179,5 @@ const getPostTagsRel = <T extends 0 | 2 | 3 | 4 | 5>(category: T) =>
     4: $s.characterTags,
     5: $s.metaTags,
   })[category];
-
-export let postsCount = countPosts.get()?.count || 0;
-setInterval(() => (postsCount = countPosts.get()?.count || 0), 60000);
 
 type Transaction = SQLiteTransaction<'sync', void, typeof $s, ExtractTablesWithRelations<typeof $s>>;

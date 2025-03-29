@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { sqliteTable, primaryKey, int, text, blob, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, primaryKey, int, text, index } from 'drizzle-orm/sqlite-core';
 
 const autoDt = () =>
   int({ mode: 'timestamp' })
@@ -58,14 +58,6 @@ export const postRelations = relations(postTable, ({ one, many }) => ({
 export const [metaTags, metaTagsRelations] = generatManyToManyTags('meta');
 export const [generalTags, generalTagsRelations] = generatManyToManyTags('general');
 export const [characterTags, characterTagsRelations] = generatManyToManyTags('character');
-
-export const errorOp = sqliteTable('errored_operations', {
-  id: int().primaryKey({ autoIncrement: true }),
-  data: blob({ mode: 'json' }).notNull(),
-  trace: text(),
-  last_retry: autoDt(),
-  created_at: autoDt(),
-});
 
 function generatManyToManyTags<T extends string>(key: T) {
   const table = sqliteTable(
