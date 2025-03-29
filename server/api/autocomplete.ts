@@ -12,8 +12,7 @@ export default defineEventHandler(async (evt): Promise<Autocomplete[]> => {
       query: { page: 'autocomplete2', term: q, type: 'tag_query', limit: '10' },
     });
   } else {
-    const fetcher = provider === 'safebooru' ? $safebooruFetch : $danbooruFetch;
-    const data = await fetcher<Autocomplete[]>('/autocomplete.json', {
+    const data = await $danbooruFetch<Autocomplete[]>('/autocomplete.json', {
       query: {
         limit: '20',
         version: '1',

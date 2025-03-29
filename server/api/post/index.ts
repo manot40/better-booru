@@ -1,6 +1,9 @@
-import type { DanbooruResponse } from '~~/types/danbooru';
 import type { GelbooruResponse } from '~~/types/gelbooru';
-import type { BooruData, PostList, Provider } from '~~/types/common';
+import type { DanbooruResponse } from '~~/types/danbooru';
+import type { PostList, Provider } from '~~/types/common';
+
+import { db } from '~~/server/db';
+import { queryPosts } from '~~/server/lib/query';
 
 export default defineEventHandler(async (evt): Promise<PostList> => {
   const headers = getHeaders(evt);
@@ -17,16 +20,17 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
     const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
-    const fetcher = provider === 'safebooru' ? $safebooruFetch : $danbooruFetch;
-    const query = { ...baseQuery, page: pid, tags: processRating(provider, rating, tags) };
-    const [data, { counts }] = await Promise.all([
-      fetcher<DanbooruResponse[]>('/posts.json', { query }),
-      fetcher<{ counts: { posts: number } }>('/counts/posts.json', { query: { tags: query.tags } }),
-    ]);
-
-    return {
-      post: processBooruData(data),
-      meta: { limit: +limit, count: counts.posts, offset: 0 },
-    };
+    if (db) {
+      const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
+      const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
+      return queryPosts({ page: <any>pid, tags: tags?.split(' '), limit: +limit, rating });
+    } else {
+      const query = { ...baseQuery, page: pid, tags: processRating(provider, rating, tags) };
+      const [data, { counts }] = await Promise.all([
+        $danbooruFetch<DanbooruResponse[]>('/posts.json', { query }),
+        $danbooruFetch<{ counts: { posts: number } }>('/counts/posts.json', { query: { tags: query.tags } }),
+      ]);
+      return { post: processBooruData(data), meta: { limit: +limit, count: counts.posts, offset: 0 } };
+    }
   }
 });

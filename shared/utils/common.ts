@@ -43,3 +43,6 @@ export function imageAspectRatio(width: number, height: number): [number, number
   const divisor = gcd(width, height);
   return [width / divisor, height / divisor];
 }
+
+export const unshortenUrl = (url: string) =>
+  url.startsWith('/danbooru') ? url.replace('/danbooru', 'https://cdn.donmai.us') : url;

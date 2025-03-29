@@ -1,7 +1,9 @@
 import type { H3Event } from 'h3';
 import type { GelbooruData } from '~~/types/gelbooru';
 import type { DanbooruResponse } from '~~/types/danbooru';
-import type { BooruData, Post, UserConfig } from '~~/types/common';
+import type { Post, UserConfig } from '~~/types/common';
+
+import { getDanbooruImage, isDanbooru } from './danbooru';
 
 export function processBooruData(data: BooruResponse): Post[] {
   if (isDanbooru(data))
@@ -15,14 +17,14 @@ export function processBooruData(data: BooruResponse): Post[] {
         change: 0,
         owner: 'danbooru',
         parent_id: raw.parent_id,
-        rating: convertDanbooruRating(raw.rating),
+        rating: raw.rating,
         sample: true,
         score: raw.fav_count,
         tags: raw.tag_string,
         source: raw.source,
         status: raw.is_deleted ? 'deleted' : 'active',
         file_ext: raw.file_ext,
-        has_notes: 0,
+        has_notes: raw.has_notes || false,
         comment_count: 0,
         tags_grouping: {
           tag: raw.tag_string_general,
@@ -34,11 +36,10 @@ export function processBooruData(data: BooruResponse): Post[] {
         ...getDanbooruImage(raw),
       }));
   return data.map((raw) => {
-    const { directory, change, owner, parent_id, status, has_notes, comment_count, ...rest } = raw;
-    const hash = 'md5' in rest ? rest.md5 : rest.hash;
+    const { directory, change, owner, status, has_notes, comment_count, md5, ...rest } = raw;
     rest.sample_url = imgAlias(rest.sample_url, 'gelbooru');
     rest.preview_url = imgAlias(rest.preview_url, 'gelbooru');
-    return { ...rest, hash };
+    return { ...rest, hash: md5, pixiv_id: null, has_notes: false, created_at: null };
   });
 }
 
@@ -49,4 +50,4 @@ export const getUserConfig = (evt: H3Event<any>) => {
   } catch {}
 };
 
-export type BooruResponse = BooruData[] | GelbooruData[] | DanbooruResponse[];
+export type BooruResponse = DanbooruResponse[] | GelbooruData[];

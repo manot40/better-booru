@@ -1,10 +1,11 @@
-export type Rating = 'general' | 'explicit' | 'sensitive' | 'questionable';
+export type Rating = 'g' | 's' | 'q' | 'e';
 export type RatingQuery = Rating | `-${Rating}` | 'all';
 
-export type FileExt = 'jpg' | 'png' | 'webp' | 'mp4' | 'webm';
+export type FileExt = StringHint<'jpg' | 'png' | 'webp' | 'mp4' | 'webm'>;
 
-export type Provider = 'danbooru' | 'gelbooru' | 'safebooru';
+export type Provider = 'danbooru' | 'gelbooru';
 
+export type TagCategoryID = 0 | 1 | 2 | 3 | 4 | 5;
 export type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
 export type TagsGroup = Record<TagCategory, string>;
 
@@ -38,7 +39,7 @@ export interface BooruData {
   sample_height: number;
   sample_width: number;
   score: Nullable<number>;
-  tags: string;
+  tags?: string;
   source: string;
   status: 'active';
   has_notes: boolean;
@@ -46,10 +47,31 @@ export interface BooruData {
   tags_grouping?: TagsGroup;
 }
 
-export type Post = Omit<
-  BooruData,
-  'directory' | 'change' | 'owner' | 'parent_id' | 'status' | 'has_notes' | 'comment_count'
->;
+export interface Post {
+  id: number;
+  hash: string;
+  tags?: Nullable<string>;
+  score?: Nullable<number>;
+  rating: Rating;
+  artist?: Nullable<string>;
+  source?: Nullable<string>;
+  pixiv_id?: Nullable<number>;
+  parent_id?: Nullable<number>;
+  has_notes: boolean;
+  created_at?: Nullable<string | Date>;
+
+  width: number;
+  height: number;
+  file_url: string;
+  file_ext: FileExt;
+  sample_url?: Nullable<string>;
+  sample_width?: Nullable<number>;
+  sample_height?: Nullable<number>;
+  preview_url?: Nullable<string>;
+  preview_width?: Nullable<number>;
+  preview_height?: Nullable<number>;
+}
+
 export type BooruMeta = { limit: number; offset: number; count: number };
 
 export interface PostList {

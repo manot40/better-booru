@@ -5,7 +5,7 @@ import type { ComboboxItemEmits } from 'reka-ui';
 import { X, Check } from 'lucide-vue-next';
 
 const open = defineModel<boolean>('open', { default: false });
-const RATING = <RatingQuery[]>['all', 'general', 'sensitive', 'questionable', 'explicit'];
+const RATING = <RatingQuery[]>['all', 'g', 's', 'q', 'e'];
 
 const userConfig = useUserConfig();
 const cachedRating = ref<RatingQuery[] | undefined>(userConfig.rating);
@@ -48,6 +48,14 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
     };
   }
 }
+
+const toLabel = (r: RatingQuery) =>
+  ({
+    g: 'General',
+    q: 'Questionable',
+    s: 'Sensitive',
+    e: 'Explicit',
+  })[r.replace('-', '')] || 'All';
 </script>
 
 <template>
@@ -84,8 +92,8 @@ function processRatingEntry(item: RatingQuery): { isSelected: boolean; isInverte
                   <X v-if="isInverted" class="w-4 h-4 mr-2" />
                   <Check v-else-if="isSelected" class="w-4 h-4 mr-2" />
                   <div>
-                    {{ startCase(value) }}
-                    <strong v-if="value === 'explicit' || value === 'questionable'" class="ml-1">NSFW</strong>
+                    {{ toLabel(value) }}
+                    <strong v-if="value === 'e' || value === 'q'" class="ml-1">NSFW</strong>
                   </div>
                 </div>
               </CommandItem>

@@ -6,7 +6,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   state: () =>
     <UserConfig>{
       column: undefined,
-      rating: ['general'],
+      rating: ['g'],
       provider: 'danbooru',
       hideNSFW: true,
       browseMode: 'paginated',
@@ -44,7 +44,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     },
 
     changeProvider(provider: UserConfig['provider']) {
-      this.mutate({ provider, rating: ['general'] });
+      this.mutate({ provider, rating: ['g'] });
     },
   },
 });

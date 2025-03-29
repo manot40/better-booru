@@ -36,6 +36,7 @@ export interface DanbooruResponse {
   has_active_children: boolean;
   bit_flags: number;
   tag_count_meta: number;
+  has_notes: boolean;
   has_large: boolean;
   has_visible_children: boolean;
   media_asset: DanbooruAsset;
