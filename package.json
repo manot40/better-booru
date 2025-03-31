@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@fontsource-variable/rubik": "^5.2.5",
+    "@libsql/client": "^0.15.1",
     "@nuxt/image": "^1.10.0",
     "@nuxtjs/color-mode": "3.5.2",
     "@nuxtjs/tailwindcss": "6.12.2",

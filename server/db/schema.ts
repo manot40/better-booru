@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { sqliteTable, primaryKey, int, text, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, int, text, index } from 'drizzle-orm/sqlite-core';
 
 const autoDt = () =>
   int({ mode: 'timestamp' })
@@ -13,9 +13,10 @@ export const tagsTable = sqliteTable('tags', {
   category: int().notNull(),
 });
 export const tagsRelations = relations(tagsTable, ({ many }) => ({
-  artist: many(postTable),
+  post: many(postTable),
   metaTags: many(metaTags),
-  generalTags: many(generalTags),
+  commonTags: many(commonTags),
+  uncommonTags: many(uncommonTags),
   characterTags: many(characterTags),
 }));
 
@@ -50,27 +51,30 @@ export const postTable = sqliteTable('posts', {
 });
 export const postRelations = relations(postTable, ({ one, many }) => ({
   artist: one(tagsTable, { fields: [postTable.artist_id], references: [tagsTable.id] }),
-  postGeneralTags: many(generalTags),
-  postCharacterTags: many(characterTags),
+  postCommonTags: many(commonTags),
+  postUncommonTags: many(commonTags),
   postCopyrightTags: many(metaTags),
+  postCharacterTags: many(characterTags),
 }));
 
 export const [metaTags, metaTagsRelations] = generatManyToManyTags('meta');
-export const [generalTags, generalTagsRelations] = generatManyToManyTags('general');
+export const [commonTags, commonTagsRelations] = generatManyToManyTags('common');
+export const [uncommonTags, uncommonTagsRelations] = generatManyToManyTags('uncommon');
 export const [characterTags, characterTagsRelations] = generatManyToManyTags('character');
 
+export type PostRelations = ReturnType<typeof generatManyToManyTags>[0];
 function generatManyToManyTags<T extends string>(key: T) {
   const table = sqliteTable(
     `posts_with_${key}_tags`,
     {
       post_id: int()
         .notNull()
-        .references(() => postTable.id, { onDelete: 'cascade' }),
+        .references(() => postTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
       tag_id: int()
         .notNull()
-        .references(() => tagsTable.id, { onDelete: 'cascade' }),
+        .references(() => tagsTable.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
     },
-    (t) => [primaryKey({ columns: [t.post_id, t.tag_id] }), index(`idx_pwt_${key}_tag_id`).on(t.tag_id)]
+    (t) => [index(`idx_pwt_${key}_post_id`).on(t.post_id), index(`idx_pwt_${key}_tag_id`).on(t.tag_id)]
   );
   const tableRelations = relations(table, ({ one }) => ({
     post: one(postTable, { fields: [table.post_id], references: [postTable.id] }),

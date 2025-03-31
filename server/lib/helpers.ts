@@ -1,3 +1,4 @@
+import type { PostRelations } from '../db/schema';
 import type { TagCategoryID } from '~~/types/common';
 import type { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import type { SQL, ExtractTablesWithRelations } from 'drizzle-orm';
@@ -19,7 +20,8 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
         else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
         else return createFilterEq(tx, cat, ids);
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .flat();
     if (filterOp.length) {
       // @ts-ignore
       const intersects = filterOp.reduce((op, next) => op!.intersect(next));
@@ -33,18 +35,26 @@ export function generateTagsFilter(tx: Transaction, tags: string[]) {
         const cat = +c as TagCategoryID;
         if (!ids) return;
 
+        const createQuery = <R extends PostRelations>(rel: R, ids: number[]) =>
+          tx
+            .select({ '1': sql`1` })
+            .from(rel)
+            .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
+
         if (cat == 1) {
           params.push(ne($s.postTable.artist_id, <number>ids[0]));
           return;
-        }
-
-        const rel = getPostTagsRel(cat);
-        return tx
-          .select({ '1': sql`1` })
-          .from(rel)
-          .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
+        } else if (cat === 0 || cat === 2) {
+          const q = <ReturnType<typeof createQuery>[]>[];
+          const common = ids.filter((id) => id <= 800);
+          const uncommon = ids.filter((id) => id > 800);
+          if (common.length > 0) q.push(createQuery($s.commonTags, common));
+          if (uncommon.length > 0) q.push(createQuery($s.uncommonTags, uncommon));
+          return q;
+        } else return createQuery(getPostTagsRel(cat), ids);
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .flat();
     if (filterOp.length) {
       // @ts-ignore
       const union = filterOp.reduce((op, next) => op!.union(next));
@@ -78,7 +88,8 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
           else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
           else return createFilterEq(tx, cat, ids);
         })
-        .filter(Boolean);
+        .filter(Boolean)
+        .flat();
 
       if (filterOp.length > 0) {
         // @ts-ignore
@@ -89,7 +100,7 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
   }
 
   const count = tx
-    .select({ count: sql<number>`COUNT(ROWID)` })
+    .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
     .from($s.postTable)
     .where(and(...params))
     .get()?.count!;
@@ -100,19 +111,27 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
 
 export function queryPostTags(post_id: number) {
   const unions = db
-    .select({ tag_id: $s.generalTags.tag_id })
-    .from($s.generalTags)
-    .where(eq($s.generalTags.post_id, post_id))
-    .union(
-      db.select({ tag_id: $s.metaTags.tag_id }).from($s.metaTags).where(eq($s.metaTags.post_id, post_id))
-    )
+    .select({ tag_id: $s.metaTags.tag_id })
+    .from($s.metaTags)
+    .where(eq($s.metaTags.post_id, post_id))
     .union(
       db
         .select({ tag_id: $s.characterTags.tag_id })
         .from($s.characterTags)
         .where(eq($s.characterTags.post_id, post_id))
+    )
+    .union(
+      db
+        .select({ tag_id: $s.commonTags.tag_id })
+        .from($s.commonTags)
+        .where(eq($s.commonTags.post_id, post_id))
+    )
+    .union(
+      db
+        .select({ tag_id: $s.uncommonTags.tag_id })
+        .from($s.uncommonTags)
+        .where(eq($s.uncommonTags.post_id, post_id))
     );
-
   const query = db.query.tagsTable.findMany({
     where: (t, { inArray }) => inArray(t.id, unions),
     orderBy: (t, { asc }) => [asc(t.category), asc(t.name)],
@@ -122,14 +141,22 @@ export function queryPostTags(post_id: number) {
 }
 
 function createFilterEq(tx: Transaction, cat: 0 | 2 | 3 | 4 | 5, ids: number[]) {
-  const rel = getPostTagsRel(cat);
-  const selection = tx.select({ post_id: rel.post_id }).from(rel);
-  if (ids.length == 1) return selection.where(eq(rel.tag_id, <number>ids[0]));
-  else
+  if (cat === 0 || cat === 2) {
+    const q = <ReturnType<typeof createRelationQuery>[]>[];
+    const common = ids.filter((id) => id <= 800);
+    const uncommon = ids.filter((id) => id > 800);
+    if (common.length > 0) q.push(createRelationQuery($s.commonTags, common));
+    if (uncommon.length > 0) q.push(createRelationQuery($s.uncommonTags, uncommon));
+    return q;
+  } else return [createRelationQuery(getPostTagsRel(cat), ids)];
+
+  function createRelationQuery<R extends PostRelations>(rel: R, ids: number[]) {
+    const selection = tx.select({ post_id: rel.post_id }).from(rel);
     return selection
       .where(inArray(rel.tag_id, ids))
       .groupBy(rel.post_id)
       .having(sql`count(${rel.tag_id}) = ${ids.length}`);
+  }
 }
 
 function deserializeTags(tags: string[]) {
@@ -170,13 +197,7 @@ if (db.enabled) {
   setCount();
 }
 
-const getPostTagsRel = <T extends 0 | 2 | 3 | 4 | 5>(category: T) =>
-  ({
-    0: $s.generalTags,
-    2: $s.generalTags,
-    3: $s.metaTags,
-    4: $s.characterTags,
-    5: $s.metaTags,
-  })[category];
+const getPostTagsRel = <T extends 3 | 4 | 5>(category: T) =>
+  ({ 3: $s.metaTags, 4: $s.characterTags, 5: $s.metaTags })[category];
 
 type Transaction = SQLiteTransaction<'sync', void, typeof $s, ExtractTablesWithRelations<typeof $s>>;
