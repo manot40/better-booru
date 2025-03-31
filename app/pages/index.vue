@@ -5,14 +5,6 @@ import 'photoswipe/style.css';
 
 import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
-definePageMeta({
-  middleware() {
-    const nuxt = useNuxtApp();
-    const ucfg = useUserConfig();
-    if (import.meta.server || nuxt.isHydrating) ucfg.populate();
-  },
-});
-
 const userConfig = useUserConfig();
 const { data, error, loading, paginator } = useBooruFetch();
 

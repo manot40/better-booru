@@ -1,4 +1,4 @@
-import type { Provider } from '~~/types/common';
+import type { Provider, UserConfig } from '~~/types/common';
 
 import { parseURL, stringifyParsedURL } from 'ufo';
 
@@ -46,3 +46,8 @@ export function imageAspectRatio(width: number, height: number): [number, number
 
 export const unshortenUrl = (url: string) =>
   url.startsWith('/danbooru') ? url.replace('/danbooru', 'https://cdn.donmai.us') : url;
+
+// @ts-ignore
+export function isUserConfig<T = any>(payload: T): payload is UserConfig {
+  return payload && typeof payload == 'object' && 'provider' in payload && 'rating' in payload;
+}

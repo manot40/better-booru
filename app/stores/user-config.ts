@@ -16,6 +16,16 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   getters: {
     nonce: (state) => stringNonce(`${state.provider}-${state.browseMode}-${state.rating}`),
     isInfinite: (state) => state.browseMode === 'infinite',
+    asState: (state) => <UserConfig>JSON.parse(
+        JSON.stringify({
+          column: state.column,
+          rating: state.rating,
+          provider: state.provider,
+          hideNSFW: state.hideNSFW,
+          browseMode: state.browseMode,
+          historyMode: state.historyMode,
+        })
+      ),
   },
 
   actions: {
