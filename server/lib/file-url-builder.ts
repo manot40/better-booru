@@ -1,12 +1,14 @@
-import { eq, sql, isNotNull } from 'drizzle-orm';
+import { eq, sql, isNotNull, inArray } from 'drizzle-orm';
 
 import { postTable as table } from '~~/server/db/schema';
 
+const vid = ['webm', 'mp4', 'zip'];
 const linkPrepend = sql<string>`,SUBSTR(${table.hash},1,2),'/',SUBSTR(${table.hash},3,2),'/',`;
 
-export const file_url = sql<string>`CONCAT('/danbooru/original/'`
-  .append(linkPrepend)
-  .append(sql`${table.hash},'.',${table.file_ext})`);
+export const file_url =
+  sql<string>`CONCAT(CASE WHEN ${inArray(table.file_ext, vid)} THEN 'https://cdn.donmai.us/original/' ELSE '/danbooru/original/' END`
+    .append(linkPrepend)
+    .append(sql`${table.hash},'.',${table.file_ext})`);
 export const sample_url =
   sql<Nullable>`CASE WHEN ${isNotNull(table.sample_ext)} THEN CONCAT('/danbooru/sample/'`
     .append(linkPrepend)
@@ -17,6 +19,3 @@ export const preview_url =
     .append(sql`${table.hash},'.',${table.preview_ext}) END`);
 
 type Nullable = string | null;
-// export const sample_url = sql<string>`CASE WHEN ${eq(postTable.sample_width, postTable.width)} THEN `
-//   .append(file_url)
-//   .append(sql` ELSE CONCAT('/danbooru/sample/','sample-',${postTable.hash},'.jpg') END`);

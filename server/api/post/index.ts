@@ -20,7 +20,7 @@ export default defineEventHandler(async (evt): Promise<PostList> => {
     const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
-    if (db) {
+    if (db.enabled) {
       const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
       const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
       return queryPosts({ page: <any>pid, tags: tags?.split(' '), limit: +limit, rating });

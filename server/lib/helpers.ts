@@ -89,7 +89,7 @@ export function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArra
   }
 
   const count = tx
-    .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
+    .select({ count: sql<number>`COUNT(ROWID)` })
     .from($s.postTable)
     .where(and(...params))
     .get()?.count!;
@@ -163,13 +163,12 @@ function deserializeTags(tags: string[]) {
 }
 
 export let postsCount = 0;
-setTimeout(() => {
-  if (!db) return;
+if (db.enabled) {
   const countPosts = db.select({ count: sql<number>`COUNT(${$s.postTable.id})` }).from($s.postTable);
   const setCount = () => (postsCount = countPosts.get()?.count || 0);
   setInterval(setCount, 60000);
   setCount();
-}, 2000);
+}
 
 const getPostTagsRel = <T extends 0 | 2 | 3 | 4 | 5>(category: T) =>
   ({
