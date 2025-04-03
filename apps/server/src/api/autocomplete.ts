@@ -1,4 +1,4 @@
-import type { Autocomplete, Provider } from '~~/types/common';
+import type { Autocomplete, Provider } from 'booru-shared/types';
 
 export default defineEventHandler(async (evt): Promise<Autocomplete[]> => {
   const headers = getHeaders(evt);

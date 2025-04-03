@@ -1,6 +1,8 @@
 import type { FileExt } from './common';
 
-export interface DanbooruResponse {
+type Nullable<T> = null | T;
+
+export declare interface DanbooruResponse {
   id: number;
   created_at: string;
   uploader_id: number;
@@ -50,7 +52,7 @@ export interface DanbooruResponse {
   preview_file_url: string;
 }
 
-export interface DanbooruAsset {
+export declare interface DanbooruAsset {
   id: number;
   created_at: Date;
   updated_at: Date;
@@ -75,4 +77,4 @@ interface Variant {
   file_ext: FileExt;
 }
 
-export type DanbooruMediaType = 'original' | 'sample' | '180x180' | '360x360' | '720x720';
+export declare type DanbooruMediaType = 'original' | 'sample' | '180x180' | '360x360' | '720x720';

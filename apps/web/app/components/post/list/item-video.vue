@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Post } from '~~/types/common';
+import type { Post } from 'booru-shared/types';
 
 defineProps<{ item: Post }>();
 </script>

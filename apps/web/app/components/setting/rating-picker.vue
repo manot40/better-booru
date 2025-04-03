@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RatingQuery } from '~~/types/common';
+import type { RatingQuery } from 'booru-shared/types';
 import type { ComboboxItemEmits } from 'reka-ui';
 
 import { X, Check } from 'lucide-vue-next';

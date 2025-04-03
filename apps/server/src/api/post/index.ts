@@ -1,6 +1,6 @@
-import type { GelbooruResponse } from '~~/types/gelbooru';
-import type { DanbooruResponse } from '~~/types/danbooru';
-import type { PostList, Provider } from '~~/types/common';
+import type { GelbooruResponse } from 'booru-shared/types';
+import type { DanbooruResponse } from 'booru-shared/types';
+import type { PostList, Provider } from 'booru-shared/types';
 
 import { db } from '~~/server/db';
 import { queryPosts } from '~~/server/lib/query/list';

@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3';
-import type { GelbooruData } from '~~/types/gelbooru';
-import type { DanbooruResponse } from '~~/types/danbooru';
-import type { Post, UserConfig } from '~~/types/common';
+import type { GelbooruData } from 'booru-shared/types';
+import type { DanbooruResponse } from 'booru-shared/types';
+import type { Post, UserConfig } from 'booru-shared/types';
 
 import { getDanbooruImage, isDanbooru } from './danbooru';
 

@@ -1,4 +1,4 @@
-import type { Provider, UserConfig } from '~~/types/common';
+import type { Provider, UserConfig } from './types/common';
 
 import { parseURL, stringifyParsedURL } from 'ufo';
 

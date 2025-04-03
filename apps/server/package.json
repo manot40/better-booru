@@ -1,0 +1,21 @@
+{
+  "name": "booru-server",
+  "type": "module",
+  "module": "src/index.js",
+  "author": "manot40 <kevinsandiho290100@gmail.com>",
+  "license": "MIT",
+  "version": "1.2.5",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "prettier:write": "prettier -w .",
+    "prettier:check": "prettier -c ."
+  },
+  "devDependencies": {
+    "@libsql/client": "^0.15.2",
+    "booru-shared": "workspace:*",
+    "drizzle-kit": "^0.30.6",
+    "drizzle-orm": "^0.41.0",
+    "elysia": "latest"
+  }
+}

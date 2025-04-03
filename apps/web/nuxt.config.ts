@@ -15,6 +15,10 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
+  nitro: {
+    preset: 'static',
+  },
+
   runtimeConfig: {
     gelbooruUserId: '',
     gelbooruApiKey: '',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UserConfig } from '~~/types/common';
+import type { UserConfig } from 'booru-shared/types';
 
 const header: [string, string] = ['Site Configuration', 'Data source and site-wide experience configuration'];
 const HISTORY_MODE = ['url_query' as const, 'session' as const, 'cookie' as const];

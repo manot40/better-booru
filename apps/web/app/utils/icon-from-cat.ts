@@ -1,4 +1,4 @@
-import type { TagCategory } from '~~/types/common';
+import type { TagCategory } from 'booru-shared/types';
 
 import { Cat, Copyright, Palette, TagIcon } from 'lucide-vue-next';
 

@@ -1,5 +1,5 @@
-import type { Post } from '~~/types/common';
-import type { DanbooruResponse } from '~~/types/danbooru';
+import type { Post } from 'booru-shared/types';
+import type { DanbooruResponse } from 'booru-shared/types';
 
 export const isDanbooru = (data: BooruResponse): data is DanbooruResponse[] =>
   'media_asset' in (data[0] || {});

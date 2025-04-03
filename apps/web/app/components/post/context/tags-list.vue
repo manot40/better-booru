@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TagCategory } from '~~/types/common';
+import type { TagCategory } from 'booru-shared/types';
 
 type Tag = { key: string; label?: string; category?: TagCategory };
 

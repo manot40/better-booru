@@ -7,7 +7,7 @@ import { and, desc, gt, lt, asc, getTableColumns, eq, inArray, notExists, ne, sq
 
 import { file_url, preview_url, sample_url } from './file-url-builder';
 import { createFilterEq, deserializeTags, getPostTagsRel } from './common';
-import { TagCategoryID } from '~~/types/common';
+import { TagCategoryID } from 'booru-shared/types';
 import { getPostCount } from './count';
 
 export async function queryPosts(qOpts: QueryOptions) {

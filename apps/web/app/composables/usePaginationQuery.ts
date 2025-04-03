@@ -1,4 +1,4 @@
-import type { UserConfig } from '~~/types/common';
+import type { UserConfig } from 'booru-shared/types';
 import type { HistoryStore } from '~/lib/query-store';
 
 import { CookieStore, SessionStore, UrlQueryStore, STORE_KEY } from '~/lib/query-store';

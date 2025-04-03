@@ -1,15 +1,17 @@
-export type Rating = 'g' | 's' | 'q' | 'e';
-export type RatingQuery = Rating | `-${Rating}` | 'all';
+export declare type Rating = 'g' | 's' | 'q' | 'e';
+export declare type RatingQuery = Rating | `-${Rating}` | 'all';
 
-export type FileExt = StringHint<'jpg' | 'png' | 'webp' | 'mp4' | 'webm'>;
+type Nullable<T> = null | T;
+type StringHint<T extends string> = T | (string & {});
+export declare type FileExt = StringHint<'jpg' | 'png' | 'webp' | 'mp4' | 'webm'>;
 
-export type Provider = 'danbooru' | 'gelbooru';
+export declare type Provider = 'danbooru' | 'gelbooru';
 
-export type TagCategoryID = 0 | 1 | 2 | 3 | 4 | 5;
-export type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
-export type TagsGroup = Record<TagCategory, string>;
+export declare type TagCategoryID = 0 | 1 | 2 | 3 | 4 | 5;
+export declare type TagCategory = 'character' | 'tag' | 'meta' | 'artist' | 'copyright';
+export declare type TagsGroup = Record<TagCategory, string>;
 
-export interface UserConfig {
+export declare interface UserConfig {
   column?: 1 | 2 | 3 | 4;
   rating?: RatingQuery[];
   provider: Provider;
@@ -18,7 +20,7 @@ export interface UserConfig {
   historyMode?: 'url_query' | 'session' | 'cookie';
 }
 
-export interface BooruData {
+export declare interface BooruData {
   preview_url: string;
   preview_width: number;
   preview_height: number;
@@ -47,7 +49,7 @@ export interface BooruData {
   tags_grouping?: TagsGroup;
 }
 
-export interface Post {
+export declare interface Post {
   id: number;
   hash: string;
   tags?: Nullable<string>;
@@ -72,21 +74,21 @@ export interface Post {
   preview_height?: Nullable<number>;
 }
 
-export type BooruMeta = { limit: number; offset: number; count: number };
+export declare type BooruMeta = { limit: number; offset: number; count: number };
 
-export interface PostList {
+export declare interface PostList {
   meta?: BooruMeta;
   post: Post[];
 }
 
-export interface ListParams {
+export declare interface ListParams {
   page: number;
   tags?: string;
   limit?: number;
   last_id?: number;
 }
 
-export interface Autocomplete {
+export declare interface Autocomplete {
   type?: 'tag';
   label: string;
   value: string;

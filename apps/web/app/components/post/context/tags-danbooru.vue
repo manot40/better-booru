@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TagCategory } from '~~/types/common';
+import type { TagCategory } from 'booru-shared/types';
 
 type GroupedTag = Record<'general' | 'meta', { key: string; category?: TagCategory }[]>;
 
