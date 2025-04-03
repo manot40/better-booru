@@ -9,11 +9,11 @@ const props = withDefaults(defineProps<DrawerRootProps>(), {
 
 const emits = defineEmits<DrawerRootEmits>();
 
-const forwarded = <ComputedRef<Record<string, any>>>useForwardPropsEmits(props, emits);
+const forwarded = useForwardPropsEmits(props, emits);
 </script>
 
 <template>
-  <DrawerRoot v-bind="forwarded">
+  <DrawerRoot data-slot="drawer" v-bind="forwarded">
     <slot />
   </DrawerRoot>
 </template>
