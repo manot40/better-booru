@@ -3,7 +3,7 @@ import type { DanbooruResponse } from '~~/types/danbooru';
 import type { PostList, Provider } from '~~/types/common';
 
 import { db } from '~~/server/db';
-import { queryPosts } from '~~/server/lib/query';
+import { queryPosts } from '~~/server/lib/query/list';
 
 export default defineEventHandler(async (evt): Promise<PostList> => {
   const headers = getHeaders(evt);

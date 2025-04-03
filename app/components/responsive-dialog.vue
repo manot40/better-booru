@@ -4,13 +4,14 @@ const open = defineModel('open', { default: false });
 
 const isDesktop = useMediaQuery('(min-width: 768px)');
 
-watch(open, (open) => {
+watch(open, (open, _, onCleanup) => {
   if (open) return;
-  const body = document.body;
-  setTimeout(() => {
+  const timeout = setTimeout(() => {
+    const body = document.body;
     body.style.overflow = '';
     body.style.pointerEvents = '';
   }, 600);
+  onCleanup(() => clearTimeout(timeout));
 });
 </script>
 

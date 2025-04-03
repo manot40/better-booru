@@ -83,7 +83,7 @@ const toLabel = (r: RatingQuery) =>
               <CommandItem
                 :value
                 :class="[
-                  'cursor-pointer',
+                  'cursor-pointer md:p-2 max-md:py-3',
                   isInverted && '!bg-red-600/80 hover:!bg-red-600/90',
                   isSelected && !isInverted && '!bg-primary/90 hover:!bg-primary !text-primary-foreground',
                 ]"
