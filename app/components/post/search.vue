@@ -60,7 +60,7 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
     <TagsInput
       :modelValue="tags"
       @removeTag="updateQuery(tags.filter((a) => a !== $event))"
-      class="font-normal rounded-b-none border-0 border-b py-2.5">
+      class="font-normal rounded-b-none border-0 border-b py-2.5 bg-inherit">
       <TagsInputItem
         v-for="tag in tags"
         :key="tag"
@@ -79,11 +79,11 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
       <div class="px-4 py-6 text-center text-sm" v-if="!searchTerm">Type tags name in searchbar</div>
       <CommandList v-else>
         <CommandEmpty>Tags not found</CommandEmpty>
-        <CommandGroup>
+        <CommandGroup class="gap-1.5">
           <CommandItem
             :key="item.value"
             :value="item.value"
-            class="cursor-pointer"
+            class="cursor-pointer px-3 py-2"
             v-for="item in filtered"
             @select.prevent="handleFilter">
             <div class="flex items-center justify-between gap-2 w-full">

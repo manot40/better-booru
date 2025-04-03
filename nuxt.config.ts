@@ -1,12 +1,19 @@
+import tailwindcss from '@tailwindcss/vite';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
+  compatibilityDate: '2025-03-01',
+
+  css: ['~/assets/css/main.css'],
 
   future: {
     compatibilityVersion: 4,
   },
 
-  compatibilityDate: '2025-03-01',
+  vite: {
+    plugins: [tailwindcss()],
+  },
 
   runtimeConfig: {
     gelbooruUserId: '',
@@ -17,7 +24,6 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxt/image',
-    '@nuxtjs/tailwindcss',
     '@nuxtjs/color-mode',
     '@pinia/nuxt',
     '@vueuse/nuxt',
