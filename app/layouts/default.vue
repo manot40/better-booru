@@ -7,7 +7,7 @@ watch(scrollUp, (v) => !v && (openSearch.value = false));
 
 <template>
   <Card
-    class="nav-root fixed w-full z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg"
+    class="nav-root fixed w-full z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg p-0"
     :data-show="top < 300 || scrollUp">
     <div class="flex items-center justify-between gap-4 px-4 py-2">
       <NuxtLink :to="{ name: 'index' }" class="shrink-0 uppercase select-none">

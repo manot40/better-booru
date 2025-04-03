@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ListParams } from '~~/types/common';
 
-import { SlidersHorizontal } from 'lucide-vue-next';
+import { ChevronLeft, SlidersHorizontal } from 'lucide-vue-next';
 
 const props = defineProps<{ count?: number; paginator: UsePagination<ListParams> }>();
 
@@ -24,20 +24,20 @@ const page = computed({
   <Card class="!flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
     <Pagination :total="count" :siblingCount="2" v-model:page="page" :itemsPerPage="query.limit || 50">
       <template #default="{ page }">
-        <PaginationList v-slot="{ items }" class="flex items-center gap-1">
-          <PaginationPrev />
+        <PaginationContent v-slot="{ items }" class="flex items-center gap-1">
+          <PaginationPrevious><ChevronLeft class="w-5 h-5" /></PaginationPrevious>
 
           <template v-if="typeof count == 'number'" v-for="(item, index) in items">
-            <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
+            <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
               <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
                 {{ item.value }}
               </Button>
-            </PaginationListItem>
+            </PaginationItem>
             <PaginationEllipsis v-else :key="item.type" :index="index" />
           </template>
           <div class="font-medium mx-4" v-else>Page {{ query.page }}</div>
 
-          <PaginationNext />
+          <PaginationNext><ChevronLeft class="w-5 h-5 -scale-x-100" /></PaginationNext>
           <Popover>
             <PopoverTrigger>
               <Button variant="ghost"><SlidersHorizontal class="w-5 h-5" /></Button>
@@ -60,7 +60,7 @@ const page = computed({
               </div>
             </PopoverContent>
           </Popover>
-        </PaginationList>
+        </PaginationContent>
       </template>
     </Pagination>
   </Card>

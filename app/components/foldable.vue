@@ -41,7 +41,7 @@ function checkGrowing(next: number, prev: number) {
       <slot />
     </div>
     <Button
-      size="xs"
+      size="sm"
       variant="ghost"
       @click="folded = !folded"
       :class="['shrink-0', !folded ? 'mt-2' : 'mt-1']"

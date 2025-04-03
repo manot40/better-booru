@@ -15,6 +15,8 @@ defineProps<Props>();
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .grid > :deep(svg) {
   @apply mx-auto mb-6 w-16 h-16;
 }

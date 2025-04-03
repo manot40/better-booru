@@ -35,7 +35,7 @@ function changeTag(tags: string) {
     <PopoverContent avoidCollisions :align="isDesktop ? 'end' : 'center'" class="w-full max-w-sm">
       <div ref="content" class="w-full overflow-y-auto" style="max-height: calc(100dvh - 8rem)" v-if="post">
         <PostContextTagsList @tag="changeTag" :tags="toTagList(post.tags)" v-if="post.tags" />
-        <PostContextTagsDanbooru :postId="post.id" @changeTag="changeTag" />
+        <PostContextTagsDanbooru :postId="post.id" @changeTag="changeTag" v-else />
       </div>
     </PopoverContent>
   </Popover>
