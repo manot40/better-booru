@@ -2,20 +2,17 @@ FROM oven/bun:1-alpine AS base
 
 FROM base AS builder
 WORKDIR /usr/app
-
-ENV CI=true
-ENV NITRO_PRESET=bun
 COPY . .
 
-RUN bun install
-RUN bun -bun run build
+RUN bun install --frozen-lockfile
+RUN bun all build && bun run copyfiles
 
 # Runtime image
 FROM base AS runtime
 WORKDIR /usr/app
 
 ENV NODE_ENV=production
-COPY --from=builder /usr/app/.output ./
+COPY --from=builder /usr/app/dist ./
 
 EXPOSE 3000
-CMD ["bun", "run", "server/index.mjs"]
+CMD ["bun", "index.js"]

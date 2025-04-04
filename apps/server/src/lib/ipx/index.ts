@@ -16,48 +16,53 @@ const ipx = createIPX({
   httpStorage: ipxHttpStorage({ domains: ['img3.gelbooru.com', 'cdn.donmai.us'] }),
 });
 
-export const elysiaIPXHandler: Handler = async ({ set, params }) => {
-  const rawParam = params['*'];
-  const [modString = '', ...ids] = rawParam.split('/');
-  if (!modString) throw new Error('IPX Modifier Not Provided');
+export const elysiaIPXHandler: Handler = async ({ set, params, error }) => {
+  try {
+    const rawParam = params['*'];
+    const [modString = '', ...ids] = rawParam.split('/');
+    if (!modString) throw new Error('IPX Modifier Not Provided');
 
-  const hash = Bun.MD5.hash(rawParam, 'hex');
-  const cached = await getCache(hash);
-  if (cached) {
-    const { data, meta, rm } = cached;
-    // When expired, remove file (SWR style).
-    if (new Date(meta.expires).getTime() < Date.now()) rm();
+    const hash = Bun.MD5.hash(rawParam, 'hex');
+    const cached = await getCache(hash);
+    if (cached) {
+      const { data, meta, rm } = cached;
+      // When expired, remove file (SWR style).
+      if (new Date(meta.expires).getTime() < Date.now()) rm();
 
-    set.headers['x-cache-status'] = 'HIT';
-    Object.assign(set.headers, meta);
-    return data;
-  }
-
-  const id = safeString(decodeURI(ids.join('/')));
-  if (!id || id === '/') throw new Error(`Missing resource: ${id}`);
-
-  const modifiers = <Modifiers>{};
-  if (modString !== '_')
-    for (const p of modString.split(MODIFIER_SEP)) {
-      const [k, ...values] = p.split(MODIFIER_VAL_SEP);
-      const key = <keyof Modifiers>safeString(k);
-      modifiers[key] = values.map((v) => safeString(decodeURI(v))).join('_');
+      set.headers['x-cache-status'] = 'HIT';
+      Object.assign(set.headers, meta);
+      return data;
     }
 
-  const prepare = ipx(id, modifiers);
-  const { data, format } = await prepare.process();
-  const now = new Date();
+    const id = safeString(decodeURI(ids.join('/')));
+    if (!id || id === '/') throw new Error(`Missing resource: ${id}`);
 
-  set.headers['expires'] = new Date(now.getTime() + MAX_AGE * 1000).toUTCString();
-  set.headers['last-modified'] = now.toUTCString();
-  set.headers['cache-control'] = `max-age=${MAX_AGE}, public, s-maxage=${MAX_AGE}`;
-  set.headers['content-length'] = data.length;
-  set.headers['content-security-policy'] = "default-src 'none'";
-  if (format) set.headers['content-type'] = `image/${format}`;
+    const modifiers = <Modifiers>{};
+    if (modString !== '_')
+      for (const p of modString.split(MODIFIER_SEP)) {
+        const [k, ...values] = p.split(MODIFIER_VAL_SEP);
+        const key = <keyof Modifiers>safeString(k);
+        modifiers[key] = values.map((v) => safeString(decodeURI(v))).join('_');
+      }
 
-  setCache(hash, data, set.headers as HeaderMeta);
+    const prepare = ipx(id, modifiers);
+    const { data, format } = await prepare.process();
+    const now = new Date();
 
-  return data;
+    set.headers['expires'] = new Date(now.getTime() + MAX_AGE * 1000).toUTCString();
+    set.headers['last-modified'] = now.toUTCString();
+    set.headers['cache-control'] = `max-age=${MAX_AGE}, public, s-maxage=${MAX_AGE}`;
+    set.headers['content-length'] = data.length;
+    set.headers['content-security-policy'] = "default-src 'none'";
+    if (format) set.headers['content-type'] = `image/${format}`;
+
+    setCache(hash, data, set.headers as HeaderMeta);
+
+    return data;
+  } catch (e) {
+    console.error(e);
+    throw error(500, e);
+  }
 };
 
 function safeString(input: string) {

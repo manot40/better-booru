@@ -2,7 +2,11 @@ import type { AsyncDataRequestStatus } from '#app';
 
 import { withQuery } from 'ufo';
 
-export const API_URL = import.meta.dev ? '//localhost:3001' : '';
+export const API_URL = import.meta.dev
+  ? '//127.0.0.1:3001'
+  : typeof location != 'undefined'
+    ? location.origin
+    : '/';
 
 export const randomInt = (from: number, to: number) => Math.floor(Math.random() * (to - from + 1) + from);
 

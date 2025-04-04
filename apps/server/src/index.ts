@@ -14,6 +14,8 @@ import * as Autocomplete from './handlers/autocomplete';
 import { STATIC } from 'booru-shared';
 import { elysiaIPXHandler } from './lib/ipx';
 
+const DEFAULT_PORT = process.env.NODE_ENV === 'production' ? 3000 : 3001;
+
 const setup = new Elysia()
   .use(etag())
   .use(cors())
@@ -34,9 +36,9 @@ const api = new Elysia({ prefix: '/api' })
 
 const app = setup
   .use(api)
-  .use(staticPlugin({ indexHTML: true }))
+  .use(staticPlugin({ indexHTML: true, prefix: '/' }))
   .get('/image/*', elysiaIPXHandler)
-  .listen(3001);
+  .listen(Bun.env.PORT || DEFAULT_PORT);
 
 console.log(`🦊 Server Listening at ${app.server?.hostname}:${app.server?.port}`);
 

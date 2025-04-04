@@ -9,22 +9,22 @@
   "private": true,
   "scripts": {
     "dev": "bun run --watch src/index.ts",
+    "build": "bun build.ts",
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@bogeychan/elysia-etag": "0.1.0",
     "@elysiajs/cors": "1.2.0",
     "@elysiajs/static": "1.2.0",
     "@elysiajs/swagger": "1.2.2",
+    "@libsql/client": "^0.15.2",
+    "booru-shared": "workspace:*",
+    "drizzle-kit": "^0.30.6",
     "drizzle-orm": "0.41.0",
     "elysia": "latest",
     "ipx": "3.0.3",
     "ofetch": "1.4.1"
-  },
-  "devDependencies": {
-    "@libsql/client": "^0.15.2",
-    "booru-shared": "workspace:*",
-    "drizzle-kit": "^0.30.6"
   }
 }

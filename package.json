@@ -11,7 +11,8 @@
   ],
   "scripts": {
     "all": "bun --bun --filter '*'",
-    "all:node": "bun --filter '*'"
+    "all:node": "bun --filter '*'",
+    "copyfiles": "bun scripts/copyfiles.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.2.8",
