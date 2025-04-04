@@ -3,7 +3,9 @@ import type { UserConfig } from 'booru-shared/types';
 import { Elysia, type InferContext } from 'elysia';
 
 import { etag } from '@bogeychan/elysia-etag';
+import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
+import { staticPlugin } from '@elysiajs/static';
 
 import * as Post from './handlers/post';
 import * as PostTags from './handlers/post-tags';
@@ -14,6 +16,7 @@ import { elysiaIPXHandler } from './lib/ipx';
 
 const setup = new Elysia()
   .use(etag())
+  .use(cors())
   .use(swagger())
   .derive(({ cookie }) => {
     const { value } = cookie[STATIC.keys.userConfig] || {};
@@ -29,7 +32,11 @@ const api = new Elysia({ prefix: '/api' })
   .get('/post/:id/tags', <any>PostTags.handler, PostTags.schema)
   .get('/autocomplete', <any>Autocomplete.handler, Autocomplete.schema);
 
-const app = setup.use(api).get('/image/*', elysiaIPXHandler).listen(3001);
+const app = setup
+  .use(api)
+  .use(staticPlugin({ indexHTML: true }))
+  .get('/image/*', elysiaIPXHandler)
+  .listen(3001);
 
 console.log(`🦊 Server Listening at ${app.server?.hostname}:${app.server?.port}`);
 

@@ -19,13 +19,6 @@ export default defineNuxtConfig({
     preset: 'static',
   },
 
-  runtimeConfig: {
-    gelbooruUserId: '',
-    gelbooruApiKey: '',
-    danbooruUserId: '',
-    danbooruApiKey: '',
-  },
-
   modules: ['@nuxt/image', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
 
   image: {
@@ -46,19 +39,5 @@ export default defineNuxtConfig({
   colorMode: {
     storage: 'cookie',
     fallback: 'dark',
-  },
-
-  $production: {
-    routeRules: {
-      '/': { prerender: true },
-      '/api/**': {
-        cache: {
-          swr: false,
-          maxAge: 60 * 5,
-          varies: ['x-provider', 'x-rating'],
-        },
-      },
-      '/api/note/**': { swr: false, cache: false },
-    },
   },
 });

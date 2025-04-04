@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@bogeychan/elysia-etag": "0.1.0",
+    "@elysiajs/cors": "1.2.0",
+    "@elysiajs/static": "1.2.0",
     "@elysiajs/swagger": "1.2.2",
     "drizzle-orm": "0.41.0",
     "elysia": "latest",

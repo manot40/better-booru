@@ -18,13 +18,16 @@ const queryState = useState<{ tags?: string }>(STORE_KEY);
 const tags = computed(() => queryState.value?.tags?.split(' ') || []);
 
 const q = debouncedRef(searchTerm, 600);
-const query = computed(() => ({ q: q.value }));
-const { data: searchTags } = useLazyFetch('/api/autocomplete', {
-  query,
+const { data: searchTags } = useLazyAsyncData('autocomplete', fetchAutocomplete, {
   server: false,
-  watch: [() => userConfig.provider],
-  headers: { 'x-provider': userConfig.provider },
+  watch: [q, () => userConfig.provider],
 });
+async function fetchAutocomplete() {
+  const headers = { 'x-provider': userConfig.provider };
+  const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value }, headers });
+  if (data) return data;
+  throw error;
+}
 
 const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.includes(a.value)) || []);
 

@@ -43,8 +43,7 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     }
 
     loading.value = true;
-    const promise = $fetch<{ post: Post[]; meta: BooruMeta }>('/api/post', { query, headers });
-    const { data: res, error: err } = await unwrapPromise(promise);
+    const { data: res, error: err } = await eden.api.post.get({ query, headers });
     loading.value = false;
 
     if (!res || err) {
