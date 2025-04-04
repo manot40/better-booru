@@ -8,27 +8,25 @@ defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{ postId: number }>();
 
-const { data: tags, status } = useLazyAsyncData(
-  `post-tags-${props.postId}`,
-  async () => {
-    const { data, error } = await eden.api.post({ id: props.postId }).tags.get();
-    if (data) return data;
-    throw error;
-  },
-  {
-    transform: (d) =>
-      d.reduce(
-        (acc, next) => {
-          const c = next.category;
-          const category = c === 1 ? 'artist' : c === 3 ? 'copyright' : c === 4 ? 'character' : 'meta';
-          if (next.category === 0) acc.general.push({ key: next.name });
-          else acc.meta.push({ key: next.name, category });
-          return acc;
-        },
-        <GroupedTag>{ general: [], meta: [] }
-      ),
-  }
-);
+const { data: tags, status } = useLazyAsyncData(`post-tags-${props.postId}`, fetchTags, {
+  watch: [() => props.postId],
+  transform: (d) =>
+    d.reduce(
+      (acc, next) => {
+        const c = next.category;
+        const category = c === 1 ? 'artist' : c === 3 ? 'copyright' : c === 4 ? 'character' : 'meta';
+        if (next.category === 0) acc.general.push({ key: next.name });
+        else acc.meta.push({ key: next.name, category });
+        return acc;
+      },
+      <GroupedTag>{ general: [], meta: [] }
+    ),
+});
+async function fetchTags() {
+  const { data, error } = await eden('/api/post/:id/tags', { params: { id: props.postId } });
+  if (data) return data;
+  throw error;
+}
 </script>
 
 <template>

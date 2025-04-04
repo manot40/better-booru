@@ -30,7 +30,7 @@ const { lightbox, opened } = useLightbox(container, {
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
     const el = data.element;
-    const src = '/image?proxy=' + data.src;
+    const src = '/image/_/' + data.src;
     if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
     el.dataset.pswpSrc = src;
     el.dataset.proxied = 'true';

@@ -1,5 +1,5 @@
 import type { Backend } from 'booru-server';
 
-import { treaty } from '@elysiajs/eden';
+import { edenFetch } from '@elysiajs/eden';
 
-export const eden = treaty<Backend>(API_URL);
+export const eden = edenFetch<Backend>(API_URL);
