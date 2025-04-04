@@ -15,6 +15,7 @@
     "prettier:check": "prettier -c ."
   },
   "devDependencies": {
+    "@elysiajs/eden": "1.2.0",
     "@fontsource-variable/rubik": "^5.2.5",
     "@nuxt/image": "^1.10.0",
     "@nuxtjs/color-mode": "3.5.2",
@@ -25,11 +26,11 @@
     "@vueuse/core": "^13.0.0",
     "@vueuse/nuxt": "^13.0.0",
     "booru-shared": "workspace:*",
+    "booru-server": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^0.487.0",
     "nuxt": "^3.16.2",
-    "nuxt-ipx-cache": "^1.0.6",
     "photoswipe": "^5.4.4",
     "pinia": "^3.0.1",
     "reka-ui": "^2.2.0",

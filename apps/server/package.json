@@ -1,6 +1,7 @@
 {
   "name": "booru-server",
   "type": "module",
+  "main": "src/index.js",
   "module": "src/index.js",
   "author": "manot40 <kevinsandiho290100@gmail.com>",
   "license": "MIT",
@@ -11,11 +12,17 @@
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."
   },
+  "dependencies": {
+    "@bogeychan/elysia-etag": "0.1.0",
+    "@elysiajs/swagger": "1.2.2",
+    "drizzle-orm": "0.41.0",
+    "elysia": "latest",
+    "ipx": "3.0.3",
+    "ofetch": "1.4.1"
+  },
   "devDependencies": {
     "@libsql/client": "^0.15.2",
     "booru-shared": "workspace:*",
-    "drizzle-kit": "^0.30.6",
-    "drizzle-orm": "^0.41.0",
-    "elysia": "latest"
+    "drizzle-kit": "^0.30.6"
   }
 }

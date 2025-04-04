@@ -1,7 +1,7 @@
 import type { SQL } from 'drizzle-orm';
-import type { DBPostData, PostRelations } from '~~/server/db/schema';
+import type { DBPostData, PostRelations } from 'db/schema';
 
-import { db, schema as $s } from '~~/server/db';
+import { db, schema as $s } from 'db';
 
 import { and, desc, gt, lt, asc, getTableColumns, eq, inArray, notExists, ne, sql } from 'drizzle-orm';
 

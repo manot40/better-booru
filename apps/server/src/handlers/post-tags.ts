@@ -1,16 +1,13 @@
-import { db, schema as $s } from '~~/server/db';
+import type { Setup } from 'index';
 
 import { eq } from 'drizzle-orm';
+import { db, schema as $s } from 'db';
 
-export default defineEventHandler((evt) => {
-  if (!db) return [];
+import { type InferHandler, t } from 'elysia';
 
-  const id = getRouterParam(evt, 'id');
-  if (!id || Number.isNaN(+id))
-    return sendError(evt, createError({ statusCode: 400, statusMessage: 'Invalid Post ID' }));
-
+export const handler: Handler = async ({ params: { id }, error }) => {
   const post = db.query.postTable.findFirst({ where: (post, { eq }) => eq(post.id, +id) }).sync();
-  if (!post) return sendError(evt, createError({ statusCode: 404, statusMessage: 'Post Not Found' }));
+  if (!post) throw error(404, 'Post Not Found');
 
   const tags = queryPostTags(post.id);
   const artist = db.query.tagsTable
@@ -18,7 +15,21 @@ export default defineEventHandler((evt) => {
     .sync()!;
 
   return [artist, ...tags];
-});
+};
+
+const params = t.Object({ id: t.Number() });
+
+const response = t.Array(
+  t.Object({
+    id: t.Number(),
+    name: t.String(),
+    category: t.UnionEnum([0, 1, 2, 3, 4, 5]),
+  })
+);
+
+export const schema = { params, response };
+
+type Handler = InferHandler<Setup, '/api/post', { params: typeof schema.params.static }>;
 
 function queryPostTags(post_id: number) {
   const unions = db

@@ -15,7 +15,11 @@ function reduceSize(item: Post): [string, number, number] {
 
   const square = width * height;
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
-  return [src, Math.round(width / division), Math.round(height / division)];
+  const w = Math.round(width / division);
+  const h = Math.round(height / division);
+  const url = `${API_URL}/image/f_webp&w_${w}&h_${h}/${src}`;
+
+  return [url, w, h];
 }
 </script>
 
@@ -30,7 +34,7 @@ function reduceSize(item: Post): [string, number, number] {
     :data-pswp-height="item.height"
     class="ps__item block relative z-0">
     <UtilMapObj :data="item" :fn="reduceSize" v-slot="[src, width, height]">
-      <NuxtImg
+      <img
         :src
         :width
         :height

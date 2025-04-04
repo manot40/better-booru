@@ -1,8 +1,9 @@
-import type { H3Event } from 'h3';
+import type { Cookie } from 'elysia';
 import type { GelbooruData } from 'booru-shared/types';
 import type { DanbooruResponse } from 'booru-shared/types';
 import type { Post, UserConfig } from 'booru-shared/types';
 
+import { STATIC } from 'booru-shared';
 import { getDanbooruImage, isDanbooru } from './danbooru';
 
 export function processBooruData(data: BooruResponse): Post[] {
@@ -37,16 +38,14 @@ export function processBooruData(data: BooruResponse): Post[] {
       }));
   return data.map((raw) => {
     const { directory, change, owner, status, has_notes, comment_count, md5, ...rest } = raw;
-    rest.sample_url = imgAlias(rest.sample_url, 'gelbooru');
-    rest.preview_url = imgAlias(rest.preview_url, 'gelbooru');
     return { ...rest, hash: md5, pixiv_id: null, has_notes: false, created_at: null };
   });
 }
 
-export const getUserConfig = (evt: H3Event<any>) => {
-  const cookieStr = getCookie(evt, STATIC.keys.userConfig);
+export const getUserConfig = (cookie: Record<string, Cookie<string | undefined>>) => {
+  const cookieStr = cookie[STATIC.keys.userConfig];
   try {
-    if (cookieStr) return <UserConfig>JSON.parse(cookieStr);
+    if (cookieStr.value) return <UserConfig>JSON.parse(cookieStr.value);
   } catch {}
 };
 

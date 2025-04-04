@@ -1,4 +1,5 @@
 import type { Post } from 'booru-shared/types';
+import type { BooruResponse } from './common';
 import type { DanbooruResponse } from 'booru-shared/types';
 
 export const isDanbooru = (data: BooruResponse): data is DanbooruResponse[] =>

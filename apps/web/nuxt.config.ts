@@ -26,14 +26,7 @@ export default defineNuxtConfig({
     danbooruApiKey: '',
   },
 
-  modules: [
-    '@nuxt/image',
-    '@nuxtjs/color-mode',
-    '@pinia/nuxt',
-    '@vueuse/nuxt',
-    'nuxt-ipx-cache',
-    'shadcn-nuxt',
-  ],
+  modules: ['@nuxt/image', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
 
   image: {
     format: ['webp', 'jpg'],
@@ -44,8 +37,6 @@ export default defineNuxtConfig({
       gelbooru: 'https://img3.gelbooru.com',
     },
   },
-
-  ipxCache: { maxAge: 60 * 60 * 24 * 7 },
 
   shadcn: {
     prefix: '',

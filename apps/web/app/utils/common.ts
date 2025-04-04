@@ -2,6 +2,8 @@ import type { AsyncDataRequestStatus } from '#app';
 
 import { withQuery } from 'ufo';
 
+export const API_URL = import.meta.dev ? '//localhost:3001' : '';
+
 export const randomInt = (from: number, to: number) => Math.floor(Math.random() * (to - from + 1) + from);
 
 export const isPend = (status: AsyncDataRequestStatus) => status === 'pending';

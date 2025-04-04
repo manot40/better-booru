@@ -1,9 +1,9 @@
 import type { TagCategoryID } from 'booru-shared/types';
-import type { PostRelations } from '~~/server/db/schema';
+import type { PostRelations } from 'db/schema';
 import type { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
 import type { ExtractTablesWithRelations } from 'drizzle-orm';
 
-import { db, schema as $s } from '~~/server/db';
+import { db, schema as $s } from 'db';
 
 import { eq, sql, inArray } from 'drizzle-orm';
 

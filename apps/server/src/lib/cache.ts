@@ -1,6 +1,8 @@
 const DEFAULT_TTL = 60 * 60 * 24 * 1000;
 
-const cache = {
+type Primitive = string | number | symbol;
+
+export const createCache = () => ({
   data: new Map(),
   timers: new Map(),
   set(k: Primitive, v: any, ttl = DEFAULT_TTL) {
@@ -25,6 +27,6 @@ const cache = {
     for (const v of this.timers.values()) clearTimeout(v);
     this.timers.clear();
   },
-};
+});
 
-export default cache;
+export default createCache();

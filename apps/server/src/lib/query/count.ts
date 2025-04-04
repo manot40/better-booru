@@ -2,7 +2,7 @@ import type { TagCategoryID } from 'booru-shared/types';
 
 import cache from '../cache';
 
-import { db, schema as $s } from '~~/server/db';
+import { db, schema as $s } from 'db';
 import { and, eq, inArray, notInArray, sql, type SQL } from 'drizzle-orm';
 
 import { createFilterEq, deserializeTags, type Transaction } from './common';
