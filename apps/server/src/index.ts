@@ -15,8 +15,6 @@ import * as Autocomplete from './handlers/autocomplete';
 import { STATIC } from '@boorugator/shared';
 import { elysiaIPXHandler } from './lib/ipx';
 
-const DEFAULT_PORT = process.env.NODE_ENV === 'production' ? 3000 : 3001;
-
 const setup = new Elysia()
   .use(etag())
   .use(cors())
@@ -45,7 +43,10 @@ const api = new Elysia({ prefix: '/api' })
   .get('/post/:id/tags', <any>PostTags.handler, PostTags.schema)
   .get('/autocomplete', <any>Autocomplete.handler, Autocomplete.schema);
 
-const app = setup.use(api).get('/image/*', elysiaIPXHandler).listen(DEFAULT_PORT);
+const app = setup
+  .use(api)
+  .get('/image/*', elysiaIPXHandler)
+  .listen(process.env.PORT || 3000);
 
 export type Setup = typeof setup;
 export type Backend = typeof app;
