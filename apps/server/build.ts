@@ -5,6 +5,7 @@ async function main() {
   const result = await Bun.build({
     target: 'bun',
     outdir: './dist',
+    external: ['@img/sharp-*'],
     splitting: true,
     sourcemap: 'linked',
     entrypoints: ['src/index.ts'],

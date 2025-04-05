@@ -60,7 +60,7 @@ export const elysiaIPXHandler: Handler = async ({ set, params, error }) => {
 
     return data;
   } catch (e) {
-    console.error(e);
+    console.error(Bun.inspect(e, { colors: true }));
     throw error(500, e);
   }
 };
