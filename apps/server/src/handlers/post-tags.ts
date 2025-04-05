@@ -20,11 +20,7 @@ export const handler: Handler = async ({ params: { id }, error }) => {
 const params = t.Object({ id: t.Number() });
 
 const response = t.Array(
-  t.Object({
-    id: t.Number(),
-    name: t.String(),
-    category: t.UnionEnum([0, 1, 2, 3, 4, 5]),
-  })
+  t.Object({ id: t.Number(), name: t.String(), category: t.UnionEnum([0, 1, 2, 3, 4, 5]) })
 );
 
 export const schema = { params, response };

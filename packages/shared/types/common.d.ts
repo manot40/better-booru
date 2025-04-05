@@ -67,9 +67,11 @@ export declare interface Post {
   file_url: string;
   file_ext: FileExt;
   sample_url?: Nullable<string>;
+  sample_ext?: Nullable<FileExt>;
   sample_width?: Nullable<number>;
   sample_height?: Nullable<number>;
   preview_url?: Nullable<string>;
+  preview_ext?: Nullable<FileExt>;
   preview_width?: Nullable<number>;
   preview_height?: Nullable<number>;
 }

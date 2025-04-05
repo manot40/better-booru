@@ -50,15 +50,15 @@ export const handler: Handler = async ({ query, headers, userConfig }) => {
 const post = t.Object({
   id: t.Number(),
   hash: t.String(),
-  tags: t.Optional(t.MaybeEmpty(t.String())),
-  score: t.MaybeEmpty(t.Number()),
+  tags: t.Optional(t.String()),
+  score: t.Number(),
   rating: t.UnionEnum(['g', 's', 'q', 'e']),
-  artist: t.MaybeEmpty(t.String()),
+  artist: t.String(),
   source: t.MaybeEmpty(t.String()),
   pixiv_id: t.MaybeEmpty(t.Number()),
   parent_id: t.MaybeEmpty(t.Number()),
   has_notes: t.Boolean(),
-  created_at: t.MaybeEmpty(t.Union([t.String(), t.Date()])),
+  created_at: t.String(),
   width: t.Number(),
   height: t.Number(),
   file_url: t.String(),
@@ -86,6 +86,6 @@ const response = t.Object({
   }),
 });
 
-export const schema = { query, response };
+export const schema = { query, response: undefined as unknown as typeof response };
 
 type Handler = InferHandler<Setup, '/api/post', { query: typeof schema.query.static }>;

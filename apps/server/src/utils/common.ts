@@ -24,7 +24,6 @@ export function processBooruData(data: BooruResponse): Post[] {
         tags: raw.tag_string,
         source: raw.source,
         status: raw.is_deleted ? 'deleted' : 'active',
-        file_ext: raw.file_ext,
         has_notes: raw.has_notes || false,
         comment_count: 0,
         tags_grouping: {
@@ -48,5 +47,7 @@ export const getUserConfig = (cookie: Record<string, Cookie<string | undefined>>
     if (cookieStr.value) return <UserConfig>JSON.parse(cookieStr.value);
   } catch {}
 };
+
+export const random = (a: number, b: number) => Math.floor(Math.random() * (b - a) + a);
 
 export type BooruResponse = DanbooruResponse[] | GelbooruData[];
