@@ -2,14 +2,9 @@ name: 'Build Routine'
 
 on:
   push:
-    paths:
-      - app/**
-      - server/**
-      - shared/**
-      - public/**
-      - modules/**
-      - Dockerfile
-      - package.json
+    paths-ignore:
+      - '**/README.md'
+      - '**/tsconfig.json'
 
 jobs:
   deploy-production:
