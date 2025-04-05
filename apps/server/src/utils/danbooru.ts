@@ -1,6 +1,6 @@
-import type { Post } from 'booru-shared/types';
+import type { Post } from '@boorugator/shared/types';
 import type { BooruResponse } from './common';
-import type { DanbooruResponse } from 'booru-shared/types';
+import type { DanbooruResponse } from '@boorugator/shared/types';
 
 export const isDanbooru = (data: BooruResponse): data is DanbooruResponse[] =>
   'media_asset' in (data[0] || {});

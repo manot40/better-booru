@@ -1,12 +1,12 @@
 import type { Setup } from 'index';
-import type { DanbooruResponse, GelbooruResponse, Provider } from 'booru-shared/types';
+import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
 import { type InferHandler, t } from 'elysia';
 
 import { db } from 'db';
 import { queryPosts } from 'lib/query/list';
 
-import { processRating } from 'booru-shared';
+import { processRating } from '@boorugator/shared';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 import { processBooruData } from 'utils/common';
 

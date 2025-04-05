@@ -1,5 +1,5 @@
 {
-  "name": "booru-server",
+  "name": "@boorugator/server",
   "type": "module",
   "main": "src/index.js",
   "module": "src/index.js",
@@ -13,18 +13,18 @@
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."
   },
-  "dependencies": {},
   "devDependencies": {
-    "@bogeychan/elysia-etag": "0.1.0",
-    "@elysiajs/cors": "1.2.0",
-    "@elysiajs/static": "1.2.0",
-    "@elysiajs/swagger": "1.2.2",
+    "@boorugator/shared": "workspace:*",
+    "@bogeychan/elysia-etag": "^0.1.0",
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/static": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.2",
     "@libsql/client": "^0.15.2",
-    "booru-shared": "workspace:*",
     "drizzle-kit": "^0.30.6",
-    "drizzle-orm": "0.41.0",
+    "drizzle-orm": "^0.41.0",
     "elysia": "latest",
     "ipx": "3.0.3",
+    "logixlysia": "^4.1.2",
     "ofetch": "1.4.1"
   }
 }

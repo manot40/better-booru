@@ -1,1 +1,1 @@
-export * from 'booru-shared';
+export * from '@boorugator/shared';

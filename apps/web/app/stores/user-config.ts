@@ -1,4 +1,4 @@
-import type { UserConfig } from 'booru-shared/types';
+import type { UserConfig } from '@boorugator/shared/types';
 
 const maxAge = 365 * 24 * 60 * 60;
 

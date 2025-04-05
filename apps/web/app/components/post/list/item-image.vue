@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Post } from 'booru-shared/types';
+import type { Post } from '@boorugator/shared/types';
 
 const props = defineProps<{ item: Post }>();
 

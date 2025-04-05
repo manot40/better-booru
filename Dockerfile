@@ -11,7 +11,6 @@ RUN bun all build && bun run copyfiles
 FROM base AS runtime
 WORKDIR /usr/app
 
-ENV NODE_ENV=production
 COPY --from=builder /usr/app/dist ./
 
 EXPOSE 3000

@@ -1,4 +1,4 @@
-import type { TagCategoryID } from 'booru-shared/types';
+import type { TagCategoryID } from '@boorugator/shared/types';
 
 import cache from '../cache';
 

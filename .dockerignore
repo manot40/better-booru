@@ -1,8 +1,8 @@
 .git
 
+**/dist
 **/.env*
 **/.nuxt
-**/.dist
 **/.data
 **/.cache
 **/.output

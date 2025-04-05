@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ListParams } from 'booru-shared/types';
+import type { ListParams } from '@boorugator/shared/types';
 
 import { ChevronLeft, SlidersHorizontal } from 'lucide-vue-next';
 

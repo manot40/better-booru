@@ -1,5 +1,5 @@
 import type { FetchError } from 'ofetch';
-import type { ListParams, Post, BooruMeta } from 'booru-shared/types';
+import type { ListParams, Post, BooruMeta } from '@boorugator/shared/types';
 
 import { isEqual } from 'ohash';
 

@@ -1,9 +1,9 @@
 import type { Cookie } from 'elysia';
-import type { GelbooruData } from 'booru-shared/types';
-import type { DanbooruResponse } from 'booru-shared/types';
-import type { Post, UserConfig } from 'booru-shared/types';
+import type { GelbooruData } from '@boorugator/shared/types';
+import type { DanbooruResponse } from '@boorugator/shared/types';
+import type { Post, UserConfig } from '@boorugator/shared/types';
 
-import { STATIC } from 'booru-shared';
+import { STATIC } from '@boorugator/shared';
 import { getDanbooruImage, isDanbooru } from './danbooru';
 
 export function processBooruData(data: BooruResponse): Post[] {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ListParams, Post, TagCategory } from 'booru-shared/types';
+import type { ListParams, Post, TagCategory } from '@boorugator/shared/types';
 
 import { TagsIcon } from 'lucide-vue-next';
 

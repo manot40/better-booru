@@ -1,4 +1,4 @@
-import type { Backend } from 'booru-server';
+import type { Backend } from '@boorugator/server';
 
 import { edenFetch } from '@elysiajs/eden';
 
