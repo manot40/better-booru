@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "build": "bun build.ts",
+    "studio": "drizzle-kit studio",
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."
   },
