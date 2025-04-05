@@ -1,0 +1,8 @@
+*.md
+.nuxt
+.data
+.cache
+deployment
+node_modules
+app/assets/img
+app/assets/icons

@@ -1,0 +1,9 @@
+.git
+
+**/dist
+**/.env*
+**/.nuxt
+**/.data
+**/.cache
+**/.output
+**/node_modules/

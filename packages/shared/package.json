@@ -1,0 +1,16 @@
+{
+  "name": "@boorugator/shared",
+  "main": "index.ts",
+  "type": "module",
+  "author": "manot40 <kevinsandiho290100@gmail.com>",
+  "license": "MIT",
+  "version": "1.2.5",
+  "private": true,
+  "files": [
+    "types/index.d.ts"
+  ],
+  "scripts": {
+    "prettier:write": "prettier -w .",
+    "prettier:check": "prettier -c ."
+  }
+}

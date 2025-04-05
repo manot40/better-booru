@@ -1,0 +1,5 @@
+.data
+.cache
+
+public/
+!public/.gitkeep

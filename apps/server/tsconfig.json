@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "types": ["@types/bun"],
+    "strict": true,
+    "target": "ESNext",
+    "module": "ES2022",
+    "baseUrl": "./src",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
