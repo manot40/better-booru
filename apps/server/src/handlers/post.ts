@@ -4,36 +4,46 @@ import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/s
 import { type InferHandler, t } from 'elysia';
 
 import { db } from 'db';
-import { queryPosts } from 'lib/query/list';
+import { queryPosts } from 'lib/query/post';
 
 import { processRating } from '@boorugator/shared';
-import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
+import { waitForWorker } from 'utils/wait-for-worker';
 import { processBooruData } from 'utils/common';
+import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
 export const handler: Handler = async ({ query, headers, userConfig }) => {
   const { tags, page: pid, limit = '50' } = query;
 
+  const baseRating = headers['x-rating'] || userConfig?.rating?.join(' ');
   const baseQuery = { s: 'post', q: 'index', pid, json: '1', page: 'dapi', limit };
   const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
-  const rating = headers['x-rating'] || userConfig?.rating?.join(' ');
 
   if (provider === 'gelbooru') {
-    const query = { ...baseQuery, tags: processRating(provider, rating, tags) };
+    const query = { ...baseQuery, tags: processRating(provider, baseRating, tags) };
     const data = await $gelbooruFetch<GelbooruResponse>('/index.php', { query });
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
-    if (db.enabled) {
-      const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
-      const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
-      return queryPosts({ page: <any>pid, tags: tags?.split(' '), limit: +limit, rating });
-    } else {
-      const query = { ...baseQuery, page: pid, tags: processRating(provider, rating, tags) };
+    if (!db.enabled) {
+      const query = { ...baseQuery, page: pid, tags: processRating(provider, baseRating, tags) };
       const [data, { counts }] = await Promise.all([
         $danbooruFetch<DanbooruResponse[]>('/posts.json', { query }),
         $danbooruFetch<{ counts: { posts: number } }>('/counts/posts.json', { query: { tags: query.tags } }),
       ]);
       return { post: processBooruData(data), meta: { limit: +limit, count: counts.posts, offset: 0 } };
     }
+
+    const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
+    const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
+    const opts = { page: <any>pid, tags: tags?.split(' '), limit: +limit, rating };
+
+    const isExpensive = !!opts.tags && (opts.tags.length > 3 || opts.tags.some((t) => t.startsWith('-')));
+    if (!isExpensive) return queryPosts(opts);
+
+    const subfolder = import.meta.dir.includes('src') ? '/src' : '';
+    return await waitForWorker(Bun.pathToFileURL(`${process.cwd()}${subfolder}/worker`), {
+      type: 'QueryPosts',
+      payload: opts,
+    });
   }
 };
 
