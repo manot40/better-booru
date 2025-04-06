@@ -15,6 +15,7 @@
     "prettier:check": "prettier -c ."
   },
   "devDependencies": {
+    "@boorugator/logixlysia": "workspace:*",
     "@boorugator/shared": "workspace:*",
     "@bogeychan/elysia-etag": "^0.1.0",
     "@elysiajs/cors": "^1.2.0",

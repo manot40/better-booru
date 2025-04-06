@@ -11,11 +11,11 @@ import { waitForWorker } from 'utils/wait-for-worker';
 import { processBooruData } from 'utils/common';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
-export const handler: Handler = async ({ query, headers, userConfig }) => {
-  const { tags, page: pid, limit = '50' } = query;
+export const handler: Handler = async ({ query, headers, store, userConfig }) => {
+  const { tags, page, limit = '50' } = query;
 
   const baseRating = headers['x-rating'] || userConfig?.rating?.join(' ');
-  const baseQuery = { s: 'post', q: 'index', pid, json: '1', page: 'dapi', limit };
+  const baseQuery = { s: 'post', q: 'index', pid: page, json: '1', page: 'dapi', limit };
   const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
 
   if (provider === 'gelbooru') {
@@ -24,7 +24,7 @@ export const handler: Handler = async ({ query, headers, userConfig }) => {
     return { meta: data['@attributes'], post: processBooruData(data.post || []) };
   } else {
     if (!db.enabled) {
-      const query = { ...baseQuery, page: pid, tags: processRating(provider, baseRating, tags) };
+      const query = { ...baseQuery, page, tags: processRating(provider, baseRating, tags) };
       const [data, { counts }] = await Promise.all([
         $danbooruFetch<DanbooruResponse[]>('/posts.json', { query }),
         $danbooruFetch<{ counts: { posts: number } }>('/counts/posts.json', { query: { tags: query.tags } }),
@@ -34,11 +34,12 @@ export const handler: Handler = async ({ query, headers, userConfig }) => {
 
     const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
-    const opts = { page: <any>pid, tags: tags?.split(' '), limit: +limit, rating };
+    const opts = { page: (page || 1).toString(), tags: tags?.split(' '), limit: +limit, rating };
 
     const isExpensive = !!opts.tags && (opts.tags.length > 3 || opts.tags.some((t) => t.startsWith('-')));
     if (!isExpensive) return queryPosts(opts);
 
+    store.cacheTTL = 60 * 30;
     const subfolder = import.meta.dir.includes('src') ? '/src' : '';
     return await waitForWorker(Bun.pathToFileURL(`${process.cwd()}${subfolder}/worker`), {
       type: 'QueryPosts',
@@ -72,7 +73,7 @@ const post = t.Object({
 });
 
 const query = t.Object({
-  page: t.Union([t.String(), t.Number()]),
+  page: t.Optional(t.Union([t.String(), t.Number()])),
   tags: t.Optional(t.String()),
   limit: t.Optional(t.Number()),
 });

@@ -14,6 +14,7 @@
       "version": "1.2.5",
       "devDependencies": {
         "@bogeychan/elysia-etag": "^0.1.0",
+        "@boorugator/logixlysia": "workspace:*",
         "@boorugator/shared": "workspace:*",
         "@elysiajs/cors": "^1.2.0",
         "@elysiajs/cron": "^1.2.0",
@@ -57,6 +58,16 @@
         "vue": "latest",
         "vue-router": "latest",
         "vue-tsc": "^2.2.8",
+      },
+    },
+    "packages/logixlysia": {
+      "name": "@boorugator/logixlysia",
+      "version": "4.1.2",
+      "devDependencies": {
+        "chalk": "^5.4.1",
+      },
+      "peerDependencies": {
+        "elysia": "^1.2.25",
       },
     },
     "packages/shared": {
@@ -118,6 +129,8 @@
     "@babel/types": ["@babel/types@7.27.0", "", { "dependencies": { "@babel/helper-string-parser": "^7.25.9", "@babel/helper-validator-identifier": "^7.25.9" } }, "sha512-H45s8fVLYjbhFH62dIJ3WtmJ6RSPt/3DRO0ZcT2SUiYiQyz3BLVb9ADEnLl91m74aQPS3AzzeajZHYOalWe3bg=="],
 
     "@bogeychan/elysia-etag": ["@bogeychan/elysia-etag@0.1.0", "", { "peerDependencies": { "elysia": ">= 1.2.10" } }, "sha512-wKRt7I1AYew+Xem5dSSIIuRwr/MRpWa5qWC9CQIq5NKYVI0TvZciWQArKG/MMJ0ibfyFouKETTernU8vY+bYEQ=="],
+
+    "@boorugator/logixlysia": ["@boorugator/logixlysia@workspace:packages/logixlysia"],
 
     "@boorugator/server": ["@boorugator/server@workspace:apps/server"],
 
@@ -666,6 +679,8 @@
     "caniuse-api": ["caniuse-api@3.0.0", "", { "dependencies": { "browserslist": "^4.0.0", "caniuse-lite": "^1.0.0", "lodash.memoize": "^4.1.2", "lodash.uniq": "^4.5.0" } }, "sha512-bsTwuIg/BZZK/vreVTYYbSWoe2F+71P7K5QGEX+pT250DZbfU1MQ5prOKpPR+LL6uWKK3KMwMCAS74QB3Um1uw=="],
 
     "caniuse-lite": ["caniuse-lite@1.0.30001709", "", {}, "sha512-NgL3vUTnDrPCZ3zTahp4fsugQ4dc7EKTSzwQDPEel6DMoMnfH2jhry9n2Zm8onbSR+f/QtKHFOA+iAQu4kbtWA=="],
+
+    "chalk": ["chalk@5.4.1", "", {}, "sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsULR3HQYkm3w8FIA3SberyMJMSldGsW+U3w=="],
 
     "chokidar": ["chokidar@4.0.3", "", { "dependencies": { "readdirp": "^4.0.1" } }, "sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA=="],
 

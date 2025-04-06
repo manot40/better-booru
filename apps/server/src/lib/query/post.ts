@@ -182,7 +182,7 @@ if (db.enabled) {
 
 export interface QueryOptions {
   /** `a` for after and `b` for before specific id */
-  page: `${number}` | `a${number}` | `b${number}`;
+  page: StringHint<`${number}` | `a${number}` | `b${number}`>;
   tags?: Array<`-${string}` | (string & {})>;
   /** default 50 */
   limit?: number;
