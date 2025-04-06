@@ -5,7 +5,7 @@ import { etag } from '@bogeychan/elysia-etag';
 import { staticPlugin } from '@elysiajs/static';
 
 import { elysiaIPXHandler } from 'lib/ipx';
-import { caching, logger, scrap, userConfig } from 'plugins';
+import { caching, scrap, userConfig } from 'plugins';
 
 import * as Post from './handlers/post';
 import * as PostTags from './handlers/post-tags';
@@ -13,12 +13,11 @@ import * as Autocomplete from './handlers/autocomplete';
 
 const setup = new Elysia()
   .use(scrap)
-  .use(logger)
   .use(etag())
   .use(cors())
-  .use(caching)
   .use(userConfig)
-  .use(staticPlugin({ indexHTML: true, prefix: '/' }));
+  .use(staticPlugin({ indexHTML: true, prefix: '/' }))
+  .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }));
 
 const app = new Elysia({ prefix: '/api' })
   .get('/post', <any>Post.handler, Post.schema)
@@ -29,6 +28,8 @@ setup
   .use(app)
   .get('/image/*', elysiaIPXHandler)
   .listen(process.env.PORT || 3000);
+
+console.info(`Server started on port ${process.env.PORT || 3000}`);
 
 export type Setup = typeof setup;
 export type Backend = typeof app;

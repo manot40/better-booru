@@ -25,7 +25,6 @@
     "drizzle-orm": "^0.41.0",
     "elysia": "latest",
     "ipx": "3.0.3",
-    "logixlysia": "^4.1.2",
     "ofetch": "1.4.1"
   }
 }
