@@ -25,6 +25,7 @@ async function scrap(state: State): Promise<void> {
   }
 
   const danbooruData = data
+    .filter((d) => !!d.md5 && d.score > -1)
     .reverse()
     .map(
       (data) =>
@@ -61,8 +62,7 @@ async function scrap(state: State): Promise<void> {
             [] as (typeof $s.tagsTable.$inferInsert)[]
           ),
         }) satisfies Payload
-    )
-    .filter((d) => !!d.hash);
+    );
   if (danbooruData.length === 0) return;
 
   try {

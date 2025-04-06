@@ -10,7 +10,6 @@ import { processRating } from '@boorugator/shared';
 import { processBooruData } from 'utils/common';
 import { waitForWorker, WORKER_PATH } from 'utils/worker';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
-import { isExpensiveTags } from 'utils/expensivenes';
 
 export const handler: Handler = async ({ query, headers, store, userConfig, expensiveTags }) => {
   const { tags, page, limit = '50' } = query;
@@ -37,12 +36,21 @@ export const handler: Handler = async ({ query, headers, store, userConfig, expe
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
     const opts = { page: (page || 1).toString(), tags: tags?.split(' '), limit: +limit, rating };
 
-    if (!isExpensiveTags(expensiveTags, opts.tags)) return queryPosts(opts);
+    if (!isExpensive(expensiveTags, opts.tags)) return queryPosts(opts);
 
     store.cacheTTL = 60 * 30;
     return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
   }
 };
+
+export function isExpensive(expensive: string[], tags?: string[]) {
+  if (!tags?.length) return false;
+  if (tags.length > 3) return true;
+  if (tags.some((t) => t.startsWith('-'))) return true;
+
+  const eqTags = tags.filter((t) => !t.startsWith('-'));
+  return eqTags.some((t) => expensive.includes(t));
+}
 
 const post = t.Object({
   id: t.Number(),
