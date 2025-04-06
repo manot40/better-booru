@@ -7,11 +7,12 @@ import { db } from 'db';
 import { queryPosts } from 'lib/query/post';
 
 import { processRating } from '@boorugator/shared';
-import { waitForWorker } from 'utils/wait-for-worker';
 import { processBooruData } from 'utils/common';
+import { waitForWorker, WORKER_PATH } from 'utils/worker';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
+import { isExpensiveTags } from 'utils/expensivenes';
 
-export const handler: Handler = async ({ query, headers, store, userConfig }) => {
+export const handler: Handler = async ({ query, headers, store, userConfig, expensiveTags }) => {
   const { tags, page, limit = '50' } = query;
 
   const baseRating = headers['x-rating'] || userConfig?.rating?.join(' ');
@@ -36,15 +37,10 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
     const opts = { page: (page || 1).toString(), tags: tags?.split(' '), limit: +limit, rating };
 
-    const isExpensive = !!opts.tags && (opts.tags.length > 3 || opts.tags.some((t) => t.startsWith('-')));
-    if (!isExpensive) return queryPosts(opts);
+    if (!isExpensiveTags(expensiveTags, opts.tags)) return queryPosts(opts);
 
     store.cacheTTL = 60 * 30;
-    const subfolder = import.meta.dir.includes('src') ? '/src' : '';
-    return await waitForWorker(Bun.pathToFileURL(`${process.cwd()}${subfolder}/worker`), {
-      type: 'QueryPosts',
-      payload: opts,
-    });
+    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
   }
 };
 

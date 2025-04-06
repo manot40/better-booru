@@ -31,13 +31,14 @@ export const caching = (options?: Options) => {
       }
     })
     .onAfterHandle(({ headers, request, response, set, store }) => {
+      const ttl = store.cacheTTL;
       const url = new URL(request.url);
       if (pathRegex && !pathRegex.some((r) => r.test(url.pathname))) return;
       if (set.headers['expires'] || +(set.status || 400) >= 300 || response instanceof Response) return;
 
       const key = generateKey(url, headers, varies);
-      cache.set(key, { data: response, expires: Date.now() + store.cacheTTL * 1000 });
-      set.headers['cache-control'] = `public, max-age=${TTL}, s-maxage=${TTL}`;
+      cache.set(key, { data: response, expires: Date.now() + ttl * 1000 });
+      set.headers['cache-control'] = `public, max-age=${ttl}, s-maxage=${ttl}`;
     })
     .as('plugin');
 };

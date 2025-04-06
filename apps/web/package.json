@@ -6,10 +6,9 @@
   "version": "1.2.5",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
+    "build": "nuxt build",
+    "typecheck": "nuxt typecheck",
     "postinstall": "nuxt prepare",
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."

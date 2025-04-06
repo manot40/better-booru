@@ -18,16 +18,18 @@ const page = computed({
     else update({ page: state == 'prev' ? qValue - 1 : qValue + 1 });
   },
 });
+
+const total = computed(() => props.count || Number.MAX_SAFE_INTEGER);
 </script>
 
 <template>
   <Card class="!flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
-    <Pagination :total="count" :siblingCount="2" v-model:page="page" :itemsPerPage="query.limit || 50">
+    <Pagination :total :siblingCount="2" :itemsPerPage="query.limit || 50" v-model:page="page">
       <template #default="{ page }">
         <PaginationContent v-slot="{ items }" class="flex items-center gap-1">
           <PaginationPrevious><ChevronLeft class="w-5 h-5" /></PaginationPrevious>
 
-          <template v-if="typeof count == 'number'" v-for="(item, index) in items">
+          <template v-if="count && typeof count == 'number'" v-for="(item, index) in items">
             <PaginationItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
               <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
                 {{ item.value }}

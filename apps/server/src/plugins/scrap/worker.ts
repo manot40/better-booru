@@ -19,7 +19,7 @@ async function scrap(state: State): Promise<void> {
   if (!res.ok) return;
 
   const data = (await res.json()) as DanbooruResponse[];
-  if (!data || !Array.isArray(data) || data.length === 0) {
+  if (!data || !Array.isArray(data) || data.length < 200) {
     state.isEnd = true;
     return;
   }

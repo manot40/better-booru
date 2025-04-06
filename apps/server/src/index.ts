@@ -5,11 +5,12 @@ import { etag } from '@bogeychan/elysia-etag';
 import { staticPlugin } from '@elysiajs/static';
 
 import { elysiaIPXHandler } from 'lib/ipx';
-import { caching, logger, scrap, userConfig } from 'plugins';
+import { caching, expensiveTags, logger, scrap, userConfig } from 'plugins';
 
 import * as Post from './handlers/post';
 import * as PostTags from './handlers/post-tags';
 import * as Autocomplete from './handlers/autocomplete';
+
 import handleError from 'handlers/error';
 
 const setup = new Elysia()
@@ -19,7 +20,8 @@ const setup = new Elysia()
   .use(logger)
   .use(userConfig)
   .use(staticPlugin({ indexHTML: true, prefix: '/' }))
-  .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }));
+  .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }))
+  .decorate('expensiveTags', expensiveTags());
 
 const api = new Elysia({ prefix: '/api' })
   .get('/post', <any>Post.handler, Post.schema)
