@@ -1,5 +1,5 @@
 import type { Backend } from '@boorugator/server';
 
-import { edenFetch } from '@elysiajs/eden';
+import { treaty } from '@elysiajs/eden/treaty2';
 
-export const eden = edenFetch<Backend>(API_URL);
+export const eden = treaty<Backend>(BASE_URL);

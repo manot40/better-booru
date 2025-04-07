@@ -15,8 +15,8 @@ export async function run() {
 }
 
 async function scrap(state: State): Promise<void> {
-  const res = await fetch(getDanbooruURL(state.last));
-  if (!res.ok) return;
+  const res = await fetch(getDanbooruURL(state.last)).catch(() => null);
+  if (!res?.ok) return;
 
   const data = (await res.json()) as DanbooruResponse[];
   if (!data || !Array.isArray(data) || data.length < 200) {

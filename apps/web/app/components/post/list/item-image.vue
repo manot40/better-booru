@@ -17,7 +17,7 @@ function reduceSize(item: Post): [string, number, number] {
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
   const w = Math.round(width / division);
   const h = Math.round(height / division);
-  const url = `${API_URL}/image/f_webp&w_${w}&h_${h}/${src}`;
+  const url = `${BASE_URL}/image/f_webp&w_${w}&h_${h}/${src}`;
 
   return [url, w, h];
 }

@@ -24,7 +24,7 @@ const { data: searchTags } = useLazyAsyncData('autocomplete', fetchAutocomplete,
 });
 async function fetchAutocomplete() {
   const headers = { 'x-provider': userConfig.provider };
-  const { data, error } = await eden('/api/autocomplete', { query: { q: q.value }, headers });
+  const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value }, headers });
   if (data) return data;
   throw error;
 }

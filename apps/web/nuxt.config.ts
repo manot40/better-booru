@@ -19,6 +19,10 @@ export default defineNuxtConfig({
     preset: 'static',
   },
 
+  runtimeConfig: {
+    public: { baseUrl: '' },
+  },
+
   modules: ['@nuxt/image', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
 
   image: {

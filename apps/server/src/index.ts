@@ -24,8 +24,8 @@ const setup = new Elysia()
   .decorate('expensiveTags', expensiveTags());
 
 const api = new Elysia({ prefix: '/api' })
-  .get('/post', <any>Post.handler, Post.schema)
-  .get('/post/:id/tags', <any>PostTags.handler, PostTags.schema)
+  .get('/posts', <any>Post.handler, Post.schema)
+  .get('/posts/:id/tags', <any>PostTags.handler, PostTags.schema)
   .get('/autocomplete', <any>Autocomplete.handler, Autocomplete.schema);
 
 const app = new Elysia().use(api).get('/image/*', elysiaIPXHandler).onError({ as: 'scoped' }, handleError);

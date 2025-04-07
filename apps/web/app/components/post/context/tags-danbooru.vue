@@ -23,7 +23,7 @@ const { data: tags, status } = useLazyAsyncData(`post-tags-${props.postId}`, fet
     ),
 });
 async function fetchTags() {
-  const { data, error } = await eden('/api/post/:id/tags', { params: { id: props.postId } });
+  const { data, error } = await eden.api.posts({ id: props.postId }).tags.get();
   if (data) return data;
   throw error;
 }
