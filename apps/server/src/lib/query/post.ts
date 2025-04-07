@@ -88,7 +88,7 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
     Object.entries(deserializeTags(tags)).forEach(([key, s]) => {
       if (!s) return;
       const filterFn = createRelationFilterFn(tx);
-      const filterOp = Object.entries(s).map(([c, ids]) => {
+      const filterOp = Object.entries(s).flatMap(([c, ids]) => {
         const cat = +c as TagCategoryID;
         if (ids && cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
         else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
@@ -96,7 +96,7 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
       });
       if (filterOp.length > 0) {
         // @ts-ignore
-        const set = filterOp.flat().reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
+        const set = filterOp.reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
         if (set) params.push((key == 'ne' ? notInArray : inArray)($s.postTable.id, set));
       }
     });
@@ -135,7 +135,7 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
     const expensivenes = expensiveTags ? { complex, tags: expensiveTags } : undefined;
 
     const filterFn = createRelationFilterFn(db, range, expensivenes);
-    const filterOp = Object.entries(tagsFilter.eq).map(([c, ids]) => {
+    const filterOp = Object.entries(tagsFilter.eq).flatMap(([c, ids]) => {
       const cat = +c as TagCategoryID;
       if (cat == 1 && ids) params.push(eq($s.postTable.artist_id, <number>ids[0]));
       else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
@@ -143,13 +143,13 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
     });
     if (filterOp.length) {
       // @ts-ignore
-      const intersects = filterOp.flat().reduce((op, next) => op!.intersect(next));
+      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
       if (intersects) params.push(inArray($s.postTable.id, intersects));
     }
   }
 
   if (tagsFilter.ne) {
-    const filterOp = Object.entries(tagsFilter.ne).map(([c, ids]) => {
+    const filterOp = Object.entries(tagsFilter.ne).flatMap(([c, ids]) => {
       const cat = +c as TagCategoryID;
       if (ids && cat == 1) params.push(ne($s.postTable.artist_id, <number>ids[0]));
       else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
@@ -157,7 +157,7 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
     });
     if (filterOp.length) {
       // @ts-ignore
-      const union = filterOp.flat().reduce((op, next) => op!.union(next));
+      const union = filterOp.reduce((op, next) => op!.union(next));
       if (union) params.push(notExists(union));
     }
     function filterFn<R extends PostRelations>(rel: R, ids: number[]) {
