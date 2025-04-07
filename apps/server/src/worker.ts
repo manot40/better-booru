@@ -5,7 +5,7 @@ declare var self: Worker;
 
 self.addEventListener('message', async (event) => {
   const evData = <WorkerEventPayload>parsePayload(event);
-  if (evData.type === 'QueryPosts') self.postMessage(queryPosts(evData.payload, true));
+  if (evData.type === 'QueryPosts') self.postMessage(queryPosts(evData.payload));
   if (evData.type === 'QueryExpensiveTags') self.postMessage(queryExpensiveTags(evData.payload));
 });
 

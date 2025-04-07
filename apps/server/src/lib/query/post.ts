@@ -1,12 +1,13 @@
 import type { SQL } from 'drizzle-orm';
 import type { TagCategoryID } from '@boorugator/shared/types';
-import type { DBPostData, PostRelations } from 'db/schema';
+import type { DanbooruTags, DBPostData, PostRelations } from 'db/schema';
 
 import cache from 'lib/cache';
 import { db, schema as $s } from 'db';
 
 import { file_url, preview_url, sample_url } from './helpers/file-url-builder';
-import { createFilterEq, deserializeTags, getPostTagsRel, type Transaction } from './helpers/common';
+import { deserializeTags, getRangeFilter, type Transaction } from './helpers/common';
+import { createRelationFilterFn, generateTagsFilterQuery } from './helpers/tags-filter';
 
 import {
   and,
@@ -23,7 +24,7 @@ import {
   sql,
 } from 'drizzle-orm';
 
-export function queryPosts(qOpts: QueryOptions, expensive = false) {
+export function queryPosts(qOpts: QueryOptions) {
   const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
   opts.page ||= '1';
 
@@ -50,7 +51,7 @@ export function queryPosts(qOpts: QueryOptions, expensive = false) {
   }
 
   // Tags Filter
-  whereParams.push(...generateTagsFilter(opts.tags));
+  whereParams.push(...generateTagsFilter(opts.tags, opts.page, opts.expensive));
 
   const { post, count } = db.transaction((tx) => {
     const { artist_id: _, ...cols } = getTableColumns($s.postTable);
@@ -62,8 +63,8 @@ export function queryPosts(qOpts: QueryOptions, expensive = false) {
       .orderBy((isAsc ? asc : desc)($s.postTable.id))
       .limit(opts.limit)
       .offset(offset);
-
-    const count = expensive ? 0 : getPostCount(tx, opts.tags, opts.rating as 'g');
+    console.log(op.toSQL());
+    const count = opts.expensive ? 0 : getPostCount(tx, opts.tags, opts.rating as 'g');
     return { post: op.all(), count };
   });
 
@@ -86,19 +87,16 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
   if (tags.length) {
     Object.entries(deserializeTags(tags)).forEach(([key, s]) => {
       if (!s) return;
-      const filterOp = Object.entries(s)
-        .map(([c, ids]) => {
-          const cat = +c as TagCategoryID;
-          if (!ids) return;
-          else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-          else return createFilterEq(cat, ids, tx);
-        })
-        .filter(Boolean)
-        .flat();
-
+      const filterFn = createRelationFilterFn(tx);
+      const filterOp = Object.entries(s).map(([c, ids]) => {
+        const cat = +c as TagCategoryID;
+        if (ids && cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
+        else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
+        return [];
+      });
       if (filterOp.length > 0) {
         // @ts-ignore
-        const set = filterOp.reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
+        const set = filterOp.flat().reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
         if (set) params.push((key == 'ne' ? notInArray : inArray)($s.postTable.id, set));
       }
     });
@@ -114,57 +112,60 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
   return count;
 }
 
-function generateTagsFilter(tags: string[]) {
+function generateTagsFilter(tags: string[], page?: string, expensiveTags?: DanbooruTags[]) {
   const params = <SQL[]>[];
   const tagsFilter = deserializeTags(tags);
+  const SAFE_OFFSET = 300000;
+
+  /** Calculate cursor range to help ease the query */
+  let range: [number, number] | undefined;
+  if (page) {
+    const t = page.slice(0, 1);
+    if (Number.isNaN(+t)) {
+      const targetId = +page.slice(1);
+      if (t === 'a') range = [targetId + SAFE_OFFSET, targetId];
+      else if (t === 'b') range = [targetId, Math.max(targetId - SAFE_OFFSET, 0)];
+    } else {
+      // TODO
+    }
+  }
 
   if (tagsFilter.eq) {
-    const filterOp = Object.entries(tagsFilter.eq)
-      .map(([c, ids]) => {
-        const cat = +c as TagCategoryID;
-        if (!ids) return;
-        else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-        else return createFilterEq(cat, ids);
-      })
-      .filter(Boolean)
-      .flat();
+    const complex = Object.values(tagsFilter.eq).flat().filter(Boolean).length > 3;
+    const expensivenes = expensiveTags ? { complex, tags: expensiveTags } : undefined;
+
+    const filterFn = createRelationFilterFn(db, range, expensivenes);
+    const filterOp = Object.entries(tagsFilter.eq).map(([c, ids]) => {
+      const cat = +c as TagCategoryID;
+      if (cat == 1 && ids) params.push(eq($s.postTable.artist_id, <number>ids[0]));
+      else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
+      return [];
+    });
     if (filterOp.length) {
       // @ts-ignore
-      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
+      const intersects = filterOp.flat().reduce((op, next) => op!.intersect(next));
       if (intersects) params.push(inArray($s.postTable.id, intersects));
     }
   }
 
   if (tagsFilter.ne) {
-    const filterOp = Object.entries(tagsFilter.ne)
-      .map(([c, ids]) => {
-        const cat = +c as TagCategoryID;
-        if (!ids) return;
-
-        const createQuery = <R extends PostRelations>(rel: R, ids: number[]) =>
-          db
-            .select({ '1': sql`1` })
-            .from(rel)
-            .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
-
-        if (cat == 1) {
-          params.push(ne($s.postTable.artist_id, <number>ids[0]));
-          return;
-        } else if (cat === 0 || cat === 2) {
-          const q = <ReturnType<typeof createQuery>[]>[];
-          const common = ids.filter((id) => id <= 800);
-          const uncommon = ids.filter((id) => id > 800);
-          if (common.length > 0) q.push(createQuery($s.commonTags, common));
-          if (uncommon.length > 0) q.push(createQuery($s.uncommonTags, uncommon));
-          return q;
-        } else return createQuery(getPostTagsRel(cat), ids);
-      })
-      .filter(Boolean)
-      .flat();
+    const filterOp = Object.entries(tagsFilter.ne).map(([c, ids]) => {
+      const cat = +c as TagCategoryID;
+      if (ids && cat == 1) params.push(ne($s.postTable.artist_id, <number>ids[0]));
+      else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
+      return [];
+    });
     if (filterOp.length) {
       // @ts-ignore
-      const union = filterOp.reduce((op, next) => op!.union(next));
+      const union = filterOp.flat().reduce((op, next) => op!.union(next));
       if (union) params.push(notExists(union));
+    }
+    function filterFn<R extends PostRelations>(rel: R, ids: number[]) {
+      const cursorFilter = range ? getRangeFilter(rel, range) : [];
+      return db
+        .select({ '1': sql`1` })
+        .from(rel)
+        .where(and(...cursorFilter, eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
     }
   }
 
@@ -187,4 +188,5 @@ export interface QueryOptions {
   /** default 50 */
   limit?: number;
   rating?: MaybeArray<StringHint<DBPostData['rating']>>;
+  expensive?: DanbooruTags[];
 }

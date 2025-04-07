@@ -1,4 +1,5 @@
 import type { Setup } from 'index';
+import type { DanbooruTags } from 'db/schema';
 import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
 import { type InferHandler, t } from 'elysia';
@@ -38,18 +39,20 @@ export const handler: Handler = async ({ query, headers, store, userConfig, expe
 
     if (!isExpensive(expensiveTags, opts.tags)) return queryPosts(opts);
 
-    store.cacheTTL = 60 * 30;
-    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
+    store.cacheTTL = 60 * 15;
+    const payload = { ...opts, expensive: expensiveTags };
+    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload });
   }
 };
 
-export function isExpensive(expensive: string[], tags?: string[]) {
+export function isExpensive(expensive: DanbooruTags[], tags?: string[]) {
   if (!tags?.length) return false;
   if (tags.length > 3) return true;
   if (tags.some((t) => t.startsWith('-'))) return true;
 
+  const mapped = expensive.map((t) => t.name);
   const eqTags = tags.filter((t) => !t.startsWith('-'));
-  return eqTags.some((t) => expensive.includes(t));
+  return eqTags.some((t) => mapped.includes(t));
 }
 
 const post = t.Object({
