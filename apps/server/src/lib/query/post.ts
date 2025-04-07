@@ -50,7 +50,7 @@ export function queryPosts(qOpts: QueryOptions, expensive = false) {
   }
 
   // Tags Filter
-  whereParams.push(...generateTagsFilter(opts.tags));
+  whereParams.push(...generateTagsFilter(opts.tags, opts.page));
 
   const { post, count } = db.transaction((tx) => {
     const { artist_id: _, ...cols } = getTableColumns($s.postTable);
@@ -91,7 +91,7 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
           const cat = +c as TagCategoryID;
           if (!ids) return;
           else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-          else return createFilterEq(cat, ids, tx);
+          else return createFilterEq({ cat, ids, tx });
         })
         .filter(Boolean)
         .flat();
@@ -114,9 +114,23 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
   return count;
 }
 
-function generateTagsFilter(tags: string[]) {
+function generateTagsFilter(tags: string[], page?: string) {
   const params = <SQL[]>[];
   const tagsFilter = deserializeTags(tags);
+  const SAFE_OFFSET = 500000;
+
+  /** Calculate cursor range to help ease the query */
+  let range: [number, number] | undefined;
+  if (page) {
+    const t = page.slice(0, 1);
+    if (Number.isNaN(+t)) {
+      const targetId = +page.slice(1);
+      if (t === 'a') range = [targetId + SAFE_OFFSET, targetId];
+      else if (t === 'b') range = [targetId, Math.max(targetId - SAFE_OFFSET, 0)];
+    } else {
+      // TODO
+    }
+  }
 
   if (tagsFilter.eq) {
     const filterOp = Object.entries(tagsFilter.eq)
@@ -124,7 +138,7 @@ function generateTagsFilter(tags: string[]) {
         const cat = +c as TagCategoryID;
         if (!ids) return;
         else if (cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-        else return createFilterEq(cat, ids);
+        else return createFilterEq({ cat, ids, range });
       })
       .filter(Boolean)
       .flat();
