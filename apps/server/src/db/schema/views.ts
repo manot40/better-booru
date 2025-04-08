@@ -1,28 +1,31 @@
 import { tagsTable, commonTags, uncommonTags, metaTags, type PostRelations } from './base';
 
-import { sql } from 'drizzle-orm';
-import { sqliteView } from 'drizzle-orm/sqlite-core';
-
-const check = <C extends PostRelations>(column: C, limit: number) =>
-  sql<number>`SELECT CASE WHEN COUNT(*) > ${limit} THEN 1 ELSE 0 END as stats FROM (SELECT 1 FROM ${column} WHERE ${column.tag_id} = ${tagsTable.id} LIMIT ${limit + 1})`;
+import { eq, sql, getTableColumns } from 'drizzle-orm';
+import { sqliteView, type QueryBuilder } from 'drizzle-orm/sqlite-core';
 
 export const expensiveMetaTags = sqliteView('expensive_meta_tags').as((qb) =>
-  qb
-    .select()
-    .from(tagsTable)
-    .where(sql`1 = (${check(metaTags, 200000)})`)
-);
-
-export const expensiveCommonTags = sqliteView('expensive_common_tags').as((qb) =>
-  qb
-    .select()
-    .from(tagsTable)
-    .where(sql`1 = (${check(commonTags, 500000)})`)
+  generateQuery(qb, metaTags, 200000)
 );
 
 export const expensiveUncommonTags = sqliteView('expensive_uncommon_tags').as((qb) =>
-  qb
-    .select()
-    .from(tagsTable)
-    .where(sql`1 = (${check(uncommonTags, 300000)})`)
+  generateQuery(qb, uncommonTags, 300000)
 );
+
+export const expensiveCommonTags = sqliteView('expensive_common_tags').as((qb) =>
+  generateQuery(qb, commonTags, 500000)
+);
+
+function generateQuery(qb: QueryBuilder, table: PostRelations, limit: number) {
+  const tagPostCounts = qb.$with('tags_post_counts').as(
+    qb
+      .select({ tag_id: table.tag_id, count: sql<number>`COUNT(ROWID)`.as('post_count') })
+      .from(table)
+      .groupBy(table.tag_id)
+      .having(sql`COUNT(ROWID) > ${limit}`)
+  );
+  return qb
+    .with(tagPostCounts)
+    .select({ ...getTableColumns(tagsTable), count: tagPostCounts.count })
+    .from(tagsTable)
+    .innerJoin(tagPostCounts, eq(tagsTable.id, tagPostCounts.tag_id));
+}

@@ -1,6 +1,7 @@
 import type { SQL } from 'drizzle-orm';
+import type { TagWithCount } from 'plugins/expensive-tags';
 import type { TagCategoryID } from '@boorugator/shared/types';
-import type { DanbooruTags, DBPostData, PostRelations } from 'db/schema';
+import type { DBPostData, PostRelations } from 'db/schema';
 
 import cache from 'lib/cache';
 import { db, schema as $s } from 'db';
@@ -19,8 +20,8 @@ import {
   inArray,
   lt,
   ne,
-  notInArray,
   notExists,
+  notInArray,
   sql,
 } from 'drizzle-orm';
 
@@ -63,7 +64,7 @@ export function queryPosts(qOpts: QueryOptions) {
       .orderBy((isAsc ? asc : desc)($s.postTable.id))
       .limit(opts.limit)
       .offset(offset);
-    console.log(op.toSQL());
+
     const count = opts.expensive ? 0 : getPostCount(tx, opts.tags, opts.rating as 'g');
     return { post: op.all(), count };
   });
@@ -112,7 +113,7 @@ function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' |
   return count;
 }
 
-function generateTagsFilter(tags: string[], page?: string, expensiveTags?: DanbooruTags[]) {
+function generateTagsFilter(tags: string[], page?: string, expensiveTags?: TagWithCount[]) {
   const params = <SQL[]>[];
   const tagsFilter = deserializeTags(tags);
   const SAFE_OFFSET = 300000;
@@ -120,13 +121,16 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
   /** Calculate cursor range to help ease the query */
   let range: [number, number] | undefined;
   if (page) {
-    const t = page.slice(0, 1);
-    if (Number.isNaN(+t)) {
+    if (page === '1') {
+      const lastId = db.query.postTable
+        .findFirst({ columns: { id: true }, orderBy: (t, { desc }) => desc(t.id) })
+        .sync();
+      if (lastId) range = [lastId.id, Math.max(lastId.id - SAFE_OFFSET, 0)];
+    } else if (/^(a|b)[0-9]+$/.test(page)) {
+      const t = page.slice(0, 1);
       const targetId = +page.slice(1);
       if (t === 'a') range = [targetId + SAFE_OFFSET, targetId];
       else if (t === 'b') range = [targetId, Math.max(targetId - SAFE_OFFSET, 0)];
-    } else {
-      // TODO
     }
   }
 
@@ -149,6 +153,13 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
   }
 
   if (tagsFilter.ne) {
+    const filterWithoutRange = <R extends PostRelations>(rel: R, ids: number[]) =>
+      db
+        .select({ '1': sql<1>`1` })
+        .from(rel)
+        .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
+
+    const filterFn = range ? createRelationFilterFn(db, range) : filterWithoutRange;
     const filterOp = Object.entries(tagsFilter.ne).flatMap(([c, ids]) => {
       const cat = +c as TagCategoryID;
       if (ids && cat == 1) params.push(ne($s.postTable.artist_id, <number>ids[0]));
@@ -156,16 +167,15 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: Danbo
       return [];
     });
     if (filterOp.length) {
-      // @ts-ignore
-      const union = filterOp.reduce((op, next) => op!.union(next));
-      if (union) params.push(notExists(union));
-    }
-    function filterFn<R extends PostRelations>(rel: R, ids: number[]) {
-      const cursorFilter = range ? getRangeFilter(rel, range) : [];
-      return db
-        .select({ '1': sql`1` })
-        .from(rel)
-        .where(and(...cursorFilter, eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
+      if (range) {
+        // @ts-ignore
+        const intersect = filterOp.reduce((op, next) => op!.intersect(next));
+        if (intersect) params.push(notInArray($s.postTable.id, intersect));
+      } else {
+        // @ts-ignore
+        const union = filterOp.reduce((op, next) => op!.union(next));
+        if (union) params.push(notExists(union));
+      }
     }
   }
 
@@ -188,5 +198,5 @@ export interface QueryOptions {
   /** default 50 */
   limit?: number;
   rating?: MaybeArray<StringHint<DBPostData['rating']>>;
-  expensive?: DanbooruTags[];
+  expensive?: TagWithCount[];
 }

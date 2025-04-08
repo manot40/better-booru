@@ -1,5 +1,5 @@
 import type { Setup } from 'index';
-import type { DanbooruTags } from 'db/schema';
+import type { TagWithCount } from 'plugins/expensive-tags';
 import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
 import { type InferHandler, t } from 'elysia';
@@ -45,7 +45,7 @@ export const handler: Handler = async ({ query, headers, store, userConfig, expe
   }
 };
 
-export function isExpensive(expensive: DanbooruTags[], tags?: string[]) {
+export function isExpensive(expensive: TagWithCount[], tags?: string[]) {
   if (!tags?.length) return false;
   if (tags.length > 3) return true;
   if (tags.some((t) => t.startsWith('-'))) return true;

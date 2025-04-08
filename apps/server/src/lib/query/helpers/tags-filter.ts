@@ -1,5 +1,6 @@
+import type { TagWithCount } from 'plugins/expensive-tags';
+import type { PostRelations } from 'db/schema';
 import type { TagCategoryID } from '@boorugator/shared/types';
-import type { DanbooruTags, PostRelations } from 'db/schema';
 
 import { getPostTagsRel, getRangeFilter, Transaction } from './common';
 
@@ -45,6 +46,6 @@ export const createRelationFilterFn =
   };
 
 export type Expensivenes = {
-  tags: DanbooruTags[];
+  tags: TagWithCount[];
   complex?: boolean;
 };
