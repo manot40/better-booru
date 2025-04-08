@@ -6,8 +6,8 @@ import type { DBPostData, PostRelations } from 'db/schema';
 import cache from 'lib/cache';
 import { db, schema as $s } from 'db';
 
+import { deserializeTags, type Transaction } from './helpers/common';
 import { file_url, preview_url, sample_url } from './helpers/file-url-builder';
-import { deserializeTags, getRangeFilter, type Transaction } from './helpers/common';
 import { createRelationFilterFn, generateTagsFilterQuery } from './helpers/tags-filter';
 
 import {
@@ -138,7 +138,7 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: TagWi
     const complex = Object.values(tagsFilter.eq).flat().filter(Boolean).length > 3;
     const expensivenes = expensiveTags ? { complex, tags: expensiveTags } : undefined;
 
-    const filterFn = createRelationFilterFn(db, range, expensivenes);
+    const filterFn = createRelationFilterFn(db, { range, ...expensivenes });
     const filterOp = Object.entries(tagsFilter.eq).flatMap(([c, ids]) => {
       const cat = +c as TagCategoryID;
       if (cat == 1 && ids) params.push(eq($s.postTable.artist_id, <number>ids[0]));
@@ -159,7 +159,7 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: TagWi
         .from(rel)
         .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
 
-    const filterFn = range ? createRelationFilterFn(db, range) : filterWithoutRange;
+    const filterFn = range ? createRelationFilterFn(db, { range, mode: 'OR' }) : filterWithoutRange;
     const filterOp = Object.entries(tagsFilter.ne).flatMap(([c, ids]) => {
       const cat = +c as TagCategoryID;
       if (ids && cat == 1) params.push(ne($s.postTable.artist_id, <number>ids[0]));
@@ -167,15 +167,9 @@ function generateTagsFilter(tags: string[], page?: string, expensiveTags?: TagWi
       return [];
     });
     if (filterOp.length) {
-      if (range) {
-        // @ts-ignore
-        const intersect = filterOp.reduce((op, next) => op!.intersect(next));
-        if (intersect) params.push(notInArray($s.postTable.id, intersect));
-      } else {
-        // @ts-ignore
-        const union = filterOp.reduce((op, next) => op!.union(next));
-        if (union) params.push(notExists(union));
-      }
+      // @ts-ignore
+      const union = filterOp.reduce((op, next) => op!.union(next));
+      if (union) params.push(range ? notInArray($s.postTable.id, union) : notExists(union));
     }
   }
 

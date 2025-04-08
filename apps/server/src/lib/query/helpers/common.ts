@@ -1,17 +1,10 @@
 import type { TagCategoryID } from '@boorugator/shared/types';
-import type { PostRelations } from 'db/schema';
 import type { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
-import type { ExtractTablesWithRelations, SQL } from 'drizzle-orm';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
 
 import { db, schema as $s } from 'db';
 
-import { eq, gte, lte, sql } from 'drizzle-orm';
-
-export function getRangeFilter<R extends PostRelations>(rel: R, range: [number, number]): [SQL, SQL] | [] {
-  if (!range) return [];
-  const [upper, lower] = range;
-  return [gte(rel.post_id, lower), lte(rel.post_id, upper)];
-}
+import { eq, sql } from 'drizzle-orm';
 
 export function deserializeTags(tags: string[]) {
   const tagByName = db
