@@ -22,9 +22,9 @@
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/cron": "^1.2.0",
     "@elysiajs/static": "^1.2.0",
-    "@libsql/client": "^0.15.2",
-    "drizzle-kit": "^0.30.6",
-    "drizzle-orm": "^0.41.0",
+    "@libsql/client": "^0.15.4",
+    "drizzle-kit": "^0.31.0",
+    "drizzle-orm": "^0.42.0",
     "elysia": "latest",
     "ipx": "3.0.3",
     "ofetch": "1.4.1"
