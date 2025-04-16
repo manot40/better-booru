@@ -9,7 +9,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
       rating: ['g'],
       provider: 'danbooru',
       hideNSFW: true,
-      browseMode: 'paginated',
+      browseMode: 'infinite',
       historyMode: 'url_query',
     },
 

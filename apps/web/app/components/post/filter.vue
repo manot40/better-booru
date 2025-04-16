@@ -3,6 +3,7 @@ import type { ListParams } from '@boorugator/shared/types';
 
 import { ChevronLeft, SlidersHorizontal } from 'lucide-vue-next';
 
+const emits = defineEmits(['scroll-top']);
 const props = defineProps<{ count?: number; paginator: UsePagination<ListParams> }>();
 
 const { query, update } = props.paginator;
@@ -10,7 +11,7 @@ const { query, update } = props.paginator;
 const page = computed({
   get: () => query.value.page,
   set(state: 'prev' | 'next' | number) {
-    if (state !== 'prev') setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
+    if (state !== 'prev') setTimeout(() => emits('scroll-top'), 300);
     if (typeof state == 'number') return update({ page: state });
 
     const qValue = query.value.page;

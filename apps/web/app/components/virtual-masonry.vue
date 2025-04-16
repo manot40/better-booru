@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { VNodeRef } from 'vue';
 
-import { useWindowVirtualizer } from '@tanstack/vue-virtual';
+import { useVirtualizer } from '@tanstack/vue-virtual';
 
 interface Props {
   gap?: number;
@@ -32,8 +32,9 @@ const options = computed(() => ({
   lanes: lanes.value,
   overscan: lanes.value,
   estimateSize: (i: number) => props.estimateSize(i, lanes.value),
+  getScrollElement: () => root.value || document.documentElement,
 }));
-const virtualizer = useWindowVirtualizer(options);
+const virtualizer = useVirtualizer(options);
 
 const width = computed(() => {
   if (typeof props.width == 'number') return props.width;
@@ -55,7 +56,7 @@ const width = computed(() => {
 const totalSize = computed(() => virtualizer.value.getTotalSize());
 const virtualRows = computed(() => virtualizer.value.getVirtualItems());
 
-defineExpose({ virtualizer });
+defineExpose({ virtualizer, el: root });
 
 onMounted(() => (rootOffset.value = root.value?.offsetTop ?? 0));
 watchDebounced([width, windowW], () => virtualizer.value.measure(), { debounce: 100 });
@@ -78,5 +79,6 @@ watchDebounced([width, windowW], () => virtualizer.value.measure(), { debounce: 
         <slot :row :virtualizer="virtualizer" />
       </div>
     </div>
+    <slot name="end" />
   </div>
 </template>

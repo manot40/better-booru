@@ -6,13 +6,16 @@ import 'photoswipe/style.css';
 import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
 const userConfig = useUserConfig();
-const { data, error, loading, paginator } = useBooruFetch();
+
+const masonry = useTemplateRef('masonry');
+const scrollEl = computed(() => masonry.value?.el || undefined);
 
 const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
+const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
 const gap = 8;
-const masonry = useTemplateRef('masonry');
+
 function estimateSize(index: number, lane: number) {
   const item = data.value?.post[index];
   if (!item) return 0;
@@ -52,13 +55,20 @@ function registerPost(index?: number) {
   if (item) post.value = data.value.post[item.index];
 }
 
+const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
+watch([top, scrollUp], ([top, up]) => {
+  const ev = new CustomEvent('contentScroll', { detail: { top, up } });
+  window.dispatchEvent(ev);
+});
+
 watch(data, () => masonry.value?.virtualizer.measure());
+const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' });
 </script>
 
 <template>
   <EmptyState
     v-if="error"
-    class="py-8 px-4 h-[80dvh]"
+    class="py-8 px-4 h-[80dvh] mt-15"
     :title="`${error?.status === 503 ? 'Cloudflare' : 'Server'} Error`">
     <template #icon><CloudLightning /></template>
     <p>
@@ -68,14 +78,15 @@ watch(data, () => masonry.value?.virtualizer.measure());
       }}
     </p>
   </EmptyState>
-  <PostListSkeleton v-else-if="!data" />
+  <PostListSkeleton v-else-if="!data" class="mt-14" />
   <VirtualMasonry
     :gap
     :estimateSize
     :count="data.post.length"
     :containerRef="(el) => (container = <HTMLElement>el)"
+    id="post-list"
     ref="masonry"
-    class="overflow-auto px-1 lg:px-2 mt-1.5 lg:mt-3"
+    class="overflow-auto px-1 lg:px-2 py-1.5 lg:py-3 [&>div]:translate-y-14 max-h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
@@ -85,21 +96,24 @@ watch(data, () => masonry.value?.virtualizer.measure());
         </UtilMapObj>
       </div>
     </template>
+    <template v-if="userConfig.isInfinite" #end>
+      <EmptyState class="py-8 px-4" v-if="loading">
+        <template #icon><LoaderCircle class="animate-spin !w-10 !h-10 !mb-3" /></template>
+        <p class="text-sm">Loading more image for you...</p>
+      </EmptyState>
+    </template>
   </VirtualMasonry>
-  <EmptyState title="Nothing Found" class="py-8 px-4 h-[80dvh]" v-else>
+  <EmptyState title="Nothing Found" class="py-8 px-4 h-[80dvh] mt-14" v-else>
     <template #icon><Bean /></template>
     <p>Try search for something else or readjust your tags.</p>
   </EmptyState>
 
-  <template v-if="data?.post.length">
-    <Teleport to=".bottom-bar" v-if="!userConfig.isInfinite">
-      <PostFilter :count="data.meta.count" :paginator />
-    </Teleport>
-    <EmptyState class="py-8 px-4" v-else-if="loading">
-      <template #icon><LoaderCircle class="animate-spin !w-10 !h-10 !mb-3" /></template>
-      <p class="text-sm">Loading more image for you...</p>
-    </EmptyState>
-  </template>
+  <div
+    v-if="data?.post.length && !userConfig.isInfinite"
+    :data-show="top < 300 || isBottom || scrollUp"
+    class="bottom-bar flex fixed z-30 left-1/2 bottom-2 lg:bottom-4 mt-4">
+    <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
+  </div>
 
   <Teleport to=".post-action" v-if="opened">
     <PostContextTags :paginator v-model:post="post" @close="lightbox?.pswp?.close()" />
@@ -109,5 +123,12 @@ watch(data, () => masonry.value?.virtualizer.measure());
 <style>
 .pswp {
   z-index: 30 !important;
+}
+.bottom-bar {
+  transform: translate3d(-50%, 0%, 0);
+  transition: all 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+.bottom-bar[data-show='false'] {
+  transform: translate3d(-50%, 130%, 0);
 }
 </style>
