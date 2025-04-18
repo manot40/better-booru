@@ -32,7 +32,7 @@ async function fetchTags() {
 <template>
   <PostContextTagsList v-if="isPend(status) || !tags" />
   <template v-else>
-    <PostContextTagsList :tags="tags.meta" class="mb-2.5" title="Meta" @tag="$emit('changeTag', $event)" />
+    <PostContextTagsList :tags="tags.meta" class="mb-2.5" :title="null" @tag="$emit('changeTag', $event)" />
     <PostContextTagsList foldable :tags="tags.general" @tag="$emit('changeTag', $event)" />
   </template>
 </template>

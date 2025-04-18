@@ -26,6 +26,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
           historyMode: state.historyMode,
         })
       ),
+    providerHost: (state) => (state.provider === 'gelbooru' ? 'gelbooru.com' : 'danbooru.donmai.us'),
   },
 
   actions: {

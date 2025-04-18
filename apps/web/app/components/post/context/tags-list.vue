@@ -4,12 +4,12 @@ import type { TagCategory } from '@boorugator/shared/types';
 type Tag = { key: string; label?: string; category?: TagCategory };
 
 defineEmits<{ tag: [tag: string] }>();
-withDefaults(defineProps<{ tags?: Tag[]; title?: string; foldable?: boolean }>(), { title: 'tags' });
+withDefaults(defineProps<{ tags?: Tag[]; title?: string | null; foldable?: boolean }>(), { title: 'tags' });
 </script>
 
 <template>
   <div class="tags">
-    <div class="text-xs md:text-sm font-bold md:font-medium mb-2">{{ startCase(title) }}</div>
+    <div class="text-xs md:text-sm font-bold md:font-medium mb-2" v-if="title">{{ startCase(title) }}</div>
     <Foldable :disable="!foldable" class="max-h-44">
       <div class="flex flex-wrap gap-1.5">
         <Skeleton class="h-6" :style="{ width: `${randomInt(50, 100)}px` }" v-if="!tags" v-for="_ in 20" />

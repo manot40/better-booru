@@ -13,7 +13,9 @@ type Modifiers = NonNullable<Parameters<typeof ipx>[1]>;
 const ipx = createIPX({
   maxAge: Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : MAX_AGE,
   storage: ipxFSStorage({ dir: './public/cache' }),
-  httpStorage: ipxHttpStorage({ domains: ['img3.gelbooru.com', 'cdn.donmai.us'] }),
+  httpStorage: ipxHttpStorage({
+    domains: ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'],
+  }),
 });
 
 export const elysiaIPXHandler: Handler = async ({ set, params, error }) => {

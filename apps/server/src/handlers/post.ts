@@ -71,6 +71,7 @@ const post = t.Object({
   height: t.Number(),
   file_url: t.String(),
   file_ext: t.String(),
+  file_size: t.Number(),
   sample_url: t.MaybeEmpty(t.String()),
   sample_width: t.MaybeEmpty(t.Number()),
   sample_height: t.MaybeEmpty(t.Number()),

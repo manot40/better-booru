@@ -23,16 +23,10 @@ export default defineNuxtConfig({
     public: { baseUrl: '' },
   },
 
-  modules: ['@nuxt/image', '@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'shadcn-nuxt'],
+  modules: ['@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt', 'shadcn-nuxt'],
 
-  image: {
-    format: ['webp', 'jpg'],
-    ipx: { modifiers: { format: 'webp' } },
-    domains: ['img3.gelbooru.com', 'cdn.donmai.us'],
-    alias: {
-      danbooru: 'https://cdn.donmai.us',
-      gelbooru: 'https://img3.gelbooru.com',
-    },
+  dayjs: {
+    plugins: ['relativeTime', 'utc', 'timezone'],
   },
 
   shadcn: {

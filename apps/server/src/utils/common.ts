@@ -24,6 +24,7 @@ export function processBooruData(data: BooruResponse): Post[] {
         tags: raw.tag_string,
         source: raw.source,
         status: raw.is_deleted ? 'deleted' : 'active',
+        file_size: raw.file_size,
         has_notes: raw.has_notes || false,
         comment_count: 0,
         tags_grouping: {
@@ -37,7 +38,7 @@ export function processBooruData(data: BooruResponse): Post[] {
       }));
   return data.map((raw) => {
     const { directory, change, owner, status, has_notes, comment_count, md5, ...rest } = raw;
-    return { ...rest, hash: md5, pixiv_id: null, has_notes: false, created_at: null };
+    return { file_size: 0, ...rest, hash: md5, pixiv_id: null, has_notes: false, created_at: null };
   });
 }
 

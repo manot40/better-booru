@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @import './font.css';
+@import './transition.css';
 
 :root {
   --radius: 0.75rem;
@@ -113,6 +114,17 @@
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
+  --ease-acc-max: cubic-bezier(0.9, 0.1, 1, 0.2);
+  --ease-acc-mid: cubic-bezier(1, 0, 1, 1);
+  --ease-acc-min: cubic-bezier(0.8, 0, 0.78, 1);
+  --ease-dec-max: cubic-bezier(0.1, 0.9, 0.2, 1);
+  --ease-dec-mid: cubic-bezier(0, 0, 0, 1);
+  --ease-dec-min: cubic-bezier(0.33, 0, 0.1, 1);
+  --ease-ease: cubic-bezier(0.33, 0, 0.67, 1);
+  --ease-ease-max: cubic-bezier(0.8, 0, 0.2, 1);
+  --ease-ease-liner: cubic-bezier(0, 0, 1, 1);
+  --ease-slide-normal: cubic-bezier(0.33, 0.72, 0, 1);
+
   @keyframes accordion-down {
     from {
       height: 0;
@@ -139,19 +151,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  a,
+  *[role='button'],
+  *[type='button'] {
+    @apply cursor-pointer;
+  }
 }
 
 .dark .ps__item > img {
   filter: brightness(0.85);
-}
-
-.blur-fade-enter-active,
-.blur-fade-leave-active {
-  transition: all 0.35s var(--mo-dec-min);
-}
-
-.blur-fade-enter-from,
-.blur-fade-leave-to {
-  opacity: 0;
-  filter: blur(6px);
 }

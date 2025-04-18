@@ -19,7 +19,9 @@ export function useLightbox(
   el: Ref<HTMLElement | null | undefined | DataSource>,
   opts = {} as UseLightboxOptions
 ) {
-  const opened = shallowRef(false);
+  const opened = ref(false);
+  const controlVisible = ref(false);
+
   const current = shallowRef<Slide>();
   const lightbox = shallowRef<PhotoSwipeLightbox>();
 
@@ -43,7 +45,7 @@ export function useLightbox(
 
     const lb = (lightbox.value = new PhotoSwipeLightbox(options));
 
-    const debounceOpen = useDebounceFn(() => (opened.value = true), 1);
+    const debounceOpen = useDebounceFn(() => (opened.value = controlVisible.value = true), 1);
     lb.on('uiElementCreate', debounceOpen);
 
     lb.on('uiRegister', function (this: PhotoSwipeLightbox['pswp']) {
@@ -59,7 +61,10 @@ export function useLightbox(
       opts.onDestroy?.();
       opened.value = false;
       current.value = undefined;
+      controlVisible.value = false;
     });
+
+    lb.on('tapAction', () => (controlVisible.value = !controlVisible.value));
 
     if (opts.onClose) lb.on('close', opts.onClose);
     if (opts.onLoadError) lb.on('loadError', opts.onLoadError);
@@ -73,5 +78,5 @@ export function useLightbox(
     lightbox.value = undefined;
   }
 
-  return { lightbox, opened, current };
+  return { lightbox, opened, current, controlVisible };
 }

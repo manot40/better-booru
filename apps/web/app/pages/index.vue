@@ -28,8 +28,9 @@ function estimateSize(index: number, lane: number) {
   return relHeight > 900 ? 900 : relHeight;
 }
 
-const { lightbox, opened } = useLightbox(container, {
+const { lightbox, controlVisible } = useLightbox(container, {
   onClose: () => (post.value = undefined),
+  onUiRegister: (pswp) => registerPost(pswp.currIndex),
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
     const el = data.element;
@@ -40,13 +41,6 @@ const { lightbox, opened } = useLightbox(container, {
     Object.assign(data, { src, proxied: true });
     slide.pswp.refreshSlideContent(slide.index);
   },
-  onUiRegister: (pswp) =>
-    pswp.ui?.registerElement({
-      order: 9,
-      name: 'action',
-      className: 'pswp__button post-action !flex items-center justify-center text-white',
-      onInit: (_, pswp) => nextTick(() => registerPost(pswp.currIndex)),
-    }),
 });
 function registerPost(index?: number) {
   const virt = masonry.value?.virtualizer;
@@ -86,7 +80,7 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
     :containerRef="(el) => (container = <HTMLElement>el)"
     id="post-list"
     ref="masonry"
-    class="overflow-auto px-1 lg:px-2 py-1.5 lg:py-3 [&>div]:translate-y-14 max-h-dvh"
+    class="overflow-auto px-1 lg:px-2 py-1.5 lg:py-3 [&>div]:translate-y-14 h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
@@ -115,9 +109,15 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
     <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
   </div>
 
-  <Teleport to=".post-action" v-if="opened">
-    <PostContextTags :paginator v-model:post="post" @close="lightbox?.pswp?.close()" />
-  </Teleport>
+  <div class="fixed bottom-8 z-50 left-1/2 -translate-x-1/2">
+    <Transition name="slide-in-out">
+      <PostContext
+        :post
+        v-if="post && controlVisible"
+        @close="lightbox?.pswp?.close()"
+        @changeTag="(paginator.set({ page: 1, tags: $event }), scrollTop())" />
+    </Transition>
+  </div>
 </template>
 
 <style>
