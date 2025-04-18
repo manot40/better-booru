@@ -51,8 +51,11 @@ function registerPost(index?: number) {
 
 const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
 watch([top, scrollUp], ([top, up]) => {
-  const ev = new CustomEvent('contentScroll', { detail: { top, up } });
-  window.dispatchEvent(ev);
+  const nav = document.querySelector('.nav-root');
+  if (nav instanceof HTMLElement) {
+    const onTop = top < 300;
+    nav.dataset.show = (onTop || up).toString();
+  }
 });
 
 watch(data, () => masonry.value?.virtualizer.measure());

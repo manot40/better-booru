@@ -1,19 +1,7 @@
-<script setup lang="ts">
-const top = ref(true);
-const scrollUp = ref(true);
-const openSearch = ref(false);
-
-useEventListener(<any>'contentScroll', (e: CustomEvent) => {
-  top.value = (e.detail?.top || 0) < 300;
-  const isUp = (scrollUp.value = Boolean(e.detail?.up));
-  if (!isUp) openSearch.value = false;
-});
-</script>
-
 <template>
   <Card
     class="nav-root fixed w-full z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg p-0"
-    :data-show="top || scrollUp">
+    :data-show="true">
     <div class="flex items-center justify-between gap-4 px-4 py-2">
       <NuxtLink :to="{ name: 'index' }" class="shrink-0 uppercase select-none">
         <div class="max-md:hidden text-xl tracking-wider">
@@ -26,7 +14,7 @@ useEventListener(<any>'contentScroll', (e: CustomEvent) => {
         </div>
       </NuxtLink>
       <div class="flex items-center gap-4 shrink-0">
-        <PostSearch class="flex-1" v-model:open="openSearch" />
+        <PostSearch class="flex-1" />
         <Menu />
       </div>
     </div>

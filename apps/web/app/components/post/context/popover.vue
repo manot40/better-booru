@@ -9,6 +9,8 @@ const content = useTemplateRef('content');
 const isDesktop = useMediaQuery('(min-width: 768px)');
 
 const open = ref(false);
+const overflowing = ref(false);
+
 onClickOutside(content, (e) => {
   if (!isDesktop.value) return;
 
@@ -32,6 +34,9 @@ onClickOutside(content, (e) => {
 
   open.value = false;
 });
+
+const { height } = useElementSize(content);
+watch(height, (h) => (overflowing.value = h >= window.innerHeight - 80));
 </script>
 
 <template>
@@ -63,7 +68,12 @@ onClickOutside(content, (e) => {
       <Trigger><slot name="trigger" /></Trigger>
     </DrawerTrigger>
     <DrawerContent class="!max-h-dvh bg-background/60 backdrop-blur-lg">
-      <div ref="content" class="relative p-4 overflow-auto overflow-x-hidden" v-bind="$attrs"><slot /></div>
+      <div
+        ref="content"
+        :class="['relative mt-4 pt-0 p-4', overflowing && 'overflow-auto overflow-x-hidden']"
+        v-bind="$attrs">
+        <slot />
+      </div>
     </DrawerContent>
   </Drawer>
 </template>
