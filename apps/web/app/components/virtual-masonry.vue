@@ -76,7 +76,7 @@ watchDebounced([width, windowW], () => virtualizer.value.measure(), { debounce: 
           transform: `translate3d(0,${row.start}px,0)`,
         }"
         v-for="(row, i) in virtualRows">
-        <slot :row :virtualizer="virtualizer" />
+        <slot :row :virtualizer />
       </div>
     </div>
     <slot name="end" />

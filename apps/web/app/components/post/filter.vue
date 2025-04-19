@@ -45,7 +45,11 @@ const total = computed(() => props.count || Number.MAX_SAFE_INTEGER);
             <PopoverTrigger>
               <Button variant="ghost"><SlidersHorizontal class="w-5 h-5" /></Button>
             </PopoverTrigger>
-            <PopoverContent :sideOffset="12" align="end" class="w-64">
+            <PopoverContent
+              asChild
+              align="end"
+              :sideOffset="12"
+              class="w-52 bg-background/80 backdrop-blur-lg">
               <div class="form-control">
                 <label class="block font-medium text-sm mb-2.5 ml-1">Limit</label>
                 <Select

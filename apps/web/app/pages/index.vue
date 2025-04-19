@@ -14,8 +14,7 @@ const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
 const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
-const gap = 8;
-
+const gap = 4;
 function estimateSize(index: number, lane: number) {
   const item = data.value?.post[index];
   if (!item) return 0;
@@ -83,7 +82,7 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
     :containerRef="(el) => (container = <HTMLElement>el)"
     id="post-list"
     ref="masonry"
-    class="overflow-auto px-1 lg:px-2 py-1.5 lg:py-3 [&>div]:translate-y-14 h-dvh"
+    class="relative overflow-auto px-1 lg:px-2 py-2 lg:py-3 [&>div]:translate-y-14 h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
@@ -93,8 +92,14 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
         </UtilMapObj>
       </div>
     </template>
-    <template v-if="userConfig.isInfinite" #end>
-      <EmptyState class="py-8 px-4" v-if="loading">
+    <template #end>
+      <div
+        v-if="!userConfig.isInfinite"
+        :data-show="top < 300 || isBottom || scrollUp"
+        class="bottom-bar flex sticky z-30 bottom-14 my-4">
+        <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
+      </div>
+      <EmptyState class="py-8 px-4" v-else-if="loading">
         <template #icon><LoaderCircle class="animate-spin !w-10 !h-10 !mb-3" /></template>
         <p class="text-sm">Loading more image for you...</p>
       </EmptyState>
@@ -105,18 +110,12 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
     <p>Try search for something else or readjust your tags.</p>
   </EmptyState>
 
-  <div
-    v-if="data?.post.length && !userConfig.isInfinite"
-    :data-show="top < 300 || isBottom || scrollUp"
-    class="bottom-bar flex fixed z-30 left-1/2 bottom-2 lg:bottom-4 mt-4">
-    <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
-  </div>
-
   <div class="fixed bottom-8 z-50 left-1/2 -translate-x-1/2">
     <Transition name="slide-in-out">
       <PostContext
         :post
-        v-if="post && controlVisible"
+        v-if="post"
+        v-show="controlVisible"
         @close="lightbox?.pswp?.close()"
         @changeTag="(paginator.set({ page: 1, tags: $event }), scrollTop())" />
     </Transition>
@@ -128,10 +127,10 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
   z-index: 30 !important;
 }
 .bottom-bar {
-  transform: translate3d(-50%, 0%, 0);
+  transform: translate3d(0, 0%, 0);
   transition: all 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
 .bottom-bar[data-show='false'] {
-  transform: translate3d(-50%, 130%, 0);
+  transform: translate3d(0, 140%, 0);
 }
 </style>
