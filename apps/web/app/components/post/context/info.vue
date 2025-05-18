@@ -52,7 +52,7 @@ const toMB = (size: number) => `${(size / 1024 / 1024).toFixed(2)} Mb`;
           Source
         </Button>
       </a>
-      <a :href="`//${userConfig.providerHost}/${post.id}`" target="_blank">
+      <a :href="createBooruURL(post.id)" target="_blank">
         <Button size="sm" variant="outline">
           <LinkIcon class="size-4" />
           Booru
