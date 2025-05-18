@@ -25,10 +25,8 @@ function reduceSize(item: Post): [string, number, number] {
 
 <template>
   <NuxtLink
-    external
-    target="_blank"
     :id="item.id"
-    :to="createBooruURL(item.id)"
+    :to="{ query: $route.query, hash: `#${item.id}` }"
     :data-pswp-src="canonical"
     :data-pswp-width="item.width"
     :data-pswp-height="item.height"

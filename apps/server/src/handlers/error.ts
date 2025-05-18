@@ -1,4 +1,4 @@
-import { type ErrorContext, file } from 'elysia';
+import { type ErrorContext, file, ErrorHandler } from 'elysia';
 
 const handleError = ({ code }: Context) => {
   if (code === 'NOT_FOUND') return file('./public/404.html');
@@ -7,10 +7,11 @@ const handleError = ({ code }: Context) => {
 type Context = ErrorContext & { code: ErrorCode };
 type ErrorCode =
   | number
-  | 'UNKNOWN'
-  | 'VALIDATION'
-  | 'NOT_FOUND'
   | 'PARSE'
+  | 'UNKNOWN'
+  | 'NOT_FOUND'
+  | 'VALIDATION'
+  | 'INVALID_FILE_TYPE'
   | 'INTERNAL_SERVER_ERROR'
   | 'INVALID_COOKIE_SIGNATURE';
 

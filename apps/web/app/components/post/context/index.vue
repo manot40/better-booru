@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Post, TagCategory } from '@boorugator/shared/types';
 
-import { InfoIcon, MessageCircleMoreIcon, TagsIcon } from 'lucide-vue-next';
+import { InfoIcon, MessageCircleMoreIcon } from 'lucide-vue-next';
 
 defineProps<{ post: Post }>();
 const emits = defineEmits<{ close: []; changeTag: [tag: string] }>();

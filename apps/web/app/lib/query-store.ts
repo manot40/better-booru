@@ -96,6 +96,8 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
     this.router = router;
 
     const routeListener = useThrottleFn((to: RouteLoc, from: RouteLoc) => {
+      if (to.query === from.query) return;
+
       if (to.path !== from.path) {
         if (to.path === '/') super.reset();
         return;

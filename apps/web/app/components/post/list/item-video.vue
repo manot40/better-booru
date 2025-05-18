@@ -10,6 +10,7 @@ defineProps<{ item: Post }>();
     muted
     controls
     playsinline
+    :id="item.id.toString()"
     :width="item.width"
     :height="item.height"
     :poster="unshortenUrl(item.preview_url || item.sample_url || '')">

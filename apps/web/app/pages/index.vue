@@ -5,6 +5,8 @@ import 'photoswipe/style.css';
 
 import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
+const route = useRoute();
+const router = useRouter();
 const userConfig = useUserConfig();
 
 const masonry = useTemplateRef('masonry');
@@ -28,7 +30,6 @@ function estimateSize(index: number, lane: number) {
 }
 
 const { lightbox, controlVisible } = useLightbox(container, {
-  onClose: () => (post.value = undefined),
   onUiRegister: (pswp) => registerPost(pswp.currIndex),
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
@@ -39,6 +40,10 @@ const { lightbox, controlVisible } = useLightbox(container, {
     el.dataset.proxied = 'true';
     Object.assign(data, { src, proxied: true });
     slide.pswp.refreshSlideContent(slide.index);
+  },
+  onClose() {
+    navigateTo({ query: route.query, hash: '' }, { replace: true });
+    post.value = undefined;
   },
 });
 function registerPost(index?: number) {
@@ -59,6 +64,25 @@ watch([top, scrollUp], ([top, up]) => {
 
 watch(data, () => masonry.value?.virtualizer.measure());
 const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' });
+
+router.afterEach((to, from) => {
+  const lbox = lightbox.value;
+  const virt = masonry.value?.virtualizer;
+  const items = data.value?.post;
+  if (!lbox || !virt || !items) return;
+
+  if (!to.hash) lbox.pswp?.close();
+  else if (to.hash !== from.hash && to.hash) {
+    const id = to.hash.slice(1);
+    if (id.includes('detail')) return;
+    const el = document.getElementById(id);
+    if (el instanceof HTMLElement) {
+      const index = +el.dataset.index!;
+      post.value = items[index];
+      el.click();
+    }
+  }
+});
 </script>
 
 <template>
@@ -87,8 +111,8 @@ const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' }
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
         <UtilMapObj :data="data.post" :fn="(p) => p[row.index]!" v-slot="item">
-          <PostListItemImage :item v-if="!['webm', 'mp4'].includes(item.file_ext)" />
-          <PostListItemVideo :item v-else />
+          <PostListItemImage :item :data-index="row.key" v-if="!['webm', 'mp4'].includes(item.file_ext)" />
+          <PostListItemVideo :item :data-index="row.key" v-else />
         </UtilMapObj>
       </div>
     </template>
