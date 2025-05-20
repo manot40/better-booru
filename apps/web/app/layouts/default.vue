@@ -1,3 +1,11 @@
+<script setup lang="ts">
+const colorMode = useColorMode();
+
+const htmlAttrs = <any>computed(() => ({ class: colorMode.value }));
+
+useHead({ htmlAttrs });
+</script>
+
 <template>
   <Card
     class="nav-root fixed w-full z-30 top-0 rounded-none border-x-0 bg-card/80 backdrop-blur-lg p-0"

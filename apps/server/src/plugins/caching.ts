@@ -40,7 +40,7 @@ export const caching = (options?: Options) => {
       cache.set(key, { data: response, expires: Date.now() + ttl * 1000 });
       set.headers['cache-control'] = `public, max-age=${ttl}, s-maxage=${ttl}`;
     })
-    .as('plugin');
+    .as('scoped');
 };
 
 const separate = (str: MaybeArray<string | undefined>): string =>

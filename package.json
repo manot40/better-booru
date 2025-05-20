@@ -9,13 +9,18 @@
     "apps/*",
     "packages/*"
   ],
+  "trustedDependencies": [
+    "@boorugator/web",
+    "@parcel/watcher",
+    "@tailwindcss/oxide"
+  ],
   "scripts": {
     "all": "bun --bun --filter '*'",
     "all:node": "bun --filter '*'",
     "copyfiles": "bun scripts/copyfiles.ts"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.10",
+    "@types/bun": "latest",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3"
   }
