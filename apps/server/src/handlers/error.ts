@@ -1,4 +1,4 @@
-import { type ErrorContext, file, ErrorHandler } from 'elysia';
+import { type ErrorContext, file } from 'elysia';
 
 const handleError = ({ code }: Context) => {
   if (code === 'NOT_FOUND') return file('./public/404.html');

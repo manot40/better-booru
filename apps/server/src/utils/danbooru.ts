@@ -32,6 +32,34 @@ export const getDanbooruImage = (data: DanbooruResponse): ExtractedImage => {
   }
 };
 
+export const mapDanbooruData = (data: DanbooruResponse) =>
+  <Post>{
+    id: data.id,
+    hash: data.md5,
+    image: `${data.md5}.${data.media_asset.file_ext}`,
+    directory: data.id,
+    change: 0,
+    owner: 'danbooru',
+    parent_id: data.parent_id,
+    rating: data.rating,
+    sample: true,
+    score: data.fav_count,
+    tags: data.tag_string,
+    source: data.source,
+    status: data.is_deleted ? 'deleted' : 'active',
+    file_size: data.file_size,
+    has_notes: data.has_notes || false,
+    comment_count: 0,
+    tags_grouping: {
+      tag: data.tag_string_general,
+      meta: data.tag_string_meta,
+      artist: data.tag_string_artist,
+      character: data.tag_string_character,
+      copyright: data.tag_string_copyright,
+    },
+    ...getDanbooruImage(data),
+  };
+
 type ExtractedImage = Pick<
   Post,
   | 'sample_url'

@@ -95,6 +95,8 @@ const response = t.Object({
   }),
 });
 
+export type PostSchema = typeof post;
+
 export const schema = { query, response: undefined as unknown as typeof response };
 
-type Handler = InferHandler<Setup, '/api/post', { query: typeof schema.query.static }>;
+type Handler = InferHandler<Setup, '/api/post', typeof schema>;

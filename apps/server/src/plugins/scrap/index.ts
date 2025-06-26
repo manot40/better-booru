@@ -6,9 +6,9 @@ import { cron, Patterns } from '@elysiajs/cron';
 
 export const scrap = new Elysia()
   .use(cron({ run, name: 'scrap', pattern: Patterns.EVERY_2_HOURS }))
-  .onBeforeHandle({ as: 'local' }, ({ query, headers, error }) => {
+  .onBeforeHandle({ as: 'local' }, ({ query, headers, status }) => {
     const token = query.token || headers['authorization'];
-    if (token !== process.env.DANBOORU_API_KEY) return error(401, 'Unauthorized');
+    if (token !== process.env.DANBOORU_API_KEY) return status(401, 'Unauthorized');
   })
   .get('/scrap/stop', ({ store }) => {
     const cron = store.cron.scrap;

@@ -18,7 +18,7 @@ const ipx = createIPX({
   }),
 });
 
-export const elysiaIPXHandler: Handler = async ({ set, params, error }) => {
+export const elysiaIPXHandler: Handler = async ({ set, params, status }) => {
   try {
     const rawParam = params['*'];
     const [modString = '', ...ids] = rawParam.split('/');
@@ -62,7 +62,7 @@ export const elysiaIPXHandler: Handler = async ({ set, params, error }) => {
 
     return data;
   } catch (e) {
-    throw error(500, e);
+    throw status(500, e);
   }
 };
 
