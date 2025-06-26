@@ -16,7 +16,7 @@ const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
 const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
-const samePage = ref(false);
+const canBack = ref(false);
 
 const gap = 4;
 function estimateSize(index: number, lane: number) {
@@ -49,11 +49,11 @@ const { lightbox, controlVisible } = useLightbox(container, {
   onClose() {
     post.value = undefined;
 
-    if (samePage.value) {
-      history.back();
-      samePage.value = false;
+    if (canBack.value) {
+      router.back();
+      canBack.value = false;
     } else {
-      navigateTo({ query: route.query, hash: '' });
+      navigateTo({ query: route.query });
     }
   },
 });
@@ -64,7 +64,7 @@ function registerPost(index?: number) {
   const item = virt.getVirtualItems().at(index);
 
   if (item) {
-    samePage.value = true;
+    canBack.value = true;
     post.value = data.value.post[item.index];
   }
 }
@@ -81,11 +81,13 @@ watch([top, scrollUp], ([top, up]) => {
 watch(data, () => masonry.value?.virtualizer.measure());
 const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' });
 
-router.afterEach((to, from) => {
+const routeListener = router.afterEach((to, from) => {
   const lbox = lightbox.value;
   const virt = masonry.value?.virtualizer;
   const items = data.value?.post;
   if (!lbox || !virt || !items) return;
+
+  canBack.value = false;
 
   if (!to.hash) lbox.pswp?.close();
   else if (to.hash !== from.hash && to.hash) {
@@ -99,6 +101,8 @@ router.afterEach((to, from) => {
     }
   }
 });
+
+onUnmounted(routeListener);
 </script>
 
 <template>
