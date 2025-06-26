@@ -16,6 +16,8 @@ const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
 const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
+const samePage = ref(false);
+
 const gap = 4;
 function estimateSize(index: number, lane: number) {
   const item = data.value?.post[index];
@@ -35,22 +37,36 @@ const { lightbox, controlVisible } = useLightbox(container, {
   onLoadError({ content: { data }, slide }) {
     const el = data.element;
     const src = '/image/_/' + data.src;
+
     if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
+
     el.dataset.pswpSrc = src;
     el.dataset.proxied = 'true';
+
     Object.assign(data, { src, proxied: true });
     slide.pswp.refreshSlideContent(slide.index);
   },
   onClose() {
-    navigateTo({ query: route.query, hash: '' }, { replace: true });
     post.value = undefined;
+
+    if (samePage.value) {
+      history.back();
+      samePage.value = false;
+    } else {
+      navigateTo({ query: route.query, hash: '' });
+    }
   },
 });
 function registerPost(index?: number) {
   const virt = masonry.value?.virtualizer;
   if (!data.value || !virt || typeof index != 'number') return;
+
   const item = virt.getVirtualItems().at(index);
-  if (item) post.value = data.value.post[item.index];
+
+  if (item) {
+    samePage.value = true;
+    post.value = data.value.post[item.index];
+  }
 }
 
 const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
