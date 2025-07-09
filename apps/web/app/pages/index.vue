@@ -18,15 +18,15 @@ const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
 const canBack = ref(false);
 
-const gap = 4;
+const gap = 8;
 function estimateSize(index: number, lane: number) {
   const item = data.value?.post[index];
   if (!item) return 0;
 
   const [x, y] = imageAspectRatio(item.width, item.height);
-  const widthPerLane = +(window.innerWidth / lane) - gap;
-  const relWidth = widthPerLane / x;
-  const relHeight = Math.round(relWidth * y);
+  const elWidth = (container.value?.clientWidth || window.innerWidth) - gap * lane;
+  const relWidth = +(elWidth / lane) / x;
+  const relHeight = relWidth * y;
 
   return relHeight > 900 ? 900 : relHeight;
 }
@@ -126,7 +126,7 @@ onUnmounted(routeListener);
     :containerRef="(el) => (container = <HTMLElement>el)"
     id="post-list"
     ref="masonry"
-    class="relative overflow-auto px-1 lg:px-2 py-2 lg:py-3 [&>div]:translate-y-14 h-dvh"
+    class="relative overflow-auto p-3 [&>div]:translate-y-14 h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">

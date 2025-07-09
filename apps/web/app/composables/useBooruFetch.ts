@@ -65,7 +65,9 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 
     error.value = undefined;
     data.value = { meta: res.meta, post: data.value.post.concat(deduped) };
-    if ((hasNext.value = res.post.length > 0)) resetPage(<number>query.page, true);
+
+    const isNotEmpty = (hasNext.value = res.post.length > 0);
+    if (isNotEmpty) resetPage(<number>query.page, true);
   }
 
   const debOpts = { debounce: 3000 };

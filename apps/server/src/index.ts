@@ -30,7 +30,10 @@ const api = new Elysia({ prefix: '/api' })
   .get('/posts/:id/tags', <any>PostTags.handler, PostTags.schema)
   .get('/autocomplete', <any>Autocomplete.handler, Autocomplete.schema);
 
-const app = new Elysia().use(api).get('/image/*', elysiaIPXHandler).onError({ as: 'scoped' }, handleError);
+export const app = new Elysia()
+  .use(api)
+  .get('/image/*', elysiaIPXHandler)
+  .onError({ as: 'scoped' }, handleError);
 
 setup.use(app).listen(process.env.PORT || 3000);
 

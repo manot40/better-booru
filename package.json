@@ -1,27 +1,27 @@
 {
   "name": "boorugator",
-  "type": "module",
-  "author": "manot40 <kevinsandiho290100@gmail.com>",
-  "license": "MIT",
   "version": "1.2.5",
+  "author": "manot40 <kevinsandiho290100@gmail.com>",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prettier": "^3.6.1",
+    "typescript": "5.8.2"
+  },
+  "license": "MIT",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "trustedDependencies": [
-    "@boorugator/web",
-    "@parcel/watcher",
-    "@tailwindcss/oxide"
-  ],
   "scripts": {
     "all": "bun --bun --filter '*'",
     "all:node": "bun --filter '*'",
     "copyfiles": "bun scripts/copyfiles.ts"
   },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "prettier": "^3.6.1",
-    "typescript": "~5.8.3"
-  }
+  "trustedDependencies": [
+    "@boorugator/web",
+    "@parcel/watcher",
+    "@tailwindcss/oxide"
+  ],
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

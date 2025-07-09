@@ -17,7 +17,6 @@ const root = useTemplateRef('root');
 const userConfig = useUserConfig();
 const { width: windowWidth } = useWindowSize();
 
-const rootOffset = ref(0);
 const windowW = throttledRef(windowWidth, 150);
 
 const lanes = computed(() => {
@@ -53,29 +52,34 @@ const width = computed(() => {
       else return 50;
   }
 });
+
+const remeasure = () => virtualizer.value.measure();
 const totalSize = computed(() => virtualizer.value.getTotalSize());
 const virtualRows = computed(() => virtualizer.value.getVirtualItems());
 
-defineExpose({ virtualizer, el: root });
+onMounted(remeasure);
+watchDebounced([width, windowW], remeasure, { debounce: 50 });
 
-onMounted(() => (rootOffset.value = root.value?.offsetTop ?? 0));
-watchDebounced([width, windowW], () => virtualizer.value.measure(), { debounce: 100 });
+defineExpose({ virtualizer, el: root });
 </script>
 
 <template>
   <div ref="root">
-    <div :ref="containerRef" class="w-full relative overflow-hidden" :style="{ height: `${totalSize}px` }">
+    <div
+      :ref="containerRef"
+      class="w-full relative overflow-hidden pl-px"
+      :style="{ height: `${totalSize}px` }">
       <div
+        v-for="(row, i) in virtualRows"
         :key="row.index"
         :data-index="i"
         :data-content-index="row.index"
         class="absolute top-0 transition-all duration-300"
         :style="{
-          left: `calc(${row.lane * width}% + ${row.lane * (gap / 2)}px)`,
-          width: `calc(${width}% - ${gap}px)`,
+          left: `calc(${row.lane * width}% + ${row.lane * (gap / lanes)}px)`,
+          width: `calc(${width}% - ${lanes == 1 ? 0 : gap}px)`,
           transform: `translate3d(0,${row.start}px,0)`,
-        }"
-        v-for="(row, i) in virtualRows">
+        }">
         <slot :row :virtualizer />
       </div>
     </div>
