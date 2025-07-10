@@ -127,7 +127,7 @@ onUnmounted(routeListener);
     :containerRef="(el) => (container = <HTMLElement>el)"
     id="post-list"
     ref="masonry"
-    class="relative overflow-auto p-3 max-md:px-2 [&>div]:translate-y-14 h-dvh"
+    class="relative overflow-y-auto overflow-x-hidden p-3 max-md:px-2 [&>div]:translate-y-14 h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
