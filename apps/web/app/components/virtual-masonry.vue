@@ -67,8 +67,8 @@ defineExpose({ virtualizer, el: root });
   <div ref="root">
     <div
       :ref="containerRef"
-      class="w-full relative overflow-hidden pl-px"
-      :style="{ height: `${totalSize}px` }">
+      :style="{ height: `${totalSize}px` }"
+      class="w-full relative ml-0.5 lg:ml-px overflow-hidden">
       <div
         v-for="(row, i) in virtualRows"
         :key="row.index"
