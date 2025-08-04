@@ -68,7 +68,7 @@ async function scrap(state: State): Promise<void> {
   try {
     console.info('Processing batch:', danbooruData[0]?.id, danbooruData.at(-1)?.id);
     db.transaction((tx) => {
-      tx.insert($s.postTable).values(danbooruData).onConflictDoNothing({ target: $s.postTable.id }).run();
+      tx.insert($s.postTable).values(danbooruData).onConflictDoNothing().run();
 
       for (const { id, tags } of danbooruData) {
         const initTagName = tags.map((t) => t.name).filter(Boolean);
