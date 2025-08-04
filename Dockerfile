@@ -4,7 +4,7 @@ FROM base AS builder
 WORKDIR /usr/app
 COPY . .
 
-RUN bun install --frozen-lockfile
+RUN bun install
 RUN bun all build && bun run copyfiles
 
 # Runtime image
