@@ -1,4 +1,4 @@
-import { eq, getTableColumns, sql } from 'drizzle-orm';
+import { asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 
 import { db, schema as $s } from 'db';
 
@@ -17,7 +17,8 @@ export async function queryPostTags(post_id: number) {
     .with(post)
     .select(getTableColumns($s.tagsTable))
     .from($s.tagsTable)
-    .innerJoin(post, eq($s.tagsTable.id, sql`ANY(${post.tag_ids})`));
+    .innerJoin(post, eq($s.tagsTable.id, sql`ANY(${post.tag_ids})`))
+    .orderBy(desc($s.tagsTable.category), asc($s.tagsTable.name));
 
   return result;
 }

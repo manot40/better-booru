@@ -54,7 +54,7 @@ export async function queryPosts(qOpts: QueryOptions) {
         .from($s.postTable)
         .where(and(cursor, arrayOverlaps($s.postTable.tag_ids, filters.ne)))
         .orderBy(order)
-        .limit(opts.limit * 100);
+        .limit(opts.limit * 60);
       whereParams.push(notInArray($s.postTable.id, exclusion));
     }
 
