@@ -32,6 +32,9 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
     }
 
     const postData = await db.query.postTable.findFirst({
+      columns: {
+        tag_ids: false,
+      },
       extras: {
         file_url: ASSET_URL.file_url.as('file_url'),
         sample_url: ASSET_URL.sample_url.as('sample_url'),
