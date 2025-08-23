@@ -65,7 +65,7 @@ async function scrap(state: State): Promise<void> {
         const tagsMap = Object.entries(t).flatMap(([cat, t1]) =>
           t1.map((tagName) => ({ category: +cat, tagName }))
         );
-        const tagsName = tagsMap.map((t) => t.tagName);
+        const tagsName = tagsMap.map((t) => t.tagName.slice(0, 100));
 
         let tag_ids: number[];
         const existingTags = await tx.query.tagsTable.findMany({
@@ -82,8 +82,8 @@ async function scrap(state: State): Promise<void> {
         } else {
           const tagsToCreate = tagsName.reduce(
             (acc, name, i) => {
-              const existIndex = existingTags.findIndex((t) => t.name === name);
-              if (existIndex !== undefined) return acc;
+              const existing = existingTags.some((t) => t.name === name);
+              if (existing) return acc;
               acc.push({ name, category: tagsMap[i].category });
               return acc;
             },
