@@ -1,13 +1,20 @@
-import type { Database as BunDatabase } from 'bun:sqlite';
+import type { Sql } from 'postgres';
+import type { PgTransaction } from 'drizzle-orm/pg-core';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
+import type { PostgresJsQueryResultHKT, PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 import * as schema from './schema';
+import { drizzle } from 'drizzle-orm/postgres-js';
 
-import { drizzle, type BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+const DB_URL = Bun.env.DATABASE_URL || 'noop';
 
-type Database = BunSQLiteDatabase<typeof schema> & { $client: BunDatabase; enabled: boolean };
-
-const DB_PATH = Bun.env.DB_FILE_PATH ?? ':memory:';
-const db = <Database>drizzle(DB_PATH, { schema });
-db.enabled = !!Bun.env.DB_FILE_PATH;
+const db = <Database>drizzle(DB_URL, { schema });
+db.enabled = !!DB_URL || DB_URL !== 'noop';
 
 export { db, schema };
+export type Database = PostgresJsDatabase<typeof schema> & { $client: Sql<{}>; enabled: boolean };
+export type Transaction = PgTransaction<
+  PostgresJsQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;

@@ -1,5 +1,4 @@
 import type { Setup } from 'index';
-import type { TagWithCount } from 'plugins/expensive-tags';
 import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
 import { type InferHandler, t } from 'elysia';
@@ -7,12 +6,14 @@ import { type InferHandler, t } from 'elysia';
 import { db } from 'db';
 import { queryPosts } from 'lib/query/post';
 
+import { tagSchema } from './post-tags';
+
 import { processRating } from '@boorugator/shared';
 import { processBooruData } from 'utils/common';
 import { waitForWorker, WORKER_PATH } from 'utils/worker';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
-export const handler: Handler = async ({ query, headers, store, userConfig, expensiveTags }) => {
+export const handler: Handler = async ({ query, headers, store, userConfig }) => {
   const { tags, page, limit = '50' } = query;
 
   const baseRating = headers['x-rating'] || userConfig?.rating?.join(' ');
@@ -35,33 +36,23 @@ export const handler: Handler = async ({ query, headers, store, userConfig, expe
 
     const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
-    const opts = { page: (page || 1).toString(), tags: tags?.split(' '), limit: +limit, rating };
+    const opts = { page: (page || 1).toString(), tags: <string[]>tags?.split(' '), limit: +limit, rating };
 
-    if (!isExpensive(expensiveTags, opts.tags)) return queryPosts(opts);
+    if (!opts.tags?.length || !opts.tags.some((t) => t.startsWith('-'))) {
+      return queryPosts(opts);
+    }
 
     store.cacheTTL = 60 * 15;
-    const payload = { ...opts, expensive: expensiveTags };
-    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload });
+    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
   }
 };
-
-export function isExpensive(expensive: TagWithCount[], tags?: string[]) {
-  if (!tags?.length) return false;
-  if (tags.length > 3) return true;
-  if (tags.some((t) => t.startsWith('-'))) return true;
-
-  const mapped = expensive.map((t) => t.name);
-  const eqTags = tags.filter((t) => !t.startsWith('-'));
-  return eqTags.some((t) => mapped.includes(t));
-}
 
 const post = t.Object({
   id: t.Number(),
   hash: t.String(),
-  tags: t.Optional(t.String()),
+  tags: t.Optional(t.Array(tagSchema)),
   score: t.Number(),
   rating: t.UnionEnum(['g', 's', 'q', 'e']),
-  artist: t.String(),
   source: t.MaybeEmpty(t.String()),
   pixiv_id: t.MaybeEmpty(t.Number()),
   parent_id: t.MaybeEmpty(t.Number()),

@@ -1,43 +1,29 @@
 import type { SQL } from 'drizzle-orm';
-import type { TagWithCount } from 'plugins/expensive-tags';
-import type { TagCategoryID } from '@boorugator/shared/types';
-import type { DBPostData, PostRelations } from 'db/schema';
+import type { DBPostData } from 'db/schema';
 
-import cache from 'lib/cache';
 import { db, schema as $s } from 'db';
 
-import { deserializeTags, type Transaction } from './helpers/common';
+import { arrayContains, arrayOverlaps } from 'drizzle-orm';
+
+import { deserializeTags } from './helpers/common';
 import { file_url, preview_url, sample_url } from './helpers/file-url-builder';
-import { createRelationFilterFn, generateTagsFilterQuery } from './helpers/tags-filter';
 
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  getTableColumns,
-  gt,
-  inArray,
-  lt,
-  ne,
-  notExists,
-  notInArray,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, notInArray, sql } from 'drizzle-orm';
 
-export function queryPosts(qOpts: QueryOptions) {
+export async function queryPosts(qOpts: QueryOptions) {
   const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
   opts.page ||= '1';
 
   let isAsc = false;
   let offset = 0;
+  let cursor: SQL | undefined;
   const whereParams: SQL[] = [];
 
   // Page Filter
   if (Number.isNaN(+opts.page)) {
     const pageNum = +opts.page.slice(1);
     isAsc = opts.page.startsWith('a');
-    whereParams.push((isAsc ? gt : lt)($s.postTable.id, pageNum));
+    cursor = (isAsc ? gt : lt)($s.postTable.id, pageNum);
   } else if (+opts.page > 1 && +opts.page <= 200000) {
     offset = (+opts.page - 1) * opts.limit;
   }
@@ -51,137 +37,49 @@ export function queryPosts(qOpts: QueryOptions) {
     whereParams.push(filter);
   }
 
-  // Tags Filter
-  whereParams.push(...generateTagsFilter(opts.tags, opts.page, opts.expensive));
+  const { post, count } = await db.transaction(async (tx) => {
+    /** Posts Ordering */
+    const order = (isAsc ? asc : desc)($s.postTable.id);
 
-  const { post, count } = db.transaction((tx) => {
-    const { artist_id: _, ...cols } = getTableColumns($s.postTable);
-    const op = tx
-      .select({ ...cols, artist: $s.tagsTable.name, file_url, sample_url, preview_url })
+    /** Tags Filter */
+    const filters = await deserializeTags(tx, opts.tags);
+    // Equality Filter
+    if (filters.eq) {
+      whereParams.push(arrayContains($s.postTable.tag_ids, filters.eq));
+    }
+    // Inequality Filter
+    if (filters.ne) {
+      const exclusion = tx
+        .select({ id: $s.postTable.id })
+        .from($s.postTable)
+        .where(and(cursor, arrayOverlaps($s.postTable.tag_ids, filters.ne)))
+        .orderBy(order)
+        .limit(opts.limit * 100);
+      whereParams.push(notInArray($s.postTable.id, exclusion));
+    }
+
+    const { tag_ids: _, ...cols } = getTableColumns($s.postTable);
+    const post = await tx
+      .select({ ...cols, file_url, preview_url, sample_url })
       .from($s.postTable)
-      .leftJoin($s.tagsTable, eq($s.tagsTable.id, $s.postTable.artist_id))
-      .where(and(...whereParams))
-      .orderBy((isAsc ? asc : desc)($s.postTable.id))
+      .where(and(cursor, ...whereParams))
+      .orderBy(order)
       .limit(opts.limit)
       .offset(offset);
 
-    const count = opts.expensive ? 0 : getPostCount(tx, opts.tags, opts.rating as 'g');
-    return { post: op.all(), count };
+    const count = !opts.tags?.length && !opts.rating ? postsCount : 0;
+    return { post, count };
   });
 
   return { meta: { limit: opts.limit, count, offset }, post };
-}
-
-function getPostCount(tx: Transaction, tags: string[], rating?: MaybeArray<'g' | 's' | 'q' | 'e'>) {
-  if (!tags.length && !rating?.length) return postsCount;
-
-  const hasRating = !!rating?.length && (!Array.isArray(rating) || rating.length <= 4);
-  const cacheKey = `rating_${hasRating ? rating : 'all'}|count_${[...tags].sort()}`;
-  if (cache.has(cacheKey)) return cache.get<number>(cacheKey);
-
-  const params = <SQL[]>[];
-
-  if (hasRating) {
-    const col = $s.postTable.rating;
-    params.push(Array.isArray(rating) ? inArray(col, rating) : eq(col, rating));
-  }
-  if (tags.length) {
-    Object.entries(deserializeTags(tags)).forEach(([key, s]) => {
-      if (!s) return;
-      const filterFn = createRelationFilterFn(tx);
-      const filterOp = Object.entries(s).flatMap(([c, ids]) => {
-        const cat = +c as TagCategoryID;
-        if (ids && cat == 1) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-        else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
-        return [];
-      });
-      if (filterOp.length > 0) {
-        // @ts-ignore
-        const set = filterOp.reduce((op, next) => op![key == 'ne' ? 'union' : 'intersect'](next));
-        if (set) params.push((key == 'ne' ? notInArray : inArray)($s.postTable.id, set));
-      }
-    });
-  }
-
-  const count = tx
-    .select({ count: sql<number>`COUNT(${$s.postTable.id})` })
-    .from($s.postTable)
-    .where(and(...params))
-    .get()?.count!;
-
-  cache.set(cacheKey, count);
-  return count;
-}
-
-function generateTagsFilter(tags: string[], page?: string, expensiveTags?: TagWithCount[]) {
-  const params = <SQL[]>[];
-  const tagsFilter = deserializeTags(tags);
-  const SAFE_OFFSET = 300000;
-
-  /** Calculate cursor range to help ease the query */
-  let range: [number, number] | undefined;
-  if (page) {
-    if (page === '1') {
-      const lastId = db.query.postTable
-        .findFirst({ columns: { id: true }, orderBy: (t, { desc }) => desc(t.id) })
-        .sync();
-      if (lastId) range = [lastId.id, Math.max(lastId.id - SAFE_OFFSET, 0)];
-    } else if (/^(a|b)[0-9]+$/.test(page)) {
-      const t = page.slice(0, 1);
-      const targetId = +page.slice(1);
-      if (t === 'a') range = [targetId + SAFE_OFFSET, targetId];
-      else if (t === 'b') range = [targetId, Math.max(targetId - SAFE_OFFSET, 0)];
-    }
-  }
-
-  if (tagsFilter.eq) {
-    const complex = Object.values(tagsFilter.eq).flat().filter(Boolean).length > 3;
-    const expensivenes = expensiveTags ? { complex, tags: expensiveTags } : undefined;
-
-    const filterFn = createRelationFilterFn(db, { range, ...expensivenes });
-    const filterOp = Object.entries(tagsFilter.eq).flatMap(([c, ids]) => {
-      const cat = +c as TagCategoryID;
-      if (cat == 1 && ids) params.push(eq($s.postTable.artist_id, <number>ids[0]));
-      else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
-      return [];
-    });
-    if (filterOp.length) {
-      // @ts-ignore
-      const intersects = filterOp.reduce((op, next) => op!.intersect(next));
-      if (intersects) params.push(inArray($s.postTable.id, intersects));
-    }
-  }
-
-  if (tagsFilter.ne) {
-    const filterWithoutRange = <R extends PostRelations>(rel: R, ids: number[]) =>
-      db
-        .select({ '1': sql<1>`1` })
-        .from(rel)
-        .where(and(eq(rel.post_id, $s.postTable.id), inArray(rel.tag_id, ids)));
-
-    const filterFn = range ? createRelationFilterFn(db, { range, mode: 'OR' }) : filterWithoutRange;
-    const filterOp = Object.entries(tagsFilter.ne).flatMap(([c, ids]) => {
-      const cat = +c as TagCategoryID;
-      if (ids && cat == 1) params.push(ne($s.postTable.artist_id, <number>ids[0]));
-      else if (ids) return generateTagsFilterQuery(filterFn, cat, ids);
-      return [];
-    });
-    if (filterOp.length) {
-      // @ts-ignore
-      const union = filterOp.reduce((op, next) => op!.union(next));
-      if (union) params.push(range ? notInArray($s.postTable.id, union) : notExists(union));
-    }
-  }
-
-  return params;
 }
 
 let postsCount = 0;
 
 if (db.enabled) {
   const countPosts = db.select({ count: sql<number>`COUNT(${$s.postTable.id})` }).from($s.postTable);
-  const setCount = () => (postsCount = countPosts.get()?.count || 0);
-  setInterval(setCount, 60000);
+  const setCount = () => countPosts.then(([{ count }]) => (postsCount = count));
+  setInterval(setCount, 60 * 60 * 1000);
   setCount();
 }
 
@@ -192,5 +90,4 @@ export interface QueryOptions {
   /** default 50 */
   limit?: number;
   rating?: MaybeArray<StringHint<DBPostData['rating']>>;
-  expensive?: TagWithCount[];
 }

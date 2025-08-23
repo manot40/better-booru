@@ -5,7 +5,7 @@ import { etag } from '@bogeychan/elysia-etag';
 import { staticPlugin } from '@elysiajs/static';
 
 import { elysiaIPXHandler } from 'lib/ipx';
-import { caching, expensiveTags, logger, scrap, userConfig } from 'plugins';
+import { caching, logger, scrap, userConfig } from 'plugins';
 
 import * as Post from 'handlers/post';
 import * as PostTags from 'handlers/post-tags';
@@ -21,8 +21,7 @@ const setup = new Elysia()
   .use(logger)
   .use(userConfig)
   .use(staticPlugin({ indexHTML: true, prefix: '/' }))
-  .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }))
-  .decorate('expensiveTags', expensiveTags());
+  .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }));
 
 const api = new Elysia({ prefix: '/api' })
   .get('/posts', <any>Post.handler, Post.schema)
