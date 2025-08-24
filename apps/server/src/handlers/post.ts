@@ -42,7 +42,6 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
       return queryPosts(opts);
     }
 
-    store.cacheTTL = 60 * 15;
     return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
   }
 };

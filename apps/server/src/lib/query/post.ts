@@ -22,20 +22,24 @@ import {
   sql,
 } from 'drizzle-orm';
 
+const SAFE_OFFSET = 1000000;
+
 export async function queryPosts(qOpts: QueryOptions) {
   const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
   opts.page ||= '1';
 
   let isAsc = false;
   let offset = 0;
-  let cursor: SQL | undefined;
+  let cursor = [] as [SQL?, SQL?];
   const filters: SQL[] = [];
 
   // Page Filter
   if (Number.isNaN(+opts.page)) {
     const pageNum = +opts.page.slice(1);
     isAsc = opts.page.startsWith('a');
-    cursor = (isAsc ? gt : lt)($s.postTable.id, pageNum);
+    cursor = isAsc
+      ? [gt($s.postTable.id, pageNum), lt($s.postTable.id, pageNum + SAFE_OFFSET)]
+      : [lt($s.postTable.id, pageNum), gt($s.postTable.id, pageNum - SAFE_OFFSET)];
   } else if (+opts.page > 1 && +opts.page <= 200000) {
     offset = (+opts.page - 1) * opts.limit;
   }
@@ -64,7 +68,7 @@ export async function queryPosts(qOpts: QueryOptions) {
       const exclusion = tx
         .select({ id: $s.postTable.id })
         .from($s.postTable)
-        .where(and(cursor, arrayOverlaps($s.postTable.tag_ids, tags.ne)))
+        .where(and(...cursor, arrayOverlaps($s.postTable.tag_ids, tags.ne)))
         .orderBy(order)
         .limit(opts.limit * 60);
       filters.push(notInArray($s.postTable.id, exclusion));
@@ -74,7 +78,7 @@ export async function queryPosts(qOpts: QueryOptions) {
     const post = await tx
       .select({ ...cols, ...fileUrl })
       .from($s.postTable)
-      .where(and(cursor, ...filters))
+      .where(and(...cursor, ...filters))
       .orderBy(order)
       .limit(opts.limit)
       .offset(offset);
@@ -93,7 +97,7 @@ export function getPostCount(filters: SQL[], order: SQL): number {
       .from($s.postTable)
       .where(and(...filters))
       .orderBy(order)
-      .limit(1000000)
+      .limit(SAFE_OFFSET)
   );
   const query = db
     .with(rows)
