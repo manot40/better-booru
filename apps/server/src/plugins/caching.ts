@@ -36,7 +36,7 @@ export const caching = (options?: Options) => {
 
       const url = new URL(request.url);
       const key = generateKey(url, headers, varies);
-      const ttl = store.cacheTTL ?? (expensive ? Math.min(60 * 60, cacheTTL) : cacheTTL);
+      const ttl = store.cacheTTL ?? (expensive ? Math.max(60 * 60, cacheTTL) : cacheTTL);
 
       /** Match cache path */
       if (pathRegex && !pathRegex.some((r) => r.test(url.pathname))) return;
