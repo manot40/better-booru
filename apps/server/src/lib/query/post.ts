@@ -1,8 +1,8 @@
 import type { SQL } from 'drizzle-orm';
 import type { DBPostData } from 'db/schema';
 
+import { SQLiteStore } from 'lib/cache/sqlite';
 import { db, schema as $s } from 'db';
-import { createCache, SQLiteStore } from 'lib/cache';
 
 import { deserializeTags } from './helpers/common';
 import * as fileUrl from './helpers/file-url-builder';
@@ -89,7 +89,7 @@ export async function queryPosts(qOpts: QueryOptions) {
   return { meta: { limit: opts.limit, count, offset }, post };
 }
 
-const countCache = createCache(new SQLiteStore<number>());
+const countCache = new SQLiteStore('.data/count_cache.db');
 export function getPostCount(filters: SQL[], order: SQL): number {
   const rows = db.$with('post_rows').as((qb) =>
     qb
@@ -113,9 +113,9 @@ export function getPostCount(filters: SQL[], order: SQL): number {
   if (cached) return +cached;
   else if (lock) return 0;
 
-  countCache.set(lockKey, true);
+  countCache.set(lockKey, '1', 60);
   query
-    .then(([{ count }]) => countCache.set(cacheKey, count))
+    .then(([{ count }]) => countCache.set(cacheKey, `${count}`, 60 * 60 * 24))
     .catch(() => void 0)
     .finally(() => countCache.delete(lockKey));
 

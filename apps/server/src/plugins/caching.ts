@@ -1,4 +1,4 @@
-import cache from 'lib/cache';
+import MemoryCache from 'lib/cache/memory';
 
 import { Elysia } from 'elysia';
 
@@ -11,8 +11,15 @@ type Options = {
   pathRegex?: RegExp[];
 };
 
+type ResponseCache = {
+  data: unknown;
+  expires: number;
+};
+
 export const caching = (options?: Options) => {
+  const cache = new MemoryCache<ResponseCache>();
   const { pathRegex, varies = VARIES, cacheTTL = TTL } = options || {};
+
   return new Elysia({ name: 'caching', seed: options })
     .state('cacheTTL', undefined as number | undefined)
     .derive({ as: 'local' }, () => ({ resolveTime: performance.now() }))
@@ -24,7 +31,7 @@ export const caching = (options?: Options) => {
       set.headers['vary'] = varies.join(', ');
 
       if (headers['cache-control'] !== 'no-cache' && cache.has(key)) {
-        const cached = cache.get(key) as { data: unknown; expires: number };
+        const cached = cache.get(key);
         if (cached.expires > Date.now()) {
           set.headers['expires'] = new Date(cached.expires).toUTCString();
           return cached.data;
