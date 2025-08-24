@@ -2,13 +2,25 @@ import type { SQL } from 'drizzle-orm';
 import type { DBPostData } from 'db/schema';
 
 import { db, schema as $s } from 'db';
-
-import { arrayContains, arrayOverlaps } from 'drizzle-orm';
+import { createCache, SQLiteStore } from 'lib/cache';
 
 import { deserializeTags } from './helpers/common';
-import { file_url, preview_url, sample_url } from './helpers/file-url-builder';
+import * as fileUrl from './helpers/file-url-builder';
 
-import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, notInArray, sql } from 'drizzle-orm';
+import {
+  and,
+  arrayContains,
+  arrayOverlaps,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  lt,
+  notInArray,
+  sql,
+} from 'drizzle-orm';
 
 export async function queryPosts(qOpts: QueryOptions) {
   const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
@@ -17,7 +29,7 @@ export async function queryPosts(qOpts: QueryOptions) {
   let isAsc = false;
   let offset = 0;
   let cursor: SQL | undefined;
-  const whereParams: SQL[] = [];
+  const filters: SQL[] = [];
 
   // Page Filter
   if (Number.isNaN(+opts.page)) {
@@ -34,7 +46,7 @@ export async function queryPosts(qOpts: QueryOptions) {
     const filter = Array.isArray(rating)
       ? inArray($s.postTable.rating, rating)
       : eq($s.postTable.rating, rating);
-    whereParams.push(filter);
+    filters.push(filter);
   }
 
   const { post, count } = await db.transaction(async (tx) => {
@@ -42,45 +54,68 @@ export async function queryPosts(qOpts: QueryOptions) {
     const order = (isAsc ? asc : desc)($s.postTable.id);
 
     /** Tags Filter */
-    const filters = await deserializeTags(tx, opts.tags);
+    const tags = await deserializeTags(tx, opts.tags);
     // Equality Filter
-    if (filters.eq) {
-      whereParams.push(arrayContains($s.postTable.tag_ids, filters.eq));
+    if (tags.eq) {
+      filters.push(arrayContains($s.postTable.tag_ids, tags.eq));
     }
     // Inequality Filter
-    if (filters.ne) {
+    if (tags.ne) {
       const exclusion = tx
         .select({ id: $s.postTable.id })
         .from($s.postTable)
-        .where(and(cursor, arrayOverlaps($s.postTable.tag_ids, filters.ne)))
+        .where(and(cursor, arrayOverlaps($s.postTable.tag_ids, tags.ne)))
         .orderBy(order)
         .limit(opts.limit * 60);
-      whereParams.push(notInArray($s.postTable.id, exclusion));
+      filters.push(notInArray($s.postTable.id, exclusion));
     }
 
     const { tag_ids: _, ...cols } = getTableColumns($s.postTable);
     const post = await tx
-      .select({ ...cols, file_url, preview_url, sample_url })
+      .select({ ...cols, ...fileUrl })
       .from($s.postTable)
-      .where(and(cursor, ...whereParams))
+      .where(and(cursor, ...filters))
       .orderBy(order)
       .limit(opts.limit)
       .offset(offset);
 
-    const count = !opts.tags?.length && !opts.rating ? postsCount : 0;
-    return { post, count };
+    return { post, count: tags.ne ? 0 : getPostCount(filters, order) };
   });
 
   return { meta: { limit: opts.limit, count, offset }, post };
 }
 
-let postsCount = 0;
+const countCache = createCache(new SQLiteStore<number>());
+export function getPostCount(filters: SQL[], order: SQL): number {
+  const rows = db.$with('post_rows').as((qb) =>
+    qb
+      .select({ id: $s.postTable.id })
+      .from($s.postTable)
+      .where(and(...filters))
+      .orderBy(order)
+      .limit(1000000)
+  );
+  const query = db
+    .with(rows)
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(rows);
 
-if (db.enabled) {
-  const countPosts = db.select({ count: sql<number>`COUNT(${$s.postTable.id})` }).from($s.postTable);
-  const setCount = () => countPosts.then(([{ count }]) => (postsCount = count));
-  setInterval(setCount, 60 * 60 * 1000);
-  setCount();
+  const cacheKey = query.toSQL().params.join('|');
+  const lockKey = `${cacheKey}-countLock`;
+
+  const lock = countCache.get(lockKey);
+  const cached = countCache.get(cacheKey);
+
+  if (cached) return +cached;
+  else if (lock) return 0;
+
+  countCache.set(lockKey, true);
+  query
+    .then(([{ count }]) => countCache.set(cacheKey, count))
+    .catch(() => void 0)
+    .finally(() => countCache.delete(lockKey));
+
+  return 0;
 }
 
 export interface QueryOptions {

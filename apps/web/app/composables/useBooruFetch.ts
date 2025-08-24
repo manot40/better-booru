@@ -14,8 +14,8 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     canLoadMore: () => hasNext.value && !noUpdate.value && !loading.value,
   });
 
-  const data = shallowRef<Result>();
-  const error = shallowRef<FetchError>();
+  const data = useState('booru-fetch-data', () => shallowRef<Result>());
+  const error = useState('booru-fetch-error', () => shallowRef<FetchError>());
 
   const hasNext = ref(true);
   const loading = ref(false);

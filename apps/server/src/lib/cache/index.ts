@@ -1,23 +1,23 @@
+import type { CacheStore, Key } from './store';
+
 const DEFAULT_TTL = 60 * 60 * 24 * 1000;
 
-type Primitive = string | number | symbol;
-
-export const createCache = () => ({
-  data: new Map(),
+export const createCache = <T = any>(storage = new Map() as CacheStore<T>) => ({
+  data: storage,
   timers: new Map(),
-  set(k: Primitive, v: any, ttl = DEFAULT_TTL) {
+  set(k: Key, v: any, ttl = DEFAULT_TTL) {
     if (this.timers.has(k)) clearTimeout(this.timers.get(k));
     const timer = setTimeout(() => this.delete(k), ttl);
     this.timers.set(k, timer);
     this.data.set(k, v);
   },
-  get<T = any>(k: Primitive) {
+  get(k: Key) {
     return this.data.get(k) as T;
   },
-  has(k: Primitive) {
+  has(k: Key) {
     return this.data.has(k);
   },
-  delete(k: Primitive) {
+  delete(k: Key) {
     if (this.timers.has(k)) clearTimeout(this.timers.get(k));
     this.timers.delete(k);
     return this.data.delete(k);
@@ -28,5 +28,7 @@ export const createCache = () => ({
     this.timers.clear();
   },
 });
+
+export { SQLiteStore } from './store';
 
 export default createCache();
