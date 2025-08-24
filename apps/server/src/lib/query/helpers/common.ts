@@ -1,42 +1,41 @@
-import type { TagCategoryID } from '@boorugator/shared/types';
-import type { SQLiteTransaction } from 'drizzle-orm/sqlite-core';
-import type { ExtractTablesWithRelations } from 'drizzle-orm';
+import type { Transaction } from 'db';
 
-import { db, schema as $s } from 'db';
+export type DeserializedTags = Record<'eq' | 'ne', number[] | undefined>;
 
-import { eq, sql } from 'drizzle-orm';
-
-export function deserializeTags(tags: string[]) {
-  const tagByName = db
-    .select()
-    .from($s.tagsTable)
-    .where(eq($s.tagsTable.name, sql.placeholder('tag')))
-    .prepare();
-
-  return tags
+export async function deserializeTags(tx: Transaction, tags: string[]): Promise<DeserializedTags> {
+  const normalized = tags
     .map((t) => {
       const exc = /^-/.test(t);
-      const tag = exc ? t.slice(1) : t;
-      return { exc, tag: tagByName.get({ tag }) };
+      const tagName = exc ? t.slice(1) : t;
+      return { exc, tagName };
     })
-    .reduce(
-      (t, { exc, tag }, i) => {
-        if (!tag) return t;
-        const mod = (t[exc ? 'ne' : 'eq'] ||= {} as Record<TagCategoryID, number[]>);
-        (mod[tag.category as TagCategoryID] ||= []).push(tag.id);
+    .sort((a, b) => a.tagName.localeCompare(b.tagName));
 
-        if (i === tags.length - 1)
-          Object.values(t).forEach((obj) => {
-            if (obj) Object.values(obj).forEach((val) => val && val.sort((a, b) => a - b));
-          });
+  const result = await tx.query.tagsTable
+    .findMany({
+      where: (table, { inArray }) =>
+        inArray(
+          table.name,
+          normalized.map((t) => t.tagName)
+        ),
+      orderBy: (table, { asc }) => asc(table.name),
+    })
+    .then((res) => res.map((tag, i) => ({ tag, exc: normalized[i].exc })));
 
-        return t;
-      },
-      <Record<'eq' | 'ne', Record<TagCategoryID, number[] | undefined> | undefined>>{}
-    );
+  return result.reduce(
+    (t, { exc, tag }) => {
+      if (!tag) return t;
+
+      if (exc) {
+        t.ne ||= [];
+        t.ne.push(tag.id);
+      } else {
+        t.eq ||= [];
+        t.eq.push(tag.id);
+      }
+
+      return t;
+    },
+    <DeserializedTags>{}
+  );
 }
-
-export const getPostTagsRel = <T extends 3 | 4 | 5>(category: T) =>
-  ({ 3: $s.metaTags, 4: $s.characterTags, 5: $s.metaTags })[category];
-
-export type Transaction = SQLiteTransaction<'sync', void, typeof $s, ExtractTablesWithRelations<typeof $s>>;

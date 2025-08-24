@@ -1,4 +1,4 @@
-import { ne, sql, inArray } from 'drizzle-orm';
+import { ne, sql } from 'drizzle-orm';
 
 import { postTable as table } from 'db/schema';
 

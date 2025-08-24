@@ -31,7 +31,10 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
       return mapDanbooruData(data);
     }
 
-    const query = db.query.postTable.findFirst({
+    const postData = await db.query.postTable.findFirst({
+      columns: {
+        tag_ids: false,
+      },
       extras: {
         file_url: ASSET_URL.file_url.as('file_url'),
         sample_url: ASSET_URL.sample_url.as('sample_url'),
@@ -40,22 +43,16 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
       where: (post, { eq }) => eq(post.id, +id),
     });
 
-    const postData = query.sync();
     if (!postData) throw status(404, 'Post Not Found');
 
-    const qTags = queryPostTags(postData.id);
-    const artist = db.query.tagsTable
-      .findFirst({ where: (table, { eq }) => eq(table.id, postData.artist_id) })
-      .sync()!;
+    const postTags = await queryPostTags(postData.id);
 
-    const tags = [artist, ...qTags].map((v) => v.name).join(' ');
     const post = <Static<PostSchema>>{
       ...postData,
-      artist: artist.name,
-      created_at: postData.created_at.toString(),
+      tags: postTags,
     };
 
-    post.tags = tags;
+    post.tags = postTags as NonNullable<(typeof post)['tags']>;
 
     return post;
   }
