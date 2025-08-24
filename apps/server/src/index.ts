@@ -34,7 +34,10 @@ export const app = new Elysia()
   .get('/image/*', elysiaIPXHandler)
   .onError({ as: 'scoped' }, handleError);
 
-setup.use(app).listen(process.env.PORT || 3000);
+setup.use(app).listen({
+  port: process.env.PORT || 3000,
+  idleTimeout: 60,
+});
 
 export type Setup = typeof setup;
 export type Backend = typeof app;
