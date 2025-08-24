@@ -43,11 +43,11 @@ async function scrap(state: State): Promise<void> {
           created_at: new Date(data.created_at || Date.now()).toISOString(),
           ...getDanbooruImage(data),
           tags: {
-            0: data.tag_string_general.split(' '),
-            1: data.tag_string_artist.split(' '),
-            3: data.tag_string_copyright.split(' '),
-            4: data.tag_string_character.split(' '),
-            5: data.tag_string_meta.split(' '),
+            0: dedupe(data.tag_string_general),
+            1: dedupe(data.tag_string_artist),
+            3: dedupe(data.tag_string_copyright),
+            4: dedupe(data.tag_string_character),
+            5: dedupe(data.tag_string_meta),
           },
         }) satisfies Payload
     );
@@ -115,7 +115,7 @@ async function scrap(state: State): Promise<void> {
 
 const findFirst = db.query.postTable.findFirst({ orderBy: desc($s.postTable.id) }).prepare('findFirstPost');
 
-const getCategoryName = (cat: number) => (cat == 4 ? 'character' : cat == 3 ? 'copyright' : 'untagged');
+const dedupe = (tags: string) => Array.from(new Set(tags.split(' ')));
 const getDanbooruURL = (lastId: number) => {
   const url = new URL('https://danbooru.donmai.us/posts.json?limit=200');
   url.searchParams.set('page', `a${lastId}`);
