@@ -1,4 +1,4 @@
-import { boolean, date, index, integer, pgEnum, pgTable, serial, text } from 'drizzle-orm/pg-core';
+import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
 export const ratingEnum = pgEnum('RATING', ['g', 's', 'q', 'e']);
 
@@ -29,7 +29,7 @@ export const postTable = pgTable(
     uploader_id: integer().notNull(),
     has_notes: boolean().notNull().default(false),
     has_children: boolean().notNull().default(false),
-    created_at: date().notNull().defaultNow(),
+    created_at: timestamp().notNull().defaultNow(),
   },
   (table) => [index('idx_posts_tag_ids').using('gin', table.tag_ids)]
 );
