@@ -25,8 +25,7 @@ export class SQLiteStore implements CacheStore<string, string> {
         key TEXT PRIMARY KEY,
         value TEXT,
         expires INTEGER
-        
-    );`);
+      );`);
 
     this.db = db;
     this.checkStmt = db.query<1, [string]>('SELECT 1 FROM cache WHERE key = ?;');
@@ -41,8 +40,9 @@ export class SQLiteStore implements CacheStore<string, string> {
     const result = this.queryStmt.get(k.toString());
     if (!result) return;
 
-    const isExpired = result.ttl && result.ttl < Math.round(Date.now() / 1000);
-    return isExpired ? undefined : result.value;
+    const isExpired = result.ttl ? result.ttl < Math.round(Date.now() / 1000) : false;
+    if (isExpired) this.delete(k);
+    else return result.value;
   }
 
   set(k: string, v: string, ttl = null as number | null): void {

@@ -4,14 +4,14 @@ import { createIPX, ipxFSStorage, ipxHttpStorage } from 'ipx';
 
 import { getCache, setCache, type HeaderMeta } from './cache';
 
-const MAX_AGE = 60 * 60 * 24 * 7;
+const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
 const MODIFIER_SEP = /[&,]/g;
 const MODIFIER_VAL_SEP = /[:=_]/;
 
 type Modifiers = NonNullable<Parameters<typeof ipx>[1]>;
 
 const ipx = createIPX({
-  maxAge: Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : MAX_AGE,
+  maxAge: MAX_AGE,
   storage: ipxFSStorage({ dir: './public/cache' }),
   httpStorage: ipxHttpStorage({
     domains: ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'],
