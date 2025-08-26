@@ -1,0 +1,1 @@
+ALTER TABLE "tags" ALTER COLUMN "category" SET DATA TYPE smallint;

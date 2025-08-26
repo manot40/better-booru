@@ -15,6 +15,20 @@
       "when": 1756138226012,
       "tag": "0001_lively_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1756140593855,
+      "tag": "0002_productive_living_mummy",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1756228223611,
+      "tag": "0003_noisy_eternity",
+      "breakpoints": true
     }
   ]
 }

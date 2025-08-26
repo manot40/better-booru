@@ -1,4 +1,14 @@
-import { boolean, index, integer, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  smallint,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 
 export const ratingEnum = pgEnum('RATING', ['g', 's', 'q', 'e']);
 
@@ -31,12 +41,12 @@ export const postTable = pgTable(
     has_children: boolean().notNull().default(false),
     created_at: timestamp().notNull().defaultNow(),
   },
-  (table) => [index('idx_posts_tag_ids').using('gin', table.tag_ids)]
+  (table) => [index('idx_posts_tag_ids').using('gin', table.tag_ids), index('idx_score').on(table.score)]
 );
 
 export type DBTagData = (typeof tagsTable)['$inferSelect'];
 export const tagsTable = pgTable('tags', {
   id: serial().primaryKey(),
   name: text().unique().notNull(),
-  category: integer().notNull(),
+  category: smallint().notNull(),
 });
