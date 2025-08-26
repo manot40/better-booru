@@ -40,7 +40,7 @@ async function scrap(state: State): Promise<void> {
           has_notes: !!data.last_noted_at,
           file_size: data.file_size,
           uploader_id: data.uploader_id,
-          created_at: new Date(data.created_at || Date.now()).toISOString(),
+          created_at: new Date(data.created_at || Date.now()),
           ...getDanbooruImage(data),
           tags: {
             0: dedupe(data.tag_string_general),
