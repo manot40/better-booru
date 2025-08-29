@@ -115,7 +115,10 @@ async function scrap(state: State): Promise<void> {
 
 const findFirst = db.query.postTable.findFirst({ orderBy: desc($s.postTable.id) }).prepare('findFirstPost');
 
-const dedupe = (tags: string) => Array.from(new Set(tags.split(' ')));
+const dedupe = (tags: string) =>
+  Array.from(new Set(tags.split(' ')))
+    .map((t) => t.trim())
+    .filter(Boolean);
 const getDanbooruURL = (lastId: number) => {
   const url = new URL('https://danbooru.donmai.us/posts.json?limit=200');
   url.searchParams.set('page', `a${lastId}`);
