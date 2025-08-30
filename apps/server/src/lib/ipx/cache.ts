@@ -1,30 +1,46 @@
 import type { HTTPHeaders } from 'elysia/dist/types';
 
+import { SQLiteStore } from 'lib/cache/sqlite';
+
+const metadataCache = new SQLiteStore('.data/ipx_cache.db');
+
+function getFileHandler(hash: string) {
+  const path = `${process.cwd()}/.cache/ipx/${hash}`;
+  return Bun.file(Bun.pathToFileURL(path));
+}
+
+export async function setCache(hash: string, options: IPXCacheOptions) {
+  const { data, meta, maxAge } = options;
+  const fileHandler = getFileHandler(hash);
+  await fileHandler.write(data).then(() => {
+    metadataCache.set(hash, JSON.stringify(meta), maxAge);
+  });
+}
+
+export async function getCache(hash: string) {
+  const fileMeta = metadataCache.get(hash);
+  const fileHandler = getFileHandler(hash);
+  const fileExists = await fileHandler.exists();
+
+  if (!fileMeta || !fileExists) {
+    if (fileExists) fileHandler.unlink().catch(() => void 0);
+    else metadataCache.delete(hash);
+    return;
+  }
+
+  const data = await fileHandler.arrayBuffer();
+  const meta = <HeaderMeta>JSON.parse(fileMeta);
+
+  return { data, meta };
+}
+
+export type IPXCacheOptions = {
+  data: string | Buffer<ArrayBufferLike>;
+  meta: HeaderMeta;
+  maxAge?: number;
+};
+
 export type HeaderMeta = Pick<
   Required<HTTPHeaders>,
   'expires' | 'last-modified' | 'cache-control' | 'content-type' | 'content-length'
 >;
-
-export function prepareCache(hash: string) {
-  const path = `${process.cwd()}/.cache/ipx/${hash}`;
-  const file = Bun.file(Bun.pathToFileURL(path));
-  const meta = Bun.file(Bun.pathToFileURL(path + '.json'));
-  return [file, meta] as const;
-}
-
-export async function setCache(hash: string, data: string | Buffer<ArrayBufferLike>, meta: HeaderMeta) {
-  const [cacheFile, cacheMeta] = prepareCache(hash);
-  await Promise.all([cacheFile.write(data), cacheMeta.write(JSON.stringify(meta))]);
-}
-
-export async function getCache(hash: string) {
-  const [cacheFile, cacheMeta] = prepareCache(hash);
-  if (!(await cacheFile.exists())) return;
-
-  const rm = async () => {
-    await Promise.all([cacheFile.unlink(), cacheMeta.unlink()]);
-  };
-
-  const [data, meta] = await Promise.all([cacheFile.arrayBuffer(), cacheMeta.text()]);
-  return { data, meta: <HeaderMeta>JSON.parse(meta), rm };
-}

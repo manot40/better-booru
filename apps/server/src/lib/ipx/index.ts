@@ -26,14 +26,11 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status }) => {
 
     const hash = Bun.MD5.hash(rawParam, 'hex');
     const cached = await getCache(hash);
-    if (cached) {
-      const { data, meta, rm } = cached;
-      // When expired, remove file (SWR style).
-      if (new Date(meta.expires).getTime() < Date.now()) rm();
 
+    if (cached) {
       set.headers['x-cache-status'] = 'HIT';
-      Object.assign(set.headers, meta);
-      return data;
+      Object.assign(set.headers, cached.meta);
+      return cached.data;
     }
 
     const id = safeString(decodeURI(ids.join('/')));
@@ -49,16 +46,22 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status }) => {
 
     const prepare = ipx(id, modifiers);
     const { data, format } = await prepare.process();
+
     const now = new Date();
+    const meta = <HeaderMeta>{
+      expires: new Date(now.getTime() + MAX_AGE * 1000).toUTCString(),
+      'content-type': format ? `image/${format}` : undefined,
+      'cache-control': `max-age=${MAX_AGE}, public, s-maxage=${MAX_AGE}`,
+      'last-modified': now.toUTCString(),
+      'content-length': data.length,
+    };
 
-    set.headers['expires'] = new Date(now.getTime() + MAX_AGE * 1000).toUTCString();
-    set.headers['last-modified'] = now.toUTCString();
-    set.headers['cache-control'] = `max-age=${MAX_AGE}, public, s-maxage=${MAX_AGE}`;
-    set.headers['content-length'] = data.length;
-    set.headers['content-security-policy'] = "default-src 'none'";
-    if (format) set.headers['content-type'] = `image/${format}`;
+    Object.assign(set.headers, {
+      ...meta,
+      ['content-security-policy']: "default-src 'none'",
+    });
 
-    setCache(hash, data, set.headers as HeaderMeta);
+    setCache(hash, { data, meta, maxAge: MAX_AGE });
 
     return data;
   } catch (e) {
