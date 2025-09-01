@@ -1,24 +1,23 @@
-import PhotoSwipeLightbox, {
-  type DataSource,
-  type EventCallback,
-  type PhotoSwipeOptions,
-} from 'photoswipe/lightbox';
+import type { UnwrapRef } from 'vue';
 
-type Slide = NonNullable<InstanceType<typeof PhotoSwipeLightbox>['pswp']>['currSlide'];
-type LightboxInstance = NonNullable<PhotoSwipeLightbox['pswp']>;
+import PhotoSwipe, { type SlideData } from 'photoswipe';
+import PhotoSwipeLightbox, { type EventCallback, type PhotoSwipeOptions } from 'photoswipe/lightbox';
+
+type Slide = PhotoSwipe['currSlide'];
 
 type UseLightboxOptions = {
   onClose?: () => void;
   onDestroy?: () => void;
   onLoadError?: EventCallback<'loadError'>;
-  onUiRegister?: (pswp: LightboxInstance) => void;
-  onSlideChange?: (slide: Slide, pswp: LightboxInstance) => void;
+  onBeforeInit?: (pswp: PhotoSwipeLightbox) => void;
+  onUiRegister?: (pswp: PhotoSwipe) => void;
+  onSlideChange?: (slide: Slide, pswp: PhotoSwipe) => void;
+  childrenSelector?: string | HTMLElement;
 };
 
-export function useLightbox(
-  el: Ref<HTMLElement | null | undefined | DataSource>,
-  opts = {} as UseLightboxOptions
-) {
+type Target = HTMLElement | null | undefined | SlideData[];
+
+export function useLightbox(el: Ref<Target>, opts = {} as UseLightboxOptions) {
   const opened = ref(false);
   const controlVisible = ref(false);
 
@@ -28,24 +27,32 @@ export function useLightbox(
   onUnmounted(destroyLightbox);
   watch(el, createLightbox, { immediate: true });
 
-  function createLightbox() {
-    if (!el.value || import.meta.server) return;
-    if (lightbox.value) destroyLightbox();
+  function createLightbox(el: UnwrapRef<Target>) {
+    if (!el || import.meta.server) return;
+
+    if (lightbox.value) {
+      if (Array.isArray(el)) {
+        lightbox.value.options.dataSource = el;
+        return triggerRef(lightbox);
+      } else {
+        destroyLightbox();
+      }
+    }
 
     const options = <PhotoSwipeOptions>{
       preload: [1, 1],
-      children: '.ps__item',
-      pswpModule: () => import('photoswipe'),
+      pswpModule: PhotoSwipe,
       initialZoomLevel: 'fit',
     };
 
-    if (el.value instanceof Element) options.gallery = el.value;
-    else if (Array.isArray(el.value)) options.dataSource = el.value;
-    else return;
+    if (el instanceof Element) {
+      options.gallery = el;
+      options.children = opts.childrenSelector || '.ps__item';
+    }
 
     const lb = (lightbox.value = new PhotoSwipeLightbox(options));
-
     const debounceOpen = useDebounceFn(() => (opened.value = controlVisible.value = true), 1);
+
     lb.on('uiElementCreate', debounceOpen);
 
     lb.on('uiRegister', function (this: PhotoSwipeLightbox['pswp']) {
@@ -69,7 +76,9 @@ export function useLightbox(
     if (opts.onClose) lb.on('close', opts.onClose);
     if (opts.onLoadError) lb.on('loadError', opts.onLoadError);
 
-    lb.init();
+    const promise: unknown = opts.onBeforeInit?.(lb);
+    if (promise instanceof Promise) promise.then(() => lb.init());
+    else lb.init();
   }
 
   function destroyLightbox() {

@@ -6,7 +6,6 @@ const props = defineProps<{ item: Post }>();
 const config = useUserConfig();
 
 const hideNSFW = computed(() => config.hideNSFW && ['e', 'q'].includes(props.item.rating));
-const canonical = computed(() => unshortenUrl(props.item.file_url));
 
 function reduceSize(item: Post): [string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -24,13 +23,7 @@ function reduceSize(item: Post): [string, number, number] {
 </script>
 
 <template>
-  <NuxtLink
-    :id="item.id"
-    :to="{ query: $route.query, hash: `#${item.id}` }"
-    :data-pswp-src="canonical"
-    :data-pswp-width="item.width"
-    :data-pswp-height="item.height"
-    class="ps__item block relative z-0">
+  <NuxtLink :id="item.id" :to="{ query: $route.query, hash: `#${item.id}` }" class="block relative z-0">
     <UtilMapObj :data="item" :fn="reduceSize" v-slot="[src, width, height]">
       <img
         :src

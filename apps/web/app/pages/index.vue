@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Post } from '@boorugator/shared/types';
+import type { SlideData } from 'photoswipe';
 
 import 'photoswipe/style.css';
 
@@ -17,6 +18,20 @@ const container = shallowRef<HTMLElement>();
 const { data, error, loading, paginator } = useBooruFetch(scrollEl);
 
 const canBack = ref(false);
+const slideData = computed<SlideData[]>(() => {
+  if (!data.value) return [];
+  return data.value.post.map((item) => ({
+    src: item.file_url,
+    width: item.width,
+    height: item.height,
+    get msrc() {
+      return getThumbElement()?.src;
+    },
+    get element() {
+      return getThumbElement();
+    },
+  }));
+});
 
 const gap = 6;
 function estimateSize(index: number, lane: number) {
@@ -32,7 +47,25 @@ function estimateSize(index: number, lane: number) {
   return relHeight > 900 ? 900 : relHeight;
 }
 
-const { lightbox, controlVisible } = useLightbox(container, {
+function getThumbElement() {
+  const index = lightbox.value?.pswp?.currIndex;
+  const img = container.value?.querySelector(`[data-content-index="${index}"] img`);
+  if (img instanceof HTMLImageElement) return img;
+}
+
+function registerPost(index?: number) {
+  const virt = masonry.value?.virtualizer;
+  if (!data.value || !virt || typeof index != 'number') return;
+
+  const item = virt.getVirtualItems().at(index);
+
+  if (item) {
+    canBack.value = true;
+    post.value = data.value.post[item.index];
+  }
+}
+
+const { lightbox, controlVisible } = useLightbox(slideData, {
   onUiRegister: (pswp) => registerPost(pswp.currIndex),
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
@@ -58,17 +91,6 @@ const { lightbox, controlVisible } = useLightbox(container, {
     }
   },
 });
-function registerPost(index?: number) {
-  const virt = masonry.value?.virtualizer;
-  if (!data.value || !virt || typeof index != 'number') return;
-
-  const item = virt.getVirtualItems().at(index);
-
-  if (item) {
-    canBack.value = true;
-    post.value = data.value.post[item.index];
-  }
-}
 
 const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
 watch([top, scrollUp], ([top, up]) => {
@@ -132,7 +154,11 @@ onUnmounted(routeListener);
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">
         <UtilMapObj :data="data.post" :fn="(p) => p[row.index]!" v-slot="item">
-          <PostListItemImage :item :data-index="row.key" v-if="!['webm', 'mp4'].includes(item.file_ext)" />
+          <PostListItemImage
+            :item
+            :data-index="row.key"
+            @click="lightbox?.loadAndOpen(row.index)"
+            v-if="!['webm', 'mp4'].includes(item.file_ext)" />
           <PostListItemVideo :item :data-index="row.key" v-else />
         </UtilMapObj>
       </div>

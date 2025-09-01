@@ -3,7 +3,7 @@ import type { AsyncDataRequestStatus } from '#app';
 import { withQuery } from 'ufo';
 
 export const BASE_URL = import.meta.dev
-  ? 'http://127.0.0.1:3001'
+  ? 'http://localhost:3001'
   : typeof location != 'undefined'
     ? location.origin
     : import.meta.env.BASE_URL;
