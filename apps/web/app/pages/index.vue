@@ -69,14 +69,8 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
   onUiRegister: (pswp) => registerPost(pswp.currIndex),
   onSlideChange: (s) => registerPost(s?.index),
   onLoadError({ content: { data }, slide }) {
-    const el = data.element;
+    if (data.proxied) return;
     const src = '/image/_/' + data.src;
-
-    if (!(el instanceof HTMLAnchorElement) || data.proxied || el.dataset.proxied) return;
-
-    el.dataset.pswpSrc = src;
-    el.dataset.proxied = 'true';
-
     Object.assign(data, { src, proxied: true });
     slide.pswp.refreshSlideContent(slide.index);
   },
