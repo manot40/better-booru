@@ -50,6 +50,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
     const post = <Static<PostSchema>>{
       ...postData,
       tags: postTags,
+      created_at: postData.created_at.toISOString(),
     };
 
     post.tags = postTags as NonNullable<(typeof post)['tags']>;

@@ -3,7 +3,7 @@
   "version": "1.2.5",
   "author": "manot40 <kevinsandiho290100@gmail.com>",
   "devDependencies": {
-    "@types/bun": "^1.2.20",
+    "@types/bun": "^1.2.21",
     "prettier": "^3.6.2",
     "typescript": "5.9.2"
   },
