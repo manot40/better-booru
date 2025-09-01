@@ -5,7 +5,10 @@ import { isEqual } from 'ohash';
 
 const LIMIT = 50;
 
-export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResult => {
+export const useBooruFetch = (
+  el = (() => window) as MaybeRefOrGetter<ScrollViewport>,
+  options?: Options
+): BooruResult => {
   const config = useUserConfig();
   const paginator = usePaginationQuery<ListParams>();
 
@@ -21,7 +24,7 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
   const loading = ref(false);
   const noUpdate = ref(false);
 
-  function resetPage(page: number, replace = false) {
+  function changePage(page: number, replace = false) {
     noUpdate.value = true;
     paginator.update({ page }, replace);
   }
@@ -29,11 +32,16 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     if (import.meta.server || (state && !config.isInfinite)) return;
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
 
-    const query = <PageAsString>{ ...paginator.query.value };
-    const headers = { 'x-rating': config.rating?.join(' ')!, 'x-provider': config.provider };
+    const query = <PageAsString>{
+      ...paginator.query.value,
+    };
+    const headers = {
+      'x-rating': config.rating?.join(' ')!,
+      'x-provider': config.provider,
+    };
+
     if (reset) {
       query.page = 1;
-      window.scrollTo({ top: 0, behavior: 'instant' });
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) query.page ||= 1;
@@ -55,7 +63,8 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
     // Infinte scroll disabled or initial state
     if (!config.isInfinite || !data.value || reset) {
       data.value = res;
-      if (reset) resetPage(1);
+      options?.onReset?.(res.post);
+      if (reset) changePage(1);
       return (error.value = undefined);
     }
 
@@ -65,9 +74,10 @@ export const useBooruFetch = (el = (() => window) as ScrollViewport): BooruResul
 
     error.value = undefined;
     data.value = { meta: res.meta, post: data.value.post.concat(deduped) };
+    options?.onAppend?.(deduped);
 
     const isNotEmpty = (hasNext.value = res.post.length > 0);
-    if (isNotEmpty) resetPage(<number>query.page, true);
+    if (isNotEmpty) changePage(<number>query.page, true);
   }
 
   const debOpts = { debounce: 3000 };
@@ -99,15 +109,17 @@ function dedupe(oldList: Post[], newList: Post[]) {
   return newList.filter((post) => !oldIds.includes(post.id));
 }
 
-type Result = { post: Post[]; meta: BooruMeta };
-type ScrollViewport = MaybeRefOrGetter<Window | HTMLElement | null | undefined>;
-export interface BooruResult {
-  data: Ref<Result | undefined>;
-  error: Ref<FetchError | undefined>;
-  hasNext: Ref<boolean>;
-  loading: Ref<boolean>;
-  paginator: UsePagination<ListParams>;
-}
+type ScrollViewport = HTMLElement | SVGElement | Window | Document | null | undefined;
+
+type Options = {
+  onReset?: (data: Post[]) => void;
+  onAppend?: (data: Post[]) => void;
+};
+
+type Result = {
+  post: Post[];
+  meta: BooruMeta;
+};
 
 type InfiScrollState = {
   x: number;
@@ -117,6 +129,14 @@ type InfiScrollState = {
   directions: DirectionState;
   arrivedState: DirectionState;
 };
+
+export interface BooruResult {
+  data: Ref<Result | undefined>;
+  error: Ref<FetchError | undefined>;
+  hasNext: Ref<boolean>;
+  loading: Ref<boolean>;
+  paginator: UsePagination<ListParams>;
+}
 
 type DirectionState = {
   left: boolean;

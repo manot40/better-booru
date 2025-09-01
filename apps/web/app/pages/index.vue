@@ -15,22 +15,51 @@ const scrollEl = computed(() => masonry.value?.el || undefined);
 
 const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
-const { data, error, loading, paginator } = useBooruFetch(scrollEl);
+const slideData = useState('slide-data', () => shallowRef<SlideData[]>([]));
 
 const canBack = ref(false);
-const slideData = computed<SlideData[]>(() => {
-  if (!data.value) return [];
-  return data.value.post.map((item) => ({
-    src: item.file_url,
-    width: item.width,
-    height: item.height,
-    get msrc() {
-      return getThumbElement()?.src;
-    },
-    get element() {
-      return getThumbElement();
-    },
-  }));
+
+const { data, error, loading, paginator } = useBooruFetch(scrollEl, {
+  onReset(post) {
+    slideData.value = post.map(postToSlide);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  },
+  onAppend(post) {
+    const result: SlideData[] = post.map(postToSlide);
+    slideData.value = userConfig.isInfinite ? slideData.value.concat(result) : result;
+  },
+});
+
+const { lightbox, controlVisible } = useLightbox(slideData, {
+  onUiRegister: (pswp) => registerPost(pswp.currIndex),
+  onSlideChange: (s) => registerPost(s?.index),
+  onLoadError({ content: { data }, slide }) {
+    if (data.proxied) return;
+    const src = `/image/_/${data.src}`;
+    Object.assign(slide.data, { src, proxied: true });
+    slide.pswp.refreshSlideContent(slide.index);
+  },
+  onClose() {
+    post.value = undefined;
+    if (canBack.value) {
+      router.back();
+      canBack.value = false;
+    } else {
+      navigateTo({ query: route.query });
+    }
+  },
+});
+
+const postToSlide = (post: Post) => ({
+  src: post.file_url,
+  width: post.width,
+  height: post.height,
+  get msrc() {
+    return getThumbElement()?.src;
+  },
+  get element() {
+    return getThumbElement();
+  },
 });
 
 const gap = 6;
@@ -64,27 +93,6 @@ function registerPost(index?: number) {
     post.value = data.value.post[item.index];
   }
 }
-
-const { lightbox, controlVisible } = useLightbox(slideData, {
-  onUiRegister: (pswp) => registerPost(pswp.currIndex),
-  onSlideChange: (s) => registerPost(s?.index),
-  onLoadError({ content: { data }, slide }) {
-    if (data.proxied) return;
-    const src = '/image/_/' + data.src;
-    Object.assign(data, { src, proxied: true });
-    slide.pswp.refreshSlideContent(slide.index);
-  },
-  onClose() {
-    post.value = undefined;
-
-    if (canBack.value) {
-      router.back();
-      canBack.value = false;
-    } else {
-      navigateTo({ query: route.query });
-    }
-  },
-});
 
 const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
 watch([top, scrollUp], ([top, up]) => {
