@@ -17,6 +17,7 @@ export const useBooruFetch = (
     canLoadMore: () => hasNext.value && !noUpdate.value && !loading.value,
   });
 
+  const ids = useState('booru-fetch-ids', () => shallowRef(new Set<number>()));
   const data = useState('booru-fetch-data', () => shallowRef<Result>());
   const error = useState('booru-fetch-error', () => shallowRef<FetchError>());
 
@@ -27,6 +28,12 @@ export const useBooruFetch = (
   function changePage(page: number, replace = false) {
     noUpdate.value = true;
     paginator.update({ page }, replace);
+  }
+  function dedupe(postList: Post[]) {
+    const filtered = postList.filter((post) => !ids.value.has(post.id));
+    postList.forEach((p) => ids.value.add(p.id));
+    triggerRef(ids);
+    return filtered;
   }
   async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
     if (import.meta.server || (state && !config.isInfinite)) return;
@@ -42,6 +49,7 @@ export const useBooruFetch = (
 
     if (reset) {
       query.page = 1;
+      data.value = undefined;
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) query.page ||= 1;
@@ -61,15 +69,15 @@ export const useBooruFetch = (
     }
 
     // Infinte scroll disabled or initial state
-    if (!config.isInfinite || !data.value || reset) {
+    if (!config.isInfinite || !data.value) {
       data.value = res;
+      ids.value = new Set(...res.post.map((p: Post) => ids.value.add(p.id)));
       options?.onReset?.(res.post);
       if (reset) changePage(1);
       return (error.value = undefined);
     }
 
-    const sliceAmt = Math.floor(LIMIT * -(data.value.post.length > LIMIT ? 2 : 1));
-    const deduped = dedupe(data.value.post.slice(sliceAmt), res.post);
+    const deduped = dedupe(res.post);
     if (!deduped.length) return;
 
     error.value = undefined;
@@ -80,8 +88,7 @@ export const useBooruFetch = (
     if (isNotEmpty) changePage(<number>query.page, true);
   }
 
-  const debOpts = { debounce: 3000 };
-  watchDebounced(noUpdate, () => (noUpdate.value &&= false), debOpts);
+  watchDebounced(noUpdate, () => (noUpdate.value &&= false), { debounce: 1000 });
 
   const onConfigUpdate = () => {
     data.value &&= undefined;
@@ -103,11 +110,6 @@ export const useBooruFetch = (
 
   return { data, loading, error, hasNext, paginator };
 };
-
-function dedupe(oldList: Post[], newList: Post[]) {
-  const oldIds = oldList.map(({ id }) => id);
-  return newList.filter((post) => !oldIds.includes(post.id));
-}
 
 type ScrollViewport = HTMLElement | SVGElement | Window | Document | null | undefined;
 

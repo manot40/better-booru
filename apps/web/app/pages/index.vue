@@ -6,7 +6,6 @@ import 'photoswipe/style.css';
 
 import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
-const route = useRoute();
 const router = useRouter();
 const userConfig = useUserConfig();
 
@@ -17,22 +16,19 @@ const post = shallowRef<Post>();
 const container = shallowRef<HTMLElement>();
 const slideData = useState('slide-data', () => shallowRef<SlideData[]>([]));
 
-const canBack = ref(false);
-
 const { data, error, loading, paginator } = useBooruFetch(scrollEl, {
   onReset(post) {
+    scrollTop();
     slideData.value = post.map(postToSlide);
-    window.scrollTo({ top: 0, behavior: 'instant' });
   },
   onAppend(post) {
-    const result: SlideData[] = post.map(postToSlide);
-    slideData.value = userConfig.isInfinite ? slideData.value.concat(result) : result;
+    const result = post.map(postToSlide);
+    slideData.value = slideData.value.concat(result);
   },
 });
 
 const { lightbox, controlVisible } = useLightbox(slideData, {
-  onUiRegister: (pswp) => registerPost(pswp.currIndex),
-  onSlideChange: (s) => registerPost(s?.index),
+  onSlideChange: (s) => s && registerPost(s.index),
   onLoadError({ content: { data }, slide }) {
     if (data.proxied) return;
     const src = `/image/_/${data.src}`;
@@ -40,17 +36,12 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
     slide.pswp.refreshSlideContent(slide.index);
   },
   onClose() {
+    if (location.hash.replace('#', '')) router.back();
     post.value = undefined;
-    if (canBack.value) {
-      router.back();
-      canBack.value = false;
-    } else {
-      navigateTo({ query: route.query });
-    }
   },
 });
 
-const postToSlide = (post: Post) => ({
+const postToSlide = (post: Post): SlideData => ({
   src: post.file_url,
   width: post.width,
   height: post.height,
@@ -82,16 +73,19 @@ function getThumbElement() {
   if (img instanceof HTMLImageElement) return img;
 }
 
-function registerPost(index?: number) {
-  const virt = masonry.value?.virtualizer;
-  if (!data.value || !virt || typeof index != 'number') return;
+function handleTagChange(tags: string) {
+  paginator.set({ page: 1, tags });
+  scrollTop();
+}
 
-  const item = virt.getVirtualItems().at(index);
+function openGallery(index: number) {
+  registerPost(index);
+  lightbox.value?.loadAndOpen(index);
+}
 
-  if (item) {
-    canBack.value = true;
-    post.value = data.value.post[item.index];
-  }
+function registerPost(index: number) {
+  if (!data.value) return;
+  post.value = data.value.post[index];
 }
 
 const { top, scrollUp, isBottom } = useScrollDirection(100, scrollEl);
@@ -106,28 +100,30 @@ watch([top, scrollUp], ([top, up]) => {
 watch(data, () => masonry.value?.virtualizer.measure());
 const scrollTop = () => scrollEl.value?.scrollTo({ top: 0, behavior: 'instant' });
 
-const routeListener = router.afterEach((to, from) => {
+const unsubRouteListener = router.afterEach((to, from) => {
   const lbox = lightbox.value;
   const virt = masonry.value?.virtualizer;
   const items = data.value?.post;
-  if (!lbox || !virt || !items) return;
+  const isDiffHash = !!to.hash && to.hash !== from.hash;
+  const isSameQuery = from?.query.tags === to.query.tags;
 
-  canBack.value = false;
+  if (!lbox || !virt || !items || to.fullPath === '/') return;
 
-  if (!to.hash) lbox.pswp?.close();
-  else if (to.hash !== from.hash && to.hash) {
-    const id = to.hash.slice(1);
-    if (id.includes('detail')) return;
-    const el = document.getElementById(id);
-    if (el instanceof HTMLElement) {
-      const index = +el.dataset.index!;
-      post.value = items[index];
-      el.click();
+  nextTick(() => {
+    if (!to.hash) return lbox.pswp?.close();
+    if (isSameQuery && isDiffHash) {
+      const id = to.hash.slice(1);
+      const el = document.getElementById(id);
+      if (el instanceof HTMLElement) {
+        const index = +el.dataset.index!;
+        post.value = items[index];
+        el.click();
+      }
     }
-  }
+  });
 });
 
-onUnmounted(routeListener);
+onUnmounted(unsubRouteListener);
 </script>
 
 <template>
@@ -159,7 +155,7 @@ onUnmounted(routeListener);
           <PostListItemImage
             :item
             :data-index="row.key"
-            @click="lightbox?.loadAndOpen(row.index)"
+            @click="openGallery(row.index)"
             v-if="!['webm', 'mp4'].includes(item.file_ext)" />
           <PostListItemVideo :item :data-index="row.key" v-else />
         </UtilMapObj>
@@ -190,7 +186,7 @@ onUnmounted(routeListener);
         v-if="post"
         v-show="controlVisible"
         @close="lightbox?.pswp?.close()"
-        @changeTag="(paginator.set({ page: 1, tags: $event }), scrollTop())" />
+        @changeTag="handleTagChange" />
     </Transition>
   </div>
 </template>
