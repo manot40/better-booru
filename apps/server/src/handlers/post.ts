@@ -10,7 +10,6 @@ import { tagSchema } from './post-tags';
 
 import { processRating } from '@boorugator/shared';
 import { processBooruData } from 'utils/common';
-import { waitForWorker, WORKER_PATH } from 'utils/worker';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
 export const handler: Handler = async ({ query, headers, store, userConfig }) => {
@@ -38,9 +37,7 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
     const opts = { page: (page || 1).toString(), tags: <string[]>tags?.split(' '), limit: +limit, rating };
 
-    if (!opts.tags?.length) return queryPosts(opts);
-
-    return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
+    return await queryPosts(opts);
   }
 };
 

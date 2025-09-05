@@ -8,7 +8,7 @@ async function main() {
     external: ['@img/sharp-*'],
     splitting: true,
     sourcemap: 'linked',
-    entrypoints: ['src/index.ts', 'src/worker.ts'],
+    entrypoints: ['src/index.ts'],
   });
 
   console.info(result.success ? 'Server Build Success' : 'Server Build Failed');
