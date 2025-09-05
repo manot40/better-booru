@@ -107,7 +107,7 @@ const unsubRouteListener = router.afterEach((to, from) => {
   const isDiffHash = !!to.hash && to.hash !== from.hash;
   const isSameQuery = from?.query.tags === to.query.tags;
 
-  if (!lbox || !virt || !items || to.fullPath === '/') return;
+  if (!lbox || !virt || !items) return;
 
   nextTick(() => {
     if (!to.hash) return lbox.pswp?.close();
