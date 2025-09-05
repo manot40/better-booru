@@ -4,8 +4,8 @@ import { Database, type Statement } from 'bun:sqlite';
 
 type DBResult = {
   key: string;
-  ttl: number | null;
   value: string;
+  expires: number | null;
 };
 
 export class SQLiteStore implements CacheStore<string, string> {
@@ -40,7 +40,7 @@ export class SQLiteStore implements CacheStore<string, string> {
     const result = this.queryStmt.get(k.toString());
     if (!result) return;
 
-    const isExpired = result.ttl ? result.ttl < Math.round(Date.now() / 1000) : false;
+    const isExpired = result.expires ? result.expires < Math.round(Date.now() / 1000) : false;
     if (isExpired) this.delete(k);
     else return result.value;
   }

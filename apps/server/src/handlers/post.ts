@@ -38,9 +38,7 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
     const opts = { page: (page || 1).toString(), tags: <string[]>tags?.split(' '), limit: +limit, rating };
 
-    if (!opts.tags?.length || !opts.tags.some((t) => t.startsWith('-'))) {
-      return queryPosts(opts);
-    }
+    if (!opts.tags?.length) return queryPosts(opts);
 
     return await waitForWorker(WORKER_PATH, { type: 'QueryPosts', payload: opts });
   }

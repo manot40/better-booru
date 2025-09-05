@@ -101,7 +101,7 @@ export function getPostCount(filters: SQL[], order: SQL): number {
   );
   const query = db
     .with(rows)
-    .select({ count: sql<number>`COUNT(*)` })
+    .select({ count: sql<number>`COUNT(*)`.as('count') })
     .from(rows);
 
   const cacheKey = query.toSQL().params.join('|');
@@ -116,7 +116,7 @@ export function getPostCount(filters: SQL[], order: SQL): number {
   countCache.set(lockKey, '1', 60);
   query
     .then(([{ count }]) => countCache.set(cacheKey, `${count}`, 60 * 60 * 24))
-    .catch(() => void 0)
+    .catch((e) => console.error(e.message))
     .finally(() => countCache.delete(lockKey));
 
   return 0;

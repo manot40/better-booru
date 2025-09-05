@@ -9,7 +9,7 @@ self.addEventListener('message', async (event) => {
 
   if (evData.type === 'QueryPosts') self.postMessage(await queryPosts(evData.payload));
 
-  db.$client.end();
+  await db.$client.end();
 });
 
 function parsePayload(ev: MessageEvent<any>) {
