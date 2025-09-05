@@ -21,6 +21,7 @@ import {
   notInArray,
   sql,
 } from 'drizzle-orm';
+import { waitForWorker, WORKER_PATH } from 'utils/worker';
 
 const SAFE_OFFSET = 1000000;
 
@@ -114,8 +115,12 @@ export function getPostCount(filters: SQL[], order: SQL): number {
   else if (lock) return 0;
 
   countCache.set(lockKey, '1', 60);
-  query
-    .then(([{ count }]) => countCache.set(cacheKey, `${count}`, 60 * 60 * 24))
+  waitForWorker<{ count: string }[]>({ op: 'DB_OPERATION', payload: query.toSQL() })
+    .then(({ data, error, worker }) => {
+      if (data) countCache.set(cacheKey, data[0].count, 60 * 60 * 24);
+      else console.error(error || 'Count data cannot be retrieved');
+      worker.terminate();
+    })
     .catch((e) => console.error(e.message))
     .finally(() => countCache.delete(lockKey));
 
