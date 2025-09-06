@@ -2,6 +2,7 @@ import type { SQL } from 'drizzle-orm';
 import type { DBPostData } from 'db/schema';
 
 import { SQLiteStore } from 'lib/cache/sqlite';
+import { waitForWorker } from 'utils/worker';
 import { db, schema as $s } from 'db';
 
 import { deserializeTags } from './helpers/common';
@@ -21,7 +22,6 @@ import {
   notInArray,
   sql,
 } from 'drizzle-orm';
-import { waitForWorker, WORKER_PATH } from 'utils/worker';
 
 const SAFE_OFFSET = 1000000;
 
