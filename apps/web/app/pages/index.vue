@@ -29,6 +29,16 @@ const { data, error, loading, paginator } = useBooruFetch(scrollEl, {
 
 const { lightbox, controlVisible } = useLightbox(slideData, {
   onSlideChange: (s) => s && registerPost(s.index),
+  onBeforeInit(lightbox) {
+    lightbox.addFilter('thumbEl', (thumb, _, i) => {
+      const img = findElement(i);
+      return img || (thumb as HTMLElement);
+    });
+    lightbox.addFilter('placeholderSrc', (src, { index: i }) => {
+      const img = findElement(i);
+      return img?.src || src;
+    });
+  },
   onLoadError({ content: { data }, slide }) {
     if (data.proxied) return;
     const src = `/image/_/${data.src}`;
@@ -43,15 +53,15 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
 
 const postToSlide = (post: Post): SlideData => ({
   src: post.file_url,
+  msrc: post.preview_url || post.file_url,
   width: post.width,
   height: post.height,
-  get msrc() {
-    return getThumbElement()?.src;
-  },
-  get element() {
-    return getThumbElement();
-  },
 });
+
+function findElement(index: number) {
+  const img = container.value?.querySelector(`[data-content-index="${index}"] img`);
+  if (img instanceof HTMLImageElement) return img;
+}
 
 const gap = 6;
 function estimateSize(index: number, lane: number) {
@@ -65,12 +75,6 @@ function estimateSize(index: number, lane: number) {
   const relHeight = relWidth * y + 2;
 
   return relHeight > 900 ? 900 : relHeight;
-}
-
-function getThumbElement() {
-  const index = lightbox.value?.pswp?.currIndex;
-  const img = container.value?.querySelector(`[data-content-index="${index}"] img`);
-  if (img instanceof HTMLImageElement) return img;
 }
 
 function handleTagChange(tags: string) {

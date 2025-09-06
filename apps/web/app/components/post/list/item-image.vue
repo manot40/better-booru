@@ -31,7 +31,6 @@ function reduceSize(item: Post): [string, number, number] {
         :height
         :key="item.hash"
         :alt="item.tags || item.artist || item.hash"
-        :data-hires="item.file_url"
         class="w-full h-full object-cover max-h-[900px]" />
       <Transition name="blur-fade">
         <div class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" v-if="hideNSFW" />
