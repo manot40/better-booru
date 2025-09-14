@@ -10,19 +10,35 @@ const MODIFIER_VAL_SEP = /[:=_]/;
 
 type Modifiers = NonNullable<Parameters<typeof ipx>[1]>;
 
+const domains = ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'];
+
 const ipx = createIPX({
   maxAge: MAX_AGE,
   storage: ipxFSStorage({ dir: './public/cache' }),
-  httpStorage: ipxHttpStorage({
-    domains: ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'],
-  }),
+  httpStorage: ipxHttpStorage({ domains }),
 });
 
 export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect }) => {
   try {
     const rawParam = params['*'];
     const [modString = '', ...ids] = rawParam.split('/');
-    if (!modString) throw new Error('IPX Modifier Not Provided');
+
+    if (!modString) {
+      throw new Error('IPX Modifier Not Provided');
+    } else if (modString === '_') {
+      const url = new URL(rawParam.replace(/.*_\//i, ''));
+
+      if (!domains.includes(url.hostname)) {
+        throw new Error(`Unallowed host for proxy: ${url.hostname}`);
+      }
+
+      const res = await fetch(url);
+      set.headers['content-type'] = res.headers.get('content-type') || 'application/octet-stream';
+      set.headers['cache-control'] = `public, max-age=${MAX_AGE}`;
+      set.headers['content-length'] = res.headers.get('content-length') || undefined;
+
+      return res.arrayBuffer();
+    }
 
     const hash = Bun.MD5.hash(rawParam, 'hex');
     const cached = await getCache(hash);
