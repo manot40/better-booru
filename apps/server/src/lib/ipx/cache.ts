@@ -9,6 +9,8 @@ export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
 
+  ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
+
   if (S3_ENABLED) {
     const file = s3.file(`${PREVIEW_PATH}/${hash}`);
     await file.write(data, { acl: 'public-read', type: meta['content-type'] });
@@ -16,8 +18,6 @@ export async function setCache(hash: string, options: IPXCacheOptions) {
   } else {
     await getFileHandler(hash).write(data);
   }
-
-  ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
 }
 
 export async function getCache(hash: string) {
