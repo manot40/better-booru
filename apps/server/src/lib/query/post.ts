@@ -5,8 +5,9 @@ import { SQLiteStore } from 'lib/cache/sqlite';
 import { waitForWorker } from 'utils/worker';
 import { db, schema as $s } from 'db';
 
-import { deserializeTags } from './helpers/common';
 import * as fileUrl from './helpers/file-url-builder';
+import { deserializeTags } from './helpers/common';
+import { populatePreviewCache } from './helpers/cache';
 
 import {
   and,
@@ -83,6 +84,8 @@ export async function queryPosts(qOpts: QueryOptions) {
       .orderBy(order)
       .limit(opts.limit)
       .offset(offset);
+
+    post.forEach(populatePreviewCache);
 
     return { post, count: tags.ne ? 0 : getPostCount(filters, order) };
   });

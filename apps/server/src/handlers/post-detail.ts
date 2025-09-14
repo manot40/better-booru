@@ -12,6 +12,7 @@ import { queryPostTags } from 'lib/query/tags';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 import { processBooruData } from 'utils/common';
 import { mapDanbooruData } from 'utils/danbooru';
+import { populatePreviewCache } from 'lib/query/helpers/cache';
 
 export const handler: Handler = async ({ params: { id }, userConfig, headers, status }) => {
   const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
@@ -54,6 +55,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
     };
 
     post.tags = postTags as NonNullable<(typeof post)['tags']>;
+    populatePreviewCache(post);
 
     return post;
   }

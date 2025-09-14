@@ -60,9 +60,9 @@ const post = t.Object({
   sample_url: t.MaybeEmpty(t.String()),
   sample_width: t.MaybeEmpty(t.Number()),
   sample_height: t.MaybeEmpty(t.Number()),
-  preview_url: t.MaybeEmpty(t.String()),
-  preview_width: t.MaybeEmpty(t.Number()),
-  preview_height: t.MaybeEmpty(t.Number()),
+  preview_url: t.String(),
+  preview_width: t.Number(),
+  preview_height: t.Number(),
 });
 
 const query = t.Object({

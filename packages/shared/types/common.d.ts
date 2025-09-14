@@ -71,10 +71,10 @@ export declare interface Post {
   sample_ext?: Nullable<FileExt>;
   sample_width?: Nullable<number>;
   sample_height?: Nullable<number>;
-  preview_url?: Nullable<string>;
-  preview_ext?: Nullable<FileExt>;
-  preview_width?: Nullable<number>;
-  preview_height?: Nullable<number>;
+  preview_url: string;
+  preview_ext: FileExt;
+  preview_width: number;
+  preview_height: number;
 }
 
 export declare type BooruMeta = { limit: number; offset: number; count: number };

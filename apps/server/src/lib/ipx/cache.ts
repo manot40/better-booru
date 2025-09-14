@@ -1,30 +1,33 @@
 import type { HTTPHeaders } from 'elysia/dist/types';
 
 import { SQLiteStore } from 'lib/cache/sqlite';
+import { s3, S3_ENABLED } from 'utils/s3';
 
-const metadataCache = new SQLiteStore('.data/ipx_cache.db');
-
-function getFileHandler(hash: string) {
-  const path = `${process.cwd()}/.cache/ipx/${hash}`;
-  return Bun.file(Bun.pathToFileURL(path));
-}
+export const PREVIEW_PATH = 'images/preview';
+export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
   const fileHandler = getFileHandler(hash);
-  await fileHandler.write(data).then(() => {
-    metadataCache.set(hash, JSON.stringify(meta), maxAge);
-  });
+
+  if (S3_ENABLED)
+    await s3.file(`${PREVIEW_PATH}/${hash}`).write(data, {
+      acl: 'public-read',
+      type: meta['content-type'],
+    });
+  else await fileHandler.write(data);
+
+  ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
 }
 
 export async function getCache(hash: string) {
-  const fileMeta = metadataCache.get(hash);
+  const fileMeta = ipxMetaCache.get(hash);
   const fileHandler = getFileHandler(hash);
   const fileExists = await fileHandler.exists();
 
   if (!fileMeta || !fileExists) {
     if (fileExists) fileHandler.unlink().catch(() => void 0);
-    else metadataCache.delete(hash);
+    else ipxMetaCache.delete(hash);
     return;
   }
 
@@ -32,6 +35,11 @@ export async function getCache(hash: string) {
   const meta = <HeaderMeta>JSON.parse(fileMeta);
 
   return { data, meta };
+}
+
+function getFileHandler(hash: string) {
+  const path = `${process.cwd()}/.cache/ipx/${hash}`;
+  return Bun.file(Bun.pathToFileURL(path));
 }
 
 export type IPXCacheOptions = {
