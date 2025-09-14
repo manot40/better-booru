@@ -8,6 +8,8 @@ COPY . .
 
 RUN bun install
 RUN --mount=type=secret,id=build_env,target=/usr/app/.env \
+    ln -s /usr/app/.env /usr/app/apps/web/.env && \
+    ln -s /usr/app/.env /usr/app/apps/server/.env && \
     bun all build && \
     bun run copyfiles
 
