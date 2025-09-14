@@ -1,11 +1,18 @@
 import tailwindcss from '@tailwindcss/vite';
 
+const CDN_URL = process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT;
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  compatibilityDate: '2025-08-20',
+
+  app: {
+    cdnURL: CDN_URL || undefined,
+  },
 
   css: ['~/assets/css/main.css'],
+
+  compatibilityDate: '2025-08-20',
 
   future: {
     compatibilityVersion: 4,
