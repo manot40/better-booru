@@ -27,7 +27,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    public: { baseUrl: '' },
+    public: { baseUrl: '', cdnUrl: CDN_URL || undefined },
   },
 
   modules: ['@nuxtjs/color-mode', '@pinia/nuxt', '@vueuse/nuxt', 'dayjs-nuxt', 'shadcn-nuxt'],

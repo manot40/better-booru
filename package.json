@@ -12,7 +12,7 @@
   "scripts": {
     "all": "bun --bun --filter '*'",
     "all:node": "bun --filter '*'",
-    "copyfiles": "bun scripts/copyfiles.ts"
+    "copyfiles": "bun scripts/copyfiles.ts && bun run scripts/upload-to-cdn.ts"
   },
   "trustedDependencies": [
     "@boorugator/web",
