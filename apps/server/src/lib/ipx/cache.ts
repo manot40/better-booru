@@ -8,14 +8,13 @@ export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
-  const fileHandler = getFileHandler(hash);
 
   if (S3_ENABLED)
     await s3.file(`${PREVIEW_PATH}/${hash}`).write(data, {
       acl: 'public-read',
       type: meta['content-type'],
     });
-  else await fileHandler.write(data);
+  else await getFileHandler(hash).write(data);
 
   ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
 }
@@ -23,11 +22,20 @@ export async function setCache(hash: string, options: IPXCacheOptions) {
 export async function getCache(hash: string) {
   const fileMeta = ipxMetaCache.get(hash);
   const fileHandler = getFileHandler(hash);
-  const fileExists = await fileHandler.exists();
 
-  if (!fileMeta || !fileExists) {
-    if (fileExists) fileHandler.unlink().catch(() => void 0);
-    else ipxMetaCache.delete(hash);
+  if (!fileMeta) return;
+
+  if (S3_ENABLED) {
+    const s3File = s3.file(`${PREVIEW_PATH}/${hash}`);
+    const s3PublicEndpoint = Bun.env.S3_PUBLIC_ENDPOINT;
+
+    if (!s3PublicEndpoint) return;
+    if (await s3File.exists()) return `${s3PublicEndpoint}/${s3File.name}`;
+  }
+
+  const fileExists = await fileHandler.exists();
+  if (!fileExists) {
+    ipxMetaCache.delete(hash);
     return;
   }
 

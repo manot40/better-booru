@@ -18,7 +18,7 @@ const ipx = createIPX({
   }),
 });
 
-export const elysiaIPXHandler: Handler = async ({ set, params, status }) => {
+export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect }) => {
   try {
     const rawParam = params['*'];
     const [modString = '', ...ids] = rawParam.split('/');
@@ -28,6 +28,8 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status }) => {
     const cached = await getCache(hash);
 
     if (cached) {
+      if (typeof cached == 'string') return redirect(cached, 302);
+
       set.headers['x-cache-status'] = 'HIT';
       Object.assign(set.headers, cached.meta);
       return cached.data;
