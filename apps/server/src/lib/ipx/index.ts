@@ -2,6 +2,7 @@ import type { Handler } from 'elysia/dist/types';
 
 import { createIPX, ipxFSStorage, ipxHttpStorage } from 'ipx';
 
+import { S3_ENABLED } from 'utils/s3';
 import { getCache, setCache, type HeaderMeta } from './cache';
 
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
@@ -44,7 +45,7 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect 
     const cached = await getCache(hash);
 
     if (cached) {
-      if (typeof cached == 'string') return redirect(cached, 302);
+      if (cached instanceof URL) return redirect(cached.toString(), 301);
 
       set.headers['x-cache-status'] = 'HIT';
       Object.assign(set.headers, cached.meta);
@@ -79,7 +80,12 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect 
       ['content-security-policy']: "default-src 'none'",
     });
 
-    setCache(hash, { data, meta, maxAge: MAX_AGE });
+    const cache = setCache(hash, { data, meta, maxAge: MAX_AGE });
+
+    if (S3_ENABLED) {
+      const url = await cache;
+      if (url instanceof URL) return redirect(url.toString(), 301);
+    }
 
     return data;
   } catch (e) {
