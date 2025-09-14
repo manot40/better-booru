@@ -1,12 +1,12 @@
 import type { UserConfig } from '@boorugator/shared/types';
 
-const maxAge = 365 * 24 * 60 * 60;
+const maxAge = 180 * 24 * 60 * 60;
 
 export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   state: () =>
     <UserConfig>{
       column: undefined,
-      rating: ['g'],
+      rating: ['g', 's'],
       provider: 'danbooru',
       hideNSFW: true,
       browseMode: 'infinite',
@@ -33,7 +33,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
     populate() {
       const config = useCookie<UserConfig>(STATIC.keys.userConfig, { maxAge });
 
-      if (!config.value || !Array.isArray(config.value.rating)) {
+      if (!config.value) {
         config.value = { ...this.$state };
         return;
       }

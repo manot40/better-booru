@@ -1,5 +1,5 @@
 export default defineNuxtRouteMiddleware(() => {
   const nuxt = useNuxtApp();
-  const ucfg = useUserConfig();
-  if (nuxt.isHydrating) ucfg.populate();
+  const config = useUserConfig();
+  if (nuxt.isHydrating) config.populate();
 });
