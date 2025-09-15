@@ -48,7 +48,7 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect 
       if (cached instanceof URL) return redirect(cached.toString(), 301);
 
       set.headers['x-cache-status'] = 'HIT';
-      Object.assign(set.headers, cached.meta);
+      Object.assign(set.headers, { ...cached.meta, lqip: undefined });
       return cached.data;
     }
 
@@ -66,8 +66,20 @@ export const elysiaIPXHandler: Handler = async ({ set, params, status, redirect 
     const prepare = ipx(id, modifiers);
     const { data, format } = await prepare.process();
 
+    const prepareBlur = ipx(id, {
+      q: '30',
+      w: '16',
+      h: '16',
+      f: 'webp',
+      fit: 'inside',
+      blur: '2',
+      kernel: 'cubic',
+    });
+    const { data: lqip } = await prepareBlur.process();
+
     const now = new Date();
     const meta = <HeaderMeta>{
+      lqip: lqip.toString('base64'),
       expires: new Date(now.getTime() + MAX_AGE * 1000).toUTCString(),
       'content-type': format ? `image/${format}` : undefined,
       'cache-control': `max-age=${MAX_AGE}, public, s-maxage=${MAX_AGE}`,

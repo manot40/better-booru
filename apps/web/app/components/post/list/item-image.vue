@@ -1,24 +1,36 @@
 <script setup lang="ts">
 import type { Post } from '@boorugator/shared/types';
+import type { Directive } from 'vue';
 
 const props = defineProps<{ item: Post }>();
 
 const config = useUserConfig();
 
+const loaded = ref(false);
 const hideNSFW = computed(() => config.hideNSFW && ['e', 'q'].includes(props.item.rating));
+
+const toggleLoaded = () => (loaded.value = true);
+
+const vLoaded: Directive<HTMLImageElement> = {
+  created: (el) => el.addEventListener('load', toggleLoaded, { once: true }),
+};
 </script>
 
 <template>
   <NuxtLink :id="item.id" :to="{ query: $route.query, hash: `#${item.id}` }" class="block relative z-0">
     <img
+      v-loaded
       :src="item.preview_url"
       :width="item.preview_width"
       :height="item.preview_height"
       :key="item.hash"
       :alt="item.tags || item.artist || item.hash"
-      class="w-full h-full object-cover max-h-[900px]" />
+      :style="item.lqip ? { backgroundImage: `url(${item.lqip})` } : undefined"
+      class="w-full h-full object-cover bg-cover bg-no-repeat max-h-[900px]" />
     <Transition name="blur-fade">
-      <div class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" v-if="hideNSFW" />
+      <div
+        v-if="hideNSFW || (item.lqip && !loaded)"
+        class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" />
     </Transition>
   </NuxtLink>
 </template>

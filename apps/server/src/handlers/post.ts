@@ -44,6 +44,7 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
 const post = t.Object({
   id: t.Number(),
   hash: t.String(),
+  lqip: t.MaybeEmpty(t.String()),
   tags: t.Optional(t.Array(tagSchema)),
   score: t.Number(),
   rating: t.UnionEnum(['g', 's', 'q', 'e']),

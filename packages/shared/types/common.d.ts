@@ -52,6 +52,7 @@ export declare interface BooruData {
 export declare interface Post {
   id: number;
   hash: string;
+  lqip?: string;
   tags?: Nullable<string>;
   score?: Nullable<number>;
   rating: Rating;
