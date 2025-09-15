@@ -1,7 +1,7 @@
-import type { HTTPHeaders } from 'elysia/dist/types';
-
 import { SQLiteStore } from 'lib/cache/sqlite';
 import { s3, S3_ENABLED } from 'utils/s3';
+
+import { getFileHandler, parseMeta, type IPXCacheOptions } from './helpers';
 
 export const PREVIEW_PATH = 'images/preview';
 export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
@@ -9,7 +9,10 @@ export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
 
-  ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
+  const payload = Buffer.from(JSON.stringify(meta), 'utf-8');
+  Bun.zstdCompress(payload).then((data) => {
+    ipxMetaCache.set(hash, data.toString('base64'), maxAge);
+  });
 
   if (S3_ENABLED) {
     const file = s3.file(`${PREVIEW_PATH}/${hash}`);
@@ -41,24 +44,8 @@ export async function getCache(hash: string) {
     return;
   }
 
+  const meta = parseMeta(fileMeta);
   const data = await fileHandler.arrayBuffer();
-  const meta = <HeaderMeta>JSON.parse(fileMeta);
 
   return { data, meta };
 }
-
-function getFileHandler(hash: string) {
-  const path = `${process.cwd()}/.cache/ipx/${hash}`;
-  return Bun.file(Bun.pathToFileURL(path));
-}
-
-export type IPXCacheOptions = {
-  data: string | Buffer<ArrayBufferLike>;
-  meta: HeaderMeta;
-  maxAge?: number;
-};
-
-export type HeaderMeta = Pick<
-  Required<HTTPHeaders>,
-  'expires' | 'last-modified' | 'cache-control' | 'content-type' | 'content-length'
->;

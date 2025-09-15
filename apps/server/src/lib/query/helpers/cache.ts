@@ -1,11 +1,10 @@
 import type { DBPostData } from 'db/schema';
 
-import { destr } from 'destr';
-
 import { S3_ENABLED } from 'utils/s3';
 import { ipxMetaCache, PREVIEW_PATH } from 'lib/ipx/cache';
+import { parseMeta, getModifiers, getLQIP, Const } from 'lib/ipx/helpers';
 
-function reduceSize(item: PostFromDB): [string, number, number] {
+function reduceSize(item: PostFromDB): [string, string, number, number] {
   const src = item.sample_url || item.file_url;
   const width = item.sample_width || item.width;
   const height = item.sample_height || item.height;
@@ -14,23 +13,23 @@ function reduceSize(item: PostFromDB): [string, number, number] {
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
   const w = Math.round(width / division);
   const h = Math.round(height / division);
-  const key = `f_webp&w_${w}&h_${h}/${src}`;
+  const mod = `f_webp&w_${w}&h_${h}`;
 
-  return [key, w, h];
+  return [src, mod, w, h];
 }
 
 export function populatePreviewCache(post: PostFromDB) {
-  const [key, w, h] = reduceSize(post);
+  const [src, mod, w, h] = reduceSize(post);
 
   post.preview_ext = 'webp';
   post.preview_width = w;
   post.preview_height = h;
 
-  const uncachedKey = `/image/${key}`;
+  const uncachedKey = `/image/${mod}/${src}`;
   const s3PublicEndPoint = Bun.env.S3_PUBLIC_ENDPOINT;
 
-  const cacheKey = Bun.MD5.hash(key, 'hex');
-  const cached = destr<{ lqip?: string } | undefined>(ipxMetaCache.get(cacheKey));
+  const { hash: cacheKey } = getModifiers(src, mod);
+  const cached = parseMeta(ipxMetaCache.get(cacheKey));
 
   if (!cached) {
     post.preview_url = uncachedKey;
@@ -43,7 +42,18 @@ export function populatePreviewCache(post: PostFromDB) {
     post.preview_url = `${s3PublicEndPoint}/${PREVIEW_PATH}/${cacheKey}`;
   }
 
-  post.lqip = `data:image/webp;base64,${cached.lqip}`;
+  if (cached.lqip) {
+    post.lqip = `data:image/webp;base64,${cached.lqip}`;
+  } else {
+    getLQIP(src)
+      .then((lqip) => {
+        const cloned = { ...cached, lqip: lqip.toString('base64') };
+        return Bun.zstdCompress(Buffer.from(JSON.stringify(cloned), 'utf-8'));
+      })
+      .then((data) => {
+        ipxMetaCache.set(cacheKey, data.toString('base64'), Const.MAX_AGE);
+      });
+  }
 }
 
 type PostFromDB = Pick<DBPostData, 'width' | 'height'> & {
