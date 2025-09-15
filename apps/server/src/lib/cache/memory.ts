@@ -19,6 +19,10 @@ export class MemoryStore<T = any> implements CacheStore<T, Key> {
     return this.data.get(k) as T;
   }
 
+  getAll(): T[] {
+    return Array.from(this.data.values());
+  }
+
   has(k: Key) {
     return this.data.has(k);
   }
