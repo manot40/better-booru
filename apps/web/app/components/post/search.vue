@@ -7,20 +7,18 @@ defineOptions({ inheritAttrs: false });
 const open = defineModel<boolean>('open');
 
 const userConfig = useUserConfig();
+const provider = toRef(userConfig, 'provider');
 
 const searchTerm = ref('');
 const queryState = useState<{ tags?: string }>(STORE_KEY);
 const tags = computed(() => queryState.value?.tags?.split(' ') || []);
 
 const q = debouncedRef(searchTerm, 600);
-const { data: searchTags } = useLazyAsyncData('autocomplete', fetchAutocomplete, {
-  server: false,
-  watch: [q, () => userConfig.provider],
-});
+const { data: searchTags } = useAsyncData(q, fetchAutocomplete, { server: false, watch: [provider] });
 async function fetchAutocomplete() {
-  const headers = { 'x-provider': userConfig.provider };
+  const headers = { 'x-provider': provider.value };
   const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value }, headers });
-  if (data) return data;
+  if (data) return data as Array<Record<'value' | 'label', string> & { category: number }>;
   throw error;
 }
 

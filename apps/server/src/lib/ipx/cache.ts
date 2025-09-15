@@ -8,9 +8,10 @@ export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
+  const strMeta = JSON.stringify(meta);
 
-  const payload = Buffer.from(JSON.stringify(meta), 'utf-8');
-  Bun.zstdCompress(payload).then((data) => {
+  ipxMetaCache.set(hash, strMeta, maxAge);
+  Bun.zstdCompress(Buffer.from(strMeta, 'utf-8')).then((data) => {
     ipxMetaCache.set(hash, data.toString('base64'), maxAge);
   });
 

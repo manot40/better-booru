@@ -30,6 +30,8 @@ export function parseMeta(data: string | Buffer<ArrayBufferLike> | undefined) {
 
   if (Buffer.isBuffer(data)) {
     decompressed = Bun.zstdDecompressSync(data);
+  } else if (/^(\{|\[)/.test(data)) {
+    return destr<HeaderMeta>(data);
   } else {
     const metaBin = Buffer.from(data, 'base64');
     decompressed = Bun.zstdDecompressSync(metaBin);
