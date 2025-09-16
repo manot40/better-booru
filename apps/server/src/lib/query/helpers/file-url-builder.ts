@@ -6,15 +6,18 @@ const linkPrepend = sql<string>`,SUBSTR(${table.hash},1,2),'/',SUBSTR(${table.ha
 
 export const file_url = sql<string>`CONCAT('https://cdn.donmai.us/original/'`
   .append(linkPrepend)
-  .append(sql`${table.hash},'.',${table.file_ext})`);
+  .append(sql`${table.hash},'.',${table.file_ext})`)
+  .as('file_url');
 export const sample_url =
   sql<Nullable>`CASE WHEN ${ne(table.sample_ext, '')} THEN CONCAT('https://cdn.donmai.us/sample/'`
     .append(linkPrepend)
-    .append(sql`'sample-',${table.hash},'.',${table.sample_ext}) END`);
+    .append(sql`'sample-',${table.hash},'.',${table.sample_ext}) END`)
+    .as('sample_url');
 export const preview_url =
   sql<Nullable>`CASE WHEN ${ne(table.preview_ext, '')} THEN CONCAT('https://cdn.donmai.us/720x720/'`
     .append(linkPrepend)
-    .append(sql`${table.hash},'.',${table.preview_ext}) END`);
+    .append(sql`${table.hash},'.',${table.preview_ext}) END`)
+    .as('preview_url');
 
 export const lqip =
   sql<Nullable>`CASE WHEN ${isNotNull(table.lqip)} THEN CONCAT('data:image/webp;base64,', encode(${table.lqip}, 'base64')) END`.as(

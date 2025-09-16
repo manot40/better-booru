@@ -36,11 +36,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
       columns: {
         tag_ids: false,
       },
-      extras: {
-        file_url: ASSET_URL.file_url.as('file_url'),
-        sample_url: ASSET_URL.sample_url.as('sample_url'),
-        preview_url: ASSET_URL.preview_url.as('preview_url'),
-      },
+      extras: ASSET_URL,
       where: (post, { eq }) => eq(post.id, +id),
     });
 
