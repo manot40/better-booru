@@ -21,7 +21,8 @@ async function log(opts: LogPayload): Promise<void> {
 
 export function createLogger(options?: Options): Logger {
   return {
-    log: (opts) => log({ ...opts, options }),
+    log: (level, data) => log({ level, data, options }),
+    logRequest: (opts) => log({ ...opts, options }),
     customLogFormat: options?.config?.customLogFormat,
     handleHttpError: (request, error, store) => handleHttpError(error, { request, store, options }),
   };

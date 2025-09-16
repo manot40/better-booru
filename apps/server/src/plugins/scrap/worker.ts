@@ -5,6 +5,8 @@ import { db, schema as $s } from 'db';
 
 import { random } from 'utils/common';
 import { getDanbooruImage } from 'utils/danbooru';
+
+import { log } from 'plugins/logger';
 import { addTask } from 'plugins/ipx/lqip-worker';
 
 export async function run() {
@@ -55,7 +57,7 @@ async function scrap(state: State): Promise<void> {
   if (danbooruData.length === 0) return;
 
   try {
-    console.info('Processing batch:', danbooruData[0]?.id, danbooruData.at(-1)?.id);
+    log('INFO', `Processing batch: ${danbooruData[0]?.id} ${danbooruData.at(-1)?.id}`);
 
     await db.transaction(async (tx) => {
       const data: (typeof $s.postTable.$inferInsert)[] = [];

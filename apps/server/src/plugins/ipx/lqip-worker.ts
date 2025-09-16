@@ -4,6 +4,7 @@ import SQLiteStore from 'lib/cache/sqlite';
 
 import createSharp from 'sharp';
 
+import { log } from 'plugins/logger';
 import { random } from 'utils/common';
 
 import { eq } from 'drizzle-orm';
@@ -36,7 +37,7 @@ async function run(store: unknown) {
   const initial = cron.currentRun()?.valueOf() || 0;
 
   if (tasks.length === 0) return;
-  else console.info('[LQIP] Processing', tasks.length, 'tasks');
+  else log('INFO', `[LQIP] Processing ${tasks.length} tasks`);
 
   for (const [hash, url] of tasks) {
     const current = cron.currentRun()?.valueOf();
@@ -66,12 +67,12 @@ async function run(store: unknown) {
 
       await new Promise((r) => setTimeout(r, random(100, 600)));
     } catch (e) {
-      console.error(`[LQIP] Failed to process task ${hash}:`, e);
+      log('WARNING', `[LQIP] Failed to process task ${hash}: ${e}`);
       continue;
     }
   }
 
-  console.info('[LQIP] Processed:', tasks.length);
+  log('INFO', `[LQIP] Processed: ${tasks.length}`);
 }
 
 async function getLQIP(data: Uint8Array<ArrayBufferLike>) {
