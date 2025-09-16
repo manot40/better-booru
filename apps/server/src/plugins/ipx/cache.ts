@@ -1,7 +1,8 @@
 import { SQLiteStore } from 'lib/cache/sqlite';
 import { s3, S3_ENABLED } from 'utils/s3';
 
-import { getFileHandler, parseMeta, type IPXCacheOptions } from './helpers';
+import { destr } from 'destr';
+import { getFileHandler, type HeaderMeta, type IPXCacheOptions } from './helpers';
 
 export const PREVIEW_PATH = 'images/preview';
 export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
@@ -41,7 +42,7 @@ export async function getCache(hash: string) {
     return;
   }
 
-  const meta = parseMeta(fileMeta);
+  const meta = destr<HeaderMeta>(fileMeta);
   const data = await fileHandler.arrayBuffer();
 
   return { data, meta };

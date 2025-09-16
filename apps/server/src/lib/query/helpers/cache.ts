@@ -1,10 +1,11 @@
 import type { DBPostData } from 'db/schema';
 
+import { destr } from 'destr';
 import { S3_ENABLED } from 'utils/s3';
 
-import { getModifiers, parseMeta } from 'plugins/ipx/helpers';
-import { ipxMetaCache, PREVIEW_PATH } from 'plugins/ipx/cache';
 import { addTask } from 'plugins/ipx/lqip-worker';
+import { ipxMetaCache, PREVIEW_PATH } from 'plugins/ipx/cache';
+import { getModifiers, type HeaderMeta } from 'plugins/ipx/helpers';
 
 function reduceSize(item: PostFromDB): [string, string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -31,18 +32,17 @@ export function populatePreviewCache(post: PostFromDB) {
   const s3PublicEndPoint = Bun.env.S3_PUBLIC_ENDPOINT;
 
   const { hash: cacheKey } = getModifiers(src, mod);
-  const cached = parseMeta(ipxMetaCache.get(cacheKey));
-
-  if (!cached) {
-    post.preview_url = uncachedKey;
-    return;
-  }
+  const cached = destr<HeaderMeta>(ipxMetaCache.get(cacheKey));
 
   if (!post.lqip) {
     addTask(post.sample_url || post.file_url, post.hash);
+  } else {
+    post.lqip = post.lqip.replaceAll('\n', '');
   }
 
-  if (!s3PublicEndPoint || !S3_ENABLED) {
+  if (!cached) {
+    post.preview_url = uncachedKey;
+  } else if (!s3PublicEndPoint || !S3_ENABLED) {
     post.preview_url = uncachedKey;
   } else {
     post.preview_url = `${s3PublicEndPoint}/${PREVIEW_PATH}/${cacheKey}`;

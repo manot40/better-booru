@@ -1,8 +1,6 @@
 import type { IPX } from 'ipx';
 import type { HTTPHeaders } from 'elysia/dist/types';
 
-import { destr } from 'destr';
-
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
 const MODIFIER_SEP = /[&,]/g;
 const MODIFIER_VAL_SEP = /[:=_]/;
@@ -16,23 +14,6 @@ export const Const = {
 };
 
 type Modifiers = NonNullable<Parameters<IPX>[1]>;
-
-export function parseMeta(data: string | Buffer<ArrayBufferLike> | undefined) {
-  if (!data) return;
-
-  let decompressed: Buffer<ArrayBufferLike>;
-
-  if (Buffer.isBuffer(data)) {
-    decompressed = Bun.zstdDecompressSync(data);
-  } else if (/^(\{|\[)/.test(data)) {
-    return destr<HeaderMeta>(data);
-  } else {
-    const metaBin = Buffer.from(data, 'base64');
-    decompressed = Bun.zstdDecompressSync(metaBin);
-  }
-
-  return destr<HeaderMeta>(decompressed.toString('utf-8'));
-}
 
 export function getModifiers(url: string | string[], mod: string) {
   const id = safeString(typeof url == 'string' ? decodeURI(url) : decodeURI(url.join('/')));

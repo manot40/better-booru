@@ -1,11 +1,10 @@
-import { join } from 'node:path';
 import { Elysia } from 'elysia';
 import { cron, Patterns } from '@elysiajs/cron';
 
 import { S3_ENABLED } from 'utils/s3';
 import { createIPX, ipxFSStorage, ipxHttpStorage } from 'ipx';
 
-import { lqipDir, run } from './lqip-worker';
+import { run } from './lqip-worker';
 import { getCache, setCache } from './cache';
 import { Const, getModifiers, type HeaderMeta } from './helpers';
 
@@ -16,22 +15,7 @@ const ipx = createIPX({
 });
 
 export const ipxCache = new Elysia()
-  .use(cron({ run, name: 'ipx_lqip', pattern: Patterns.EVERY_MINUTE, maxRuns: 1 }))
-  .get('/image/lqip/:hash', async ({ set, params, status }) => {
-    const { hash } = params;
-
-    const lqip = Bun.file(join(lqipDir, hash));
-
-    if (await lqip.exists()) {
-      const data = await lqip.arrayBuffer();
-      set.headers['content-type'] = 'image/webp';
-      set.headers['content-length'] = data.byteLength;
-      set.headers['cache-control'] = `public, max-age=${60 * 60 * 24 * 365}`;
-      return data;
-    } else {
-      throw status(404, 'File not found');
-    }
-  })
+  .use(cron({ run, name: 'lqip_worker', pattern: Patterns.EVERY_MINUTE }))
   .get('/image/*', async ({ set, params, status, redirect }) => {
     try {
       const maxAge = Const.MAX_AGE;

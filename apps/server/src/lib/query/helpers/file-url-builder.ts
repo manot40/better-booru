@@ -1,6 +1,5 @@
-import { eq, ne, sql } from 'drizzle-orm';
+import { isNotNull, ne, sql } from 'drizzle-orm';
 
-import { S3_ENABLED } from 'utils/s3';
 import { postTable as table } from 'db/schema';
 
 const linkPrepend = sql<string>`,SUBSTR(${table.hash},1,2),'/',SUBSTR(${table.hash},3,2),'/',`;
@@ -17,6 +16,9 @@ export const preview_url =
     .append(linkPrepend)
     .append(sql`${table.hash},'.',${table.preview_ext}) END`);
 
-export const lqip = sql<Nullable>`CASE WHEN ${eq(table.haveLQIP, true)} THEN CONCAT('${sql.raw(S3_ENABLED ? Bun.env.S3_PUBLIC_ENDPOINT! : '/image/lqip')}/', ${table.hash}) END`;
+export const lqip =
+  sql<Nullable>`CASE WHEN ${isNotNull(table.lqip)} THEN CONCAT('data:image/webp;base64,', encode(${table.lqip}, 'base64')) END`.as(
+    'lqip'
+  );
 
 type Nullable = string | null;
