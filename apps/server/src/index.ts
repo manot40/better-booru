@@ -4,8 +4,7 @@ import { cors } from '@elysiajs/cors';
 import { etag } from '@bogeychan/elysia-etag';
 import { staticPlugin } from '@elysiajs/static';
 
-import { elysiaIPXHandler } from 'lib/ipx';
-import { caching, logger, scrap, userConfig } from 'plugins';
+import { caching, ipxCache, logger, scrap, userConfig } from 'plugins';
 
 import * as Post from 'handlers/post';
 import * as PostTags from 'handlers/post-tags';
@@ -19,6 +18,7 @@ const setup = new Elysia()
   .use(etag())
   .use(cors())
   .use(logger)
+  .use(ipxCache)
   .use(userConfig)
   .use(staticPlugin({ indexHTML: true, prefix: '/' }))
   .use(caching({ pathRegex: [/^\/api\/(post|autocomplete)/] }));
@@ -29,10 +29,7 @@ const api = new Elysia({ prefix: '/api' })
   .get('/posts/:id/tags', <any>PostTags.handler, PostTags.schema)
   .get('/autocomplete', <any>Autocomplete.handler, Autocomplete.schema);
 
-export const app = new Elysia()
-  .use(api)
-  .get('/image/*', elysiaIPXHandler)
-  .onError({ as: 'scoped' }, handleError);
+export const app = new Elysia().use(api).onError({ as: 'scoped' }, handleError);
 
 setup.use(app).listen({
   port: process.env.PORT || 3000,

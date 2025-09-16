@@ -13,14 +13,17 @@ export const getDanbooruImage = (data: DanbooruResponse): ExtractedImage => {
         acc.width = next.width;
         acc.height = next.height;
         acc.file_ext = next.file_ext;
+        acc.file_url = next.url;
       } else if (next.type === 'sample') {
+        acc.sample_url = next.url;
         acc.sample_ext = next.file_ext || null;
         acc.sample_width = next.width || null;
         acc.sample_height = next.height || null;
       } else if (next.type === '720x720') {
-        acc.preview_ext = next.file_ext || null;
-        acc.preview_width = next.width || null;
-        acc.preview_height = next.height || null;
+        acc.preview_url = next.url;
+        acc.preview_ext = next.file_ext;
+        acc.preview_width = next.width;
+        acc.preview_height = next.height;
       }
       return acc;
     }, extracted);

@@ -1,7 +1,7 @@
+import type { IPX } from 'ipx';
 import type { HTTPHeaders } from 'elysia/dist/types';
 
 import { destr } from 'destr';
-import { createIPX, ipxFSStorage, ipxHttpStorage, type IPX } from 'ipx';
 
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
 const MODIFIER_SEP = /[&,]/g;
@@ -14,12 +14,6 @@ export const Const = {
   MODIFIER_SEP,
   MODIFIER_VAL_SEP,
 };
-
-export const ipx = createIPX({
-  maxAge: MAX_AGE,
-  storage: ipxFSStorage({ dir: './public/cache' }),
-  httpStorage: ipxHttpStorage({ domains: ALLOWED_HOSTS }),
-});
 
 type Modifiers = NonNullable<Parameters<IPX>[1]>;
 
@@ -63,22 +57,6 @@ export function getModifiers(url: string | string[], mod: string) {
   return { hash, modifiers, id };
 }
 
-export async function getLQIP(url: string) {
-  const prepareBlur = ipx(url, {
-    q: '30',
-    w: '16',
-    h: '16',
-    f: 'webp',
-    fit: 'inside',
-    blur: '2',
-    kernel: 'cubic',
-  });
-
-  const { data } = await prepareBlur.process();
-
-  return data;
-}
-
 export function getFileHandler(hash: string) {
   const path = `${process.cwd()}/.cache/ipx/${hash}`;
   return Bun.file(Bun.pathToFileURL(path));
@@ -102,7 +80,7 @@ export type IPXCacheOptions = {
   maxAge?: number;
 };
 
-export type HeaderMeta = { lqip?: string } & Pick<
+export type HeaderMeta = Pick<
   Required<HTTPHeaders>,
   'expires' | 'last-modified' | 'cache-control' | 'content-type' | 'content-length'
 >;

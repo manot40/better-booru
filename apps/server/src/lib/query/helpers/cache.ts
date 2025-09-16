@@ -1,8 +1,10 @@
 import type { DBPostData } from 'db/schema';
 
 import { S3_ENABLED } from 'utils/s3';
-import { ipxMetaCache, PREVIEW_PATH } from 'lib/ipx/cache';
-import { parseMeta, getModifiers, getLQIP, Const } from 'lib/ipx/helpers';
+
+import { getModifiers, parseMeta } from 'plugins/ipx/helpers';
+import { ipxMetaCache, PREVIEW_PATH } from 'plugins/ipx/cache';
+import { addTask } from 'plugins/ipx/lqip-worker';
 
 function reduceSize(item: PostFromDB): [string, string, number, number] {
   const src = item.sample_url || item.file_url;
@@ -36,28 +38,19 @@ export function populatePreviewCache(post: PostFromDB) {
     return;
   }
 
+  if (!post.lqip) {
+    addTask(post.sample_url || post.file_url, post.hash);
+  }
+
   if (!s3PublicEndPoint || !S3_ENABLED) {
     post.preview_url = uncachedKey;
   } else {
     post.preview_url = `${s3PublicEndPoint}/${PREVIEW_PATH}/${cacheKey}`;
   }
-
-  if (cached.lqip) {
-    post.lqip = `data:image/webp;base64,${cached.lqip}`;
-  } else {
-    getLQIP(src)
-      .then((lqip) => {
-        const cloned = { ...cached, lqip: lqip.toString('base64') };
-        return Bun.zstdCompress(Buffer.from(JSON.stringify(cloned), 'utf-8'));
-      })
-      .then((data) => {
-        ipxMetaCache.set(cacheKey, data.toString('base64'), Const.MAX_AGE);
-      });
-  }
 }
 
-type PostFromDB = Pick<DBPostData, 'width' | 'height'> & {
-  lqip?: string;
+type PostFromDB = Pick<DBPostData, 'width' | 'height' | 'hash'> & {
+  lqip?: string | null;
   file_url: string;
   sample_url?: string | null;
   sample_width?: number | null;

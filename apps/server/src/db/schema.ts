@@ -22,6 +22,7 @@ export const postTable = pgTable(
     source: text(),
     rating: ratingEnum().notNull(),
     tag_ids: integer().array(),
+    haveLQIP: boolean('have_lqip').notNull().default(false),
 
     preview_ext: text(),
     preview_width: integer(),

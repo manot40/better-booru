@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS cache (
     const cacheToPersist = () => {
       if (!this.memcache || !this.needUpdate) return;
 
-      const data = this.memcache.getAll();
+      const data = this.memcache.getEntries().map(([, v]) => v);
       const deleteKeys = data.map((row) => row.key);
       const insertData = this.db.transaction((data: DBResult[]) => {
         const result = data.map((row) => this.op.upsert.run(row.key, row.value, row.expires));
@@ -59,9 +59,20 @@ CREATE TABLE IF NOT EXISTS cache (
     else return result.value;
   }
 
-  getAll(): string[] {
-    const data = this.memcache?.getAll() || this.op.getAll.all();
-    return data.map((row) => row.value);
+  getEntries(): [string, string][] {
+    const fromMemory = this.memcache
+      ?.getEntries()
+      .map<[string, string]>(([, value]) => [value.key, value.value]);
+    const fromPersist = this.op.getAll.all().map((row) => [row.key, row.value]);
+
+    const entries = [...fromPersist, ...(fromMemory || [])]
+      .reduce((acc, [key, value]) => {
+        acc.set(key, value);
+        return acc;
+      }, new Map<string, string>())
+      .entries();
+
+    return Array.from(entries);
   }
 
   set(k: string, v: string, ttl = null as number | null): void {
