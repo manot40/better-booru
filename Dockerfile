@@ -4,8 +4,6 @@ FROM base AS builder
 WORKDIR /usr/app
 COPY . .
 
-
-
 RUN bun install
 RUN --mount=type=secret,id=build_env,target=/usr/app/.env \
     bun --env-file=./.env all build && \

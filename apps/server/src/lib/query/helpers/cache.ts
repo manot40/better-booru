@@ -35,7 +35,7 @@ export function populatePreviewCache(post: PostFromDB) {
   const cached = destr<HeaderMeta>(ipxMetaCache.get(cacheKey));
 
   if (!post.lqip) {
-    addTask(post.sample_url || post.file_url, post.hash);
+    addTask(post.preview_url || post.sample_url || post.file_url, post.hash);
   } else {
     post.lqip = post.lqip.replaceAll('\n', '');
   }

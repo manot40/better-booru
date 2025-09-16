@@ -33,14 +33,19 @@ function addTask(url: string | URL, hash?: string) {
 async function run(store: unknown) {
   const cron = (store as { cron: { lqip_worker: Cron } }).cron.lqip_worker;
   const tasks = lqipQueue.getEntries();
-  const initial = cron.currentRun()?.getMinutes() || 0;
+  const initial = cron.currentRun()?.valueOf() || 0;
 
   if (tasks.length === 0) return;
   else console.info('[LQIP] Processing', tasks.length, 'tasks');
 
   for (const [hash, url] of tasks) {
-    const current = cron.currentRun()?.getMinutes();
+    const current = cron.currentRun()?.valueOf();
+
     if (initial !== current) return;
+    if (/.*(mp4|webm|zip)$/.test(url)) {
+      lqipQueue.delete(hash);
+      continue;
+    }
 
     const res = await fetch(url);
     const isPict = res.headers.get('content-type')?.startsWith('image/');
@@ -59,7 +64,7 @@ async function run(store: unknown) {
         .where(eq($s.postTable.hash, hash))
         .then(() => lqipQueue.delete(hash));
 
-      await new Promise((r) => setTimeout(r, random(300, 1000)));
+      await new Promise((r) => setTimeout(r, random(100, 600)));
     } catch (e) {
       console.error(`[LQIP] Failed to process task ${hash}:`, e);
       continue;

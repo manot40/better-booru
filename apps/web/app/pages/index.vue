@@ -53,7 +53,7 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
 
 const postToSlide = (post: Post): SlideData => ({
   src: post.file_url,
-  msrc: post.preview_url || post.file_url,
+  msrc: post.preview_url || post.sample_url || post.file_url,
   width: post.width,
   height: post.height,
 });
