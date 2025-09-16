@@ -1,8 +1,7 @@
-import { ne, sql } from 'drizzle-orm';
+import { isNotNull, ne, sql } from 'drizzle-orm';
 
 import { postTable as table } from 'db/schema';
 
-const vid = ['webm', 'mp4', 'zip'];
 const linkPrepend = sql<string>`,SUBSTR(${table.hash},1,2),'/',SUBSTR(${table.hash},3,2),'/',`;
 
 export const file_url = sql<string>`CONCAT('https://cdn.donmai.us/original/'`
@@ -16,5 +15,10 @@ export const preview_url =
   sql<Nullable>`CASE WHEN ${ne(table.preview_ext, '')} THEN CONCAT('https://cdn.donmai.us/720x720/'`
     .append(linkPrepend)
     .append(sql`${table.hash},'.',${table.preview_ext}) END`);
+
+export const lqip =
+  sql<Nullable>`CASE WHEN ${isNotNull(table.lqip)} THEN CONCAT('data:image/webp;base64,', encode(${table.lqip}, 'base64')) END`.as(
+    'lqip'
+  );
 
 type Nullable = string | null;

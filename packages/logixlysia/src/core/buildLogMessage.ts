@@ -23,7 +23,7 @@ export function buildLogMessage(opts: LogPayload): string {
       : formatTimestamp(now, options?.config?.timestamp),
     epoch: Math.floor(now.getTime() / 1000).toString(),
     level: logString(level, useColors),
-    duration: durationString(store.beforeTime, useColors),
+    duration: store ? durationString(store.beforeTime, useColors) : '',
     method: req ? methodString(req.method, useColors) : '',
     pathname: req ? pathString(req) : '',
     status: typeof data == 'object' ? statusString(data?.status || 200, useColors) : '',

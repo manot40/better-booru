@@ -1,19 +1,16 @@
 import { SQLiteStore } from 'lib/cache/sqlite';
 import { s3, S3_ENABLED } from 'utils/s3';
 
-import { getFileHandler, parseMeta, type IPXCacheOptions } from './helpers';
+import { destr } from 'destr';
+import { getFileHandler, type HeaderMeta, type IPXCacheOptions } from './helpers';
 
 export const PREVIEW_PATH = 'images/preview';
 export const ipxMetaCache = new SQLiteStore('.data/ipx_cache.db');
 
 export async function setCache(hash: string, options: IPXCacheOptions) {
   const { data, meta, maxAge } = options;
-  const strMeta = JSON.stringify(meta);
 
-  ipxMetaCache.set(hash, strMeta, maxAge);
-  Bun.zstdCompress(Buffer.from(strMeta, 'utf-8')).then((data) => {
-    ipxMetaCache.set(hash, data.toString('base64'), maxAge);
-  });
+  ipxMetaCache.set(hash, JSON.stringify(meta), maxAge);
 
   if (S3_ENABLED) {
     const file = s3.file(`${PREVIEW_PATH}/${hash}`);
@@ -45,7 +42,7 @@ export async function getCache(hash: string) {
     return;
   }
 
-  const meta = parseMeta(fileMeta);
+  const meta = destr<HeaderMeta>(fileMeta);
   const data = await fileHandler.arrayBuffer();
 
   return { data, meta };

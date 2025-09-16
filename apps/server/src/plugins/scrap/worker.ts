@@ -6,6 +6,9 @@ import { db, schema as $s } from 'db';
 import { random } from 'utils/common';
 import { getDanbooruImage } from 'utils/danbooru';
 
+import { log } from 'plugins/logger';
+import { addTask } from 'plugins/ipx/lqip-worker';
+
 export async function run() {
   const state = { last: (await findFirst.execute())?.id || 0, isEnd: false };
   while (!state.isEnd) {
@@ -54,10 +57,11 @@ async function scrap(state: State): Promise<void> {
   if (danbooruData.length === 0) return;
 
   try {
-    console.info('Processing batch:', danbooruData[0]?.id, danbooruData.at(-1)?.id);
+    log('INFO', `Processing batch: ${danbooruData[0]?.id} ${danbooruData.at(-1)?.id}`);
 
     await db.transaction(async (tx) => {
       const data: (typeof $s.postTable.$inferInsert)[] = [];
+      const lqipTasks: Parameters<typeof addTask>[] = [];
 
       for (let i = 0; i < danbooruData.length; i++) {
         const { tags: t, ...rest } = danbooruData[i];
@@ -102,9 +106,13 @@ async function scrap(state: State): Promise<void> {
         }
 
         data.push({ ...rest, tag_ids });
+        lqipTasks.push([rest.sample_url || rest.file_url, rest.hash]);
       }
 
-      await tx.insert($s.postTable).values(data);
+      await tx
+        .insert($s.postTable)
+        .values(data)
+        .then(() => lqipTasks.forEach(([url, hash]) => addTask(url, hash)));
     });
 
     state.last = danbooruData.at(-1)!.id;

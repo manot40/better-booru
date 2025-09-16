@@ -14,7 +14,7 @@ export interface ColorMap {
   [key: string]: (str: string) => string;
 }
 
-export type LogLevel = 'INFO' | 'WARNING' | 'ERROR' | string;
+export type LogLevel = 'INFO' | 'WARNING' | 'ERROR' | ({} & string);
 
 export interface LogData {
   status?: number;
@@ -24,14 +24,15 @@ export interface LogData {
 export type LogPayload = {
   data: LogData | string;
   level: LogLevel;
-  store: StoreData;
+  store?: StoreData;
   request?: RequestInfo;
   options?: Options;
   useColors?: boolean;
 };
 
 export interface Logger {
-  log(opts: Omit<LogPayload, 'options'>): void;
+  log(level: LogLevel, data: LogData | string): void;
+  logRequest(opts: Omit<LogPayload, 'options'>): void;
   handleHttpError(request: RequestInfo, error: HttpError, store: StoreData): void;
   customLogFormat?: string;
 }

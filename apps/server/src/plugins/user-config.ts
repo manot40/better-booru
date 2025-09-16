@@ -10,7 +10,7 @@ export const userConfig = new Elysia({ name: 'user-config' }).derive({ as: 'scop
   const { value } = cookie[STATIC.keys.userConfig] || {};
 
   // Only when hitting homepage or API routes
-  if (!/(^\/$|^\/api)/.test(path)) return;
+  if (!/(^\/$|^\/api\/post)/.test(path)) return;
 
   const config = destr<UserConfig | undefined>(value);
   if (!config) return;

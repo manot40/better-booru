@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
 } from 'drizzle-orm/pg-core';
+import bytea from './bytea';
 
 export const ratingEnum = pgEnum('RATING', ['g', 's', 'q', 'e']);
 
@@ -17,6 +18,7 @@ export const postTable = pgTable(
   'posts',
   {
     id: integer().primaryKey(),
+    lqip: bytea('lqip'),
     hash: text().unique().notNull(),
     score: integer(),
     source: text(),

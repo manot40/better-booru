@@ -29,7 +29,7 @@ const vLoaded: Directive<HTMLImageElement> = {
       class="w-full h-full object-cover bg-cover bg-no-repeat max-h-[900px]" />
     <Transition name="blur-fade">
       <div
-        v-if="hideNSFW || (item.lqip && !loaded)"
+        v-show="hideNSFW || (item.lqip && !loaded)"
         class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" />
     </Transition>
   </NuxtLink>

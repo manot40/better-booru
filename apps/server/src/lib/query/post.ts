@@ -1,6 +1,7 @@
 import type { SQL } from 'drizzle-orm';
 import type { DBPostData } from 'db/schema';
 
+import { log } from 'plugins/logger';
 import { SQLiteStore } from 'lib/cache/sqlite';
 import { waitForWorker } from 'utils/worker';
 import { db, schema as $s } from 'db';
@@ -121,10 +122,10 @@ export function getPostCount(filters: SQL[], order: SQL): number {
   waitForWorker<{ count: string }[]>({ op: 'DB_OPERATION', payload: query.toSQL() })
     .then(({ data, error, worker }) => {
       if (data) countCache.set(cacheKey, data[0].count, 60 * 60 * 24);
-      else console.error(error || 'Count data cannot be retrieved');
+      else log('ERROR', error || 'Count data cannot be retrieved');
       worker.terminate();
     })
-    .catch((e) => console.error(e.message))
+    .catch((e) => log('ERROR', e.message))
     .finally(() => countCache.delete(lockKey));
 
   return 0;
