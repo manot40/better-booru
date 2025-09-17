@@ -52,10 +52,16 @@ export const useBooruFetch = (
       data.value = undefined;
     } else if (config.isInfinite) {
       query.limit = LIMIT;
-      if (!data.value) query.page ||= 1;
-      else if (config.provider == 'danbooru') query.page = `b${data.value.post.at(-1)!.id}`;
-      else if (typeof query.page == 'number') query.page++;
-      else query.page = 1;
+      if (!data.value) {
+        query.page ||= 1;
+      } else if (config.provider == 'danbooru') {
+        const isAsc = query.page.toString().startsWith('a');
+        query.page = `${isAsc ? 'a' : 'b'}${data.value.post.at(-1)?.id}`;
+      } else if (typeof query.page == 'number') {
+        query.page++;
+      } else {
+        query.page = 1;
+      }
     }
 
     loading.value = true;
