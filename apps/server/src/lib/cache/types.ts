@@ -1,10 +1,10 @@
 export interface CacheStore<T = any, K extends Key = Key> {
-  get(k: K): T | undefined;
-  has(k: K): boolean;
+  get(k: K): MaybePromise<T | undefined>;
+  has(k: K): MaybePromise<boolean>;
   set(k: K, v: T, ttl?: number): void;
   clear(): void;
-  delete(k: K): boolean | number;
-  getEntries(): [K, T][];
+  delete(k: K): MaybePromise<boolean | number>;
+  getEntries(): MaybePromise<[K, T][]>;
 }
 
 export type Key = string | number | symbol;

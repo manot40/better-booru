@@ -36,7 +36,7 @@ async function run(store: unknown) {
   const tasks = lqipQueue.getEntries();
   const initial = cron.currentRun()?.valueOf() || 0;
 
-  if (tasks.length === 0) return;
+  if (tasks.length === 0) return lqipQueue.vacuum();
   else log('INFO', `[LQIP] Processing ${tasks.length} tasks`);
 
   for (const [hash, url] of tasks) {
