@@ -2,11 +2,13 @@ import type { AsyncDataRequestStatus } from '#app';
 
 import { withQuery } from 'ufo';
 
-export const BASE_URL = import.meta.dev
-  ? 'http://localhost:3001'
-  : typeof location != 'undefined'
-    ? location.origin
-    : import.meta.env.BASE_URL;
+export function getBaseURL() {
+  const { baseUrl } = useRuntimeConfig().public;
+  const fallback = import.meta.env.BASE_URL || 'http://localhost:3001';
+
+  if (baseUrl) return baseUrl;
+  else return typeof location != 'undefined' ? location.origin : fallback;
+}
 
 export const randomInt = (from: number, to: number) => Math.floor(Math.random() * (to - from + 1) + from);
 

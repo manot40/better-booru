@@ -74,6 +74,11 @@ export const useBooruFetch = (
       return;
     }
 
+    // Set new base url for preview urls
+    res.post.forEach((post: Post) => {
+      post.preview_url &&= new URL(post.preview_url, getBaseURL()).toString();
+    });
+
     // Infinte scroll disabled or initial state
     if (!config.isInfinite || !data.value) {
       data.value = res;
