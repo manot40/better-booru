@@ -8,6 +8,7 @@ export default defineNuxtConfig({
 
   app: {
     cdnURL: CDN_URL || undefined,
+    buildAssetsDir: 'web_assets',
   },
 
   css: ['~/assets/css/main.css'],
