@@ -1,9 +1,10 @@
 import MemoryCache from 'lib/cache/memory';
 
 import { Elysia } from 'elysia';
+import { STATIC } from '@boorugator/shared';
 
 const TTL = 60 * 5;
-const VARIES = ['x-rating', 'x-provider'];
+const VARIES = [STATIC.keys.userConfig];
 
 type Options = {
   varies?: string[];

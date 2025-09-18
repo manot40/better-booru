@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import '@fontsource-variable/rubik';
 
-const { public: config } = useRuntimeConfig();
-
-useHead({
-  title: 'Booru Aggregator',
-  link: config.cdnUrl ? [{ rel: 'preconnect', href: config.cdnUrl }] : undefined,
-});
+useHead({ title: 'Booru Aggregator' });
 </script>
 
 <template>

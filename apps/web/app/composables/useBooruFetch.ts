@@ -42,10 +42,6 @@ export const useBooruFetch = (
     const query = <PageAsString>{
       ...paginator.query.value,
     };
-    const headers = {
-      'x-rating': config.rating?.join(' ')!,
-      'x-provider': config.provider,
-    };
 
     if (reset) {
       query.page = 1;
@@ -65,7 +61,7 @@ export const useBooruFetch = (
     }
 
     loading.value = true;
-    const { data: res, error: err } = await eden.api.posts.get({ query, headers });
+    const { data: res, error: err } = await eden.api.posts.get({ query });
     loading.value = false;
 
     if (!res || err) {

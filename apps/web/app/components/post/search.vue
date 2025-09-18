@@ -16,8 +16,7 @@ const tags = computed(() => queryState.value?.tags?.split(' ') || []);
 const q = debouncedRef(searchTerm, 600);
 const { data: searchTags } = useAsyncData(q, fetchAutocomplete, { server: false, watch: [provider] });
 async function fetchAutocomplete() {
-  const headers = { 'x-provider': provider.value };
-  const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value }, headers });
+  const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value } });
   if (data) return data as Array<Record<'value' | 'label', string> & { category: number }>;
   throw error;
 }

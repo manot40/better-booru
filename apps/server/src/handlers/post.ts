@@ -15,9 +15,9 @@ import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 export const handler: Handler = async ({ query, headers, store, userConfig }) => {
   const { tags, page, limit = '50' } = query;
 
-  const baseRating = headers['x-rating'] || userConfig?.rating?.join(' ');
+  const baseRating = userConfig?.rating?.join(' ');
   const baseQuery = { s: 'post', q: 'index', pid: page, json: '1', page: 'dapi', limit };
-  const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
+  const provider = <Provider>(userConfig?.provider || 'danbooru');
 
   if (provider === 'gelbooru') {
     const query = { ...baseQuery, tags: processRating(provider, baseRating, tags) };
@@ -33,7 +33,7 @@ export const handler: Handler = async ({ query, headers, store, userConfig }) =>
       return { post: processBooruData(data), meta: { limit: +limit, count: counts.posts, offset: 0 } };
     }
 
-    const rating_ = headers['x-rating']?.split(' ') || userConfig?.rating;
+    const rating_ = userConfig?.rating;
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
     const opts = { page: (page || 1).toString(), tags: <string[]>tags?.split(' '), limit: +limit, rating };
 

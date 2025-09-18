@@ -18,7 +18,7 @@ const autocompleteSchema = t.Object({
 
 export const handler: Handler = async ({ query, userConfig, headers }) => {
   const { q, provider: qProvider } = query;
-  const provider = qProvider || headers['x-provider'] || userConfig?.provider;
+  const provider = qProvider || userConfig?.provider;
 
   if (provider === 'gelbooru') {
     const data = await $gelbooruFetch<GelAutocomplete[]>('/index.php', {

@@ -13,7 +13,7 @@ export const userConfig = new Elysia({ name: 'user-config' }).derive({ as: 'scop
   const configString = fromHeaders ? Buffer.from(fromHeaders, 'base64').toString('utf-8') : fromCookie;
 
   // Only when hitting homepage or API routes
-  if (!/(^\/$|^\/api\/post)/.test(path)) return;
+  if (!/(^\/$|^\/api\/)/.test(path)) return;
 
   const config = destr<UserConfig | undefined>(configString);
   if (!config) return;

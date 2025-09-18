@@ -15,7 +15,7 @@ import { mapDanbooruData } from 'utils/danbooru';
 import { populatePreviewCache } from 'lib/query/helpers/cache';
 
 export const handler: Handler = async ({ params: { id }, userConfig, headers, status }) => {
-  const provider = <Provider>(headers['x-provider'] || userConfig?.provider || 'danbooru');
+  const provider = <Provider>(userConfig?.provider || 'danbooru');
   const baseQuery = { s: 'post', q: 'index', json: '1', page: 'dapi' };
 
   if (provider === 'gelbooru') {
