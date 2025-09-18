@@ -4,7 +4,9 @@ import { cron, Patterns } from '@elysiajs/cron';
 import { S3_ENABLED } from 'utils/s3';
 import { createIPX, ipxFSStorage, ipxHttpStorage } from 'ipx';
 
-import { run } from './lqip-worker';
+import { run as lqipWorker } from './lqip-worker';
+import { run as cleanupWorker } from './cleanup-worker';
+
 import { getCache, setCache } from './cache';
 import { Const, getModifiers, type HeaderMeta } from './helpers';
 
@@ -15,7 +17,20 @@ const ipx = createIPX({
 });
 
 export const ipxCache = new Elysia()
-  .use(cron({ run, name: 'lqip_worker', pattern: Patterns.EVERY_MINUTE }))
+  .use(
+    cron({
+      run: lqipWorker,
+      name: 'lqip_worker',
+      pattern: Patterns.EVERY_MINUTE,
+    })
+  )
+  .use(
+    cron({
+      run: cleanupWorker,
+      name: 'ipx_cleanup_worker',
+      pattern: Patterns.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT,
+    })
+  )
   .get('/image/*', async ({ set, params, status, redirect }) => {
     try {
       const maxAge = Const.MAX_AGE;
