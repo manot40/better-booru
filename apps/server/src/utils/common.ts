@@ -1,11 +1,7 @@
-import type { Cookie } from 'elysia';
+import type { Post } from '@boorugator/shared/types';
 import type { GelbooruData } from '@boorugator/shared/types';
 import type { DanbooruResponse } from '@boorugator/shared/types';
-import type { Post, UserConfig } from '@boorugator/shared/types';
 
-import { destr } from 'destr';
-
-import { STATIC } from '@boorugator/shared';
 import { isDanbooru, mapDanbooruData } from './danbooru';
 
 export function processBooruData(data: BooruResponse): Post[] {
@@ -23,11 +19,6 @@ export function processBooruData(data: BooruResponse): Post[] {
     };
   });
 }
-
-export const getUserConfig = (cookie: Record<string, Cookie<string | undefined>>) => {
-  const cookieStr = cookie[STATIC.keys.userConfig];
-  if (cookieStr.value) return destr<UserConfig>(cookieStr.value);
-};
 
 export const random = (a: number, b: number) => Math.floor(Math.random() * (b - a) + a);
 

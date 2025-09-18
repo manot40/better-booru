@@ -31,27 +31,37 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
 
   actions: {
     populate() {
-      const config = useCookie<UserConfig>(STATIC.keys.userConfig, { maxAge });
+      const config = useCookie<UserConfig>(STATIC.keys.userConfig, { readonly: true });
+      const local = import.meta.client && localStorage[STATIC.keys.userConfig];
 
-      if (!config.value) {
-        config.value = { ...this.$state };
-        return;
+      if (!config.value && !local) {
+        return this.mutate(this.$state);
       }
 
-      if (typeof config.value != 'object') return;
-      Object.assign(this, config.value);
+      if (typeof config.value == 'object') Object.assign(this, config.value);
+      else if (local) Object.assign(this, JSON.parse(local));
     },
 
     mutate(value: Partial<UserConfig>) {
       const updated = Object.assign(this.$state, value);
-      const cookie = useCookie(STATIC.keys.userConfig, { maxAge });
-      cookie.value = JSON.stringify(updated);
+
+      if (import.meta.server) {
+        const cookie = useCookie(STATIC.keys.userConfig, { maxAge });
+        cookie.value = JSON.stringify(updated);
+      } else {
+        localStorage[STATIC.keys.userConfig] = JSON.stringify(updated);
+      }
     },
 
     reset() {
       this.$reset();
-      const cookie = useCookie(STATIC.keys.userConfig, { maxAge });
-      cookie.value = JSON.stringify(this.$state);
+
+      if (import.meta.server) {
+        const cookie = useCookie(STATIC.keys.userConfig, { maxAge });
+        cookie.value = JSON.stringify(this.$state);
+      } else {
+        localStorage[STATIC.keys.userConfig] = JSON.stringify(this.$state);
+      }
     },
 
     changeProvider(provider: UserConfig['provider']) {
