@@ -1,5 +1,6 @@
 import type { Cron } from 'croner';
 
+import RedisStore from 'lib/cache/redis';
 import SQLiteStore from 'lib/cache/sqlite';
 
 import createSharp from 'sharp';
@@ -10,11 +11,12 @@ import { random } from 'utils/common';
 import { eq } from 'drizzle-orm';
 import { db, schema as $s } from 'db';
 
-const lqipQueue = new SQLiteStore('.data/lqip_queue.db');
+const STORE_KEY = 'lqip_queue';
+const lqipQueue = Bun.env.REDIS_URL ? new RedisStore(STORE_KEY) : new SQLiteStore(`.data/${STORE_KEY}.db`);
 
-function addTask(url: URL): void;
-function addTask(url: string, hash: string): void;
-function addTask(url: string | URL, hash?: string) {
+function addTask(url: URL): Promise<void>;
+function addTask(url: string, hash: string): Promise<void>;
+async function addTask(url: string | URL, hash?: string): Promise<void> {
   if (url instanceof URL) {
     hash = url.pathname
       .split('/')
@@ -22,9 +24,9 @@ function addTask(url: string | URL, hash?: string) {
       ?.replace(/(^sample\-|\.\w+)/g, '');
     if (!hash) throw new Error('Invalid URL');
 
-    lqipQueue.set(hash, url.toString());
+    await lqipQueue.set(hash, url.toString());
   } else if (typeof url == 'string' && hash) {
-    lqipQueue.set(hash, url);
+    await lqipQueue.set(hash, url);
   } else {
     throw new Error('Invalid arguments');
   }
@@ -33,11 +35,15 @@ function addTask(url: string | URL, hash?: string) {
 /** @internal */
 async function run(store: unknown) {
   const cron = (store as { cron: { lqip_worker: Cron } }).cron.lqip_worker;
-  const tasks = lqipQueue.getEntries();
+  const tasks = await lqipQueue.getEntries();
   const initial = cron.currentRun()?.valueOf() || 0;
 
-  if (tasks.length === 0) return lqipQueue.vacuum();
-  else log('INFO', `[LQIP] Processing ${tasks.length} tasks`);
+  if (tasks.length === 0) {
+    if ('vacuum' in lqipQueue) lqipQueue.vacuum();
+    return;
+  } else {
+    log('INFO', `[LQIP] Processing ${tasks.length} tasks`);
+  }
 
   for (const [hash, url] of tasks) {
     const current = cron.currentRun()?.valueOf();

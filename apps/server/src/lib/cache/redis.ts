@@ -1,6 +1,6 @@
 import type { CacheStore } from './types';
 
-export class RedisStore implements CacheStore<string, string> {
+class RedisStore implements CacheStore<string, string> {
   private redis: Bun.RedisClient;
   private connected = false;
 
@@ -63,3 +63,5 @@ export class RedisStore implements CacheStore<string, string> {
     return Object.entries(entries);
   }
 }
+
+export default RedisStore;
