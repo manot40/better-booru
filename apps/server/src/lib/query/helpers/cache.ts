@@ -7,10 +7,18 @@ import { addTask } from 'plugins/ipx/lqip-worker';
 import { ipxMetaCache, PREVIEW_PATH } from 'plugins/ipx/cache';
 import { getModifiers, type HeaderMeta } from 'plugins/ipx/helpers';
 
-function reduceSize(item: PostFromDB): [string, string, number, number] {
-  const src = item.sample_url || item.file_url;
-  const width = item.sample_width || item.width;
-  const height = item.sample_height || item.height;
+function reduceSize(item: PostFromDB): null | [string, string, number, number] {
+  let src = item.sample_url || item.file_url;
+  let width = item.sample_width || item.width;
+  let height = item.sample_height || item.height;
+
+  const notPhoto = !/\.(webp|png|jp(e?)g)$/.test(src);
+  if (notPhoto) {
+    if (!item.preview_url) return null;
+    src = item.preview_url;
+    width = item.preview_width!;
+    height = item.preview_height!;
+  }
 
   const square = width * height;
   const division = square > 2_000_000 ? 3 : square > 1_000_000 ? 2 : 1;
@@ -22,7 +30,10 @@ function reduceSize(item: PostFromDB): [string, string, number, number] {
 }
 
 export function populatePreviewCache(post: PostFromDB) {
-  const [src, mod, w, h] = reduceSize(post);
+  const reduced = reduceSize(post);
+  if (!reduced) return;
+
+  const [src, mod, w, h] = reduced;
 
   post.preview_ext = 'webp';
   post.preview_width = w;

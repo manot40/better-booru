@@ -7,6 +7,7 @@ const props = defineProps<{ item: Post }>();
 const config = useUserConfig();
 
 const loaded = ref(false);
+const loading = computed(() => !!props.item.lqip && !loaded.value);
 const hideNSFW = computed(() => config.hideNSFW && ['e', 'q'].includes(props.item.rating));
 
 const toggleLoaded = () => (loaded.value = true);
@@ -29,8 +30,11 @@ const vLoaded: Directive<HTMLImageElement> = {
       class="w-full h-full object-cover bg-cover bg-no-repeat max-h-[900px]" />
     <Transition name="blur-fade">
       <div
-        v-show="hideNSFW || (item.lqip && !loaded)"
-        class="w-full h-full absolute left-0 top-0 z-10 bg-black/25 backdrop-blur-xl" />
+        v-show="hideNSFW || loading"
+        :class="[
+          'w-full h-full absolute left-0 top-0 z-10',
+          loading ? 'backdrop-blur-sm bg-black/20' : 'backdrop-blur-xl bg-black/25',
+        ]" />
     </Transition>
   </NuxtLink>
 </template>
