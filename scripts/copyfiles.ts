@@ -24,11 +24,12 @@ if (!S3_ENABLED) {
   const assetsGlob = new Bun.Glob(join(process.cwd(), ARTIFACTS));
 
   for await (const filePath of assetsGlob.scan()) {
-    const isNuxtFile = filePath.includes(`${NUXT_DIR}/`);
+    const fileUrl = Bun.pathToFileURL(filePath).toString();
+    const isNuxtFile = fileUrl.includes(`${NUXT_DIR}/`);
 
     let destination: string;
     if (isNuxtFile) {
-      const fileName = filePath.replace(/.*\/.output\//g, '');
+      const fileName = fileUrl.replace(/.*\/.output\//g, '');
       destination = join(DIST_DIR, fileName);
     } else {
       const fileName = basename(filePath);
