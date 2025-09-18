@@ -4,7 +4,7 @@ import { Elysia } from 'elysia';
 import { STATIC } from '@boorugator/shared';
 
 const TTL = 60 * 5;
-const VARIES = [STATIC.keys.userConfig];
+const VARIES = [`x-${STATIC.keys.userConfig}`];
 
 type Options = {
   varies?: string[];
