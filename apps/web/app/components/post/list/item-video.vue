@@ -13,7 +13,7 @@ defineProps<{ item: Post }>();
     :id="item.id.toString()"
     :width="item.width"
     :height="item.height"
-    :poster="unshortenUrl(item.preview_url || item.sample_url || '')">
+    :poster="item.preview_url || item.sample_url || undefined">
     <source :src="item.file_url" />
   </video>
 </template>

@@ -160,7 +160,7 @@ onUnmounted(unsubRouteListener);
             :item
             :data-index="row.key"
             @click="openGallery(row.index)"
-            v-if="item.preview_url || !['webm', 'mp4'].includes(item.file_ext)" />
+            v-if="!['webm', 'mp4', 'zip'].includes(item.file_ext)" />
           <PostListItemVideo :item :data-index="row.key" v-else />
         </UtilMapObj>
       </div>
