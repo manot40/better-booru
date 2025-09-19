@@ -1,12 +1,8 @@
 {
+  "type": "module",
   "name": "boorugator",
   "version": "1.2.5",
   "author": "manot40 <kevinsandiho290100@gmail.com>",
-  "devDependencies": {
-    "@types/bun": "^1.2.21",
-    "prettier": "^3.6.2",
-    "typescript": "5.9.2"
-  },
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -14,14 +10,19 @@
     "all:node": "bun --filter '*'",
     "copyfiles": "bun scripts/copyfiles.ts && bun run scripts/upload-to-cdn.ts"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "trustedDependencies": [
     "@boorugator/web",
     "@parcel/watcher",
     "@tailwindcss/oxide"
   ],
-  "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "devDependencies": {
+    "@types/bun": "1.2.22",
+    "dts-bundle-generator": "^9.5.1",
+    "prettier": "^3.6.2",
+    "typescript": "5.9.2"
+  }
 }

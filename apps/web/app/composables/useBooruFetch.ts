@@ -1,4 +1,3 @@
-import type { FetchError } from 'ofetch';
 import type { ListParams, Post, BooruMeta } from '@boorugator/shared/types';
 
 import { isEqual } from 'ohash';
@@ -65,26 +64,26 @@ export const useBooruFetch = (
     loading.value = false;
 
     if (!res || err) {
-      error.value = <FetchError>err;
+      error.value = err;
       hasNext.value = loading.value = false;
       return;
     }
 
     // Set new base url for preview urls
-    res.post.forEach((post: Post) => {
+    res.post.forEach((post) => {
       post.preview_url &&= new URL(post.preview_url, getBaseURL()).toString();
     });
 
     // Infinte scroll disabled or initial state
     if (!config.isInfinite || !data.value) {
-      data.value = res;
-      ids.value = new Set(...res.post.map((p: Post) => ids.value.add(p.id)));
-      options?.onReset?.(res.post);
+      data.value = res as Result;
+      ids.value = new Set(...res.post.map((p) => ids.value.add(p.id)));
+      options?.onReset?.(res.post as Post[]);
       if (reset) changePage(1);
       return (error.value = undefined);
     }
 
-    const deduped = dedupe(res.post);
+    const deduped = dedupe(res.post as Post[]);
     if (!deduped.length) return;
 
     error.value = undefined;
@@ -128,6 +127,19 @@ type Options = {
 type Result = {
   post: Post[];
   meta: BooruMeta;
+};
+
+type FetchError = {
+  status: number;
+  value: {
+    on: string;
+    type: string;
+    found?: unknown;
+    summary?: string;
+    message?: string;
+    property?: string;
+    expected?: string;
+  };
 };
 
 type InfiScrollState = {

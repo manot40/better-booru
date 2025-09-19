@@ -57,7 +57,7 @@ async function scrap(state: State): Promise<void> {
   if (danbooruData.length === 0) return;
 
   try {
-    log('INFO', `Processing batch: ${danbooruData[0]?.id} ${danbooruData.at(-1)?.id}`);
+    log('INFO', `[SCRAP] Processing batch: ${danbooruData[0]?.id} ${danbooruData.at(-1)?.id}`);
 
     await db.transaction(async (tx) => {
       const data: (typeof $s.postTable.$inferInsert)[] = [];

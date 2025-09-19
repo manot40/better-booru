@@ -1,7 +1,13 @@
-import chalk from 'chalk';
-
 import { LogComponents, LogPayload, Options } from '../types';
-import { durationString, formatTimestamp, logString, methodString, pathString, statusString } from '../utils';
+import {
+  durationString,
+  formatTimestamp,
+  LogLevelColorMap,
+  logString,
+  methodString,
+  pathString,
+  statusString,
+} from '../utils';
 
 const defaultLogFormat = '🦊 {now} {level} {duration} {method} {pathname} {status} {message} {ip}';
 
@@ -19,7 +25,7 @@ export function buildLogMessage(opts: LogPayload): string {
   const clientIP = req?.headers.get('cf-connecting-ip') || req?.headers.get('x-forwarded-for');
   const components: LogComponents = {
     now: actuallyUseColors
-      ? chalk.bgYellow(chalk.black(formatTimestamp(now, options?.config?.timestamp)))
+      ? LogLevelColorMap['WARNING'](formatTimestamp(now, options?.config?.timestamp))
       : formatTimestamp(now, options?.config?.timestamp),
     epoch: Math.floor(now.getTime() / 1000).toString(),
     level: logString(level, useColors),

@@ -11,10 +11,7 @@
     "prettier:write": "prettier -w .",
     "prettier:check": "prettier -c ."
   },
-  "devDependencies": {
-    "chalk": "^5.4.1"
-  },
   "peerDependencies": {
-    "elysia": "^1.3.21"
+    "elysia": "^1.4.6"
   }
 }

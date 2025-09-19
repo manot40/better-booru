@@ -1,6 +1,6 @@
 import type { Backend } from '@boorugator/server';
 
-import { treaty } from '@elysiajs/eden/treaty2';
+import { treaty } from '@elysiajs/eden';
 
 export const eden = treaty<Backend>('_', {
   // @ts-expect-error - Don't know what causing this error

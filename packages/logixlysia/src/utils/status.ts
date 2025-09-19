@@ -1,5 +1,5 @@
-import chalk from 'chalk';
 import { StatusMap } from 'elysia';
+import { textColor } from './colorMapping';
 
 export function getStatusCode(status: string | number): number {
   if (typeof status === 'number') return status;
@@ -9,10 +9,13 @@ export function getStatusCode(status: string | number): number {
 export default function statusString(status: number, useColors: boolean): string {
   const statusStr = status.toString();
   if (!useColors) return statusStr;
-
-  if (status >= 500) return chalk.red(statusStr);
-  if (status >= 400) return chalk.yellow(statusStr);
-  if (status >= 300) return chalk.cyan(statusStr);
-  if (status >= 200) return chalk.green(statusStr);
-  return chalk.white(statusStr);
+  return getColor(status, statusStr);
 }
+
+const getColor = (status: number, text: string) =>
+  ({
+    500: textColor('red', text),
+    400: textColor('yellow', text),
+    300: textColor('cyan', text),
+    200: textColor('green', text),
+  })[status] || textColor('white', text);

@@ -1,4 +1,5 @@
 import type { Query } from 'drizzle-orm';
+import type { WorkerEventPayload } from 'types/util';
 
 import { db } from 'db';
 

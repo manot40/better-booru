@@ -12,7 +12,7 @@ import { processRating } from '@boorugator/shared';
 import { processBooruData } from 'utils/common';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
-export const handler: Handler = async ({ query, headers, store, userConfig }) => {
+export const handler: Handler = async ({ query, userConfig }) => {
   const { tags, page, limit = '50' } = query;
 
   const baseRating = userConfig?.rating?.join(' ');

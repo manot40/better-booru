@@ -14,7 +14,6 @@ export class SQLiteStore implements CacheStore<string, string> {
 
   constructor(dbFilePath = ':memory:') {
     this.db = new Database(dbFilePath, { create: true });
-    this.op = createStatements(this.db);
 
     this.db.run("PRAGMA journal_mode = 'wal'");
     // prettier-ignore
@@ -24,7 +23,9 @@ export class SQLiteStore implements CacheStore<string, string> {
       'value TEXT,' +
       'expires INTEGER' +
     ')');
+
     this.vacuum();
+    this.op = createStatements(this.db);
   }
 
   get(k: string): string | undefined {

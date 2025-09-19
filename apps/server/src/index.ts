@@ -1,4 +1,4 @@
-import { Elysia, type InferContext } from 'elysia';
+import { Elysia } from 'elysia';
 
 import { cors } from '@elysiajs/cors';
 import { etag } from '@bogeychan/elysia-etag';
@@ -38,4 +38,3 @@ setup.use(app).listen({
 
 export type Setup = typeof setup;
 export type Backend = typeof app;
-export type Context = InferContext<Setup>;

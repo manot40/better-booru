@@ -138,7 +138,7 @@ onUnmounted(unsubRouteListener);
     <template #icon><CloudLightning /></template>
     <p>
       {{
-        (error.statusMessage != 'Server Error' && error.statusMessage) ||
+        (error.status == 422 && (error.value.summary || error.value.message)) ||
         'Something definitely wrong. Try refreshing this page.'
       }}
     </p>
@@ -151,7 +151,7 @@ onUnmounted(unsubRouteListener);
     :containerRef="(el) => (container = <HTMLElement>el)"
     id="post-list"
     ref="masonry"
-    class="relative overflow-y-auto overflow-x-hidden p-3 max-md:px-2 [&>div]:translate-y-14 h-dvh"
+    class="relative p-3 max-md:px-2 [&>div]:translate-y-14 h-dvh"
     v-else-if="data.post.length > 0">
     <template #default="{ row }">
       <div class="rounded-xl overflow-hidden shadow-sm border border-neutral-50 dark:border-transparent">

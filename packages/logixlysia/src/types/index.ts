@@ -10,10 +10,6 @@ export interface Server {
   protocol?: string;
 }
 
-export interface ColorMap {
-  [key: string]: (str: string) => string;
-}
-
 export type LogLevel = 'INFO' | 'WARNING' | 'ERROR' | ({} & string);
 
 export interface LogData {

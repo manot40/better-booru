@@ -1,3 +1,5 @@
+import type { MaybeArray } from 'types/util';
+
 import MemoryCache from 'lib/cache/memory';
 
 import { Elysia } from 'elysia';

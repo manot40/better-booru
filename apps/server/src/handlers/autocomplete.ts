@@ -16,7 +16,7 @@ const autocompleteSchema = t.Object({
   post_count: t.Optional(t.Number()),
 });
 
-export const handler: Handler = async ({ query, userConfig, headers }) => {
+export const handler: Handler = async ({ query, userConfig }) => {
   const { q, provider: qProvider } = query;
   const provider = qProvider || userConfig?.provider;
 

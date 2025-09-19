@@ -1,3 +1,5 @@
+import { MaybePromise } from 'types/util';
+
 export interface CacheStore<T = any, K extends Key = Key> {
   get(k: K): MaybePromise<T | undefined>;
   has(k: K): MaybePromise<boolean>;

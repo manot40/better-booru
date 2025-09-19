@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { VNodeRef } from 'vue';
 
+import { cn } from '@/lib/utils';
 import { useVirtualizer } from '@tanstack/vue-virtual';
 
 interface Props {
   gap?: number;
   count: number;
   width?: number;
+  class?: string;
   containerRef?: VNodeRef;
   estimateSize: (i: number, lane: number) => number;
 }
@@ -64,7 +66,7 @@ defineExpose({ virtualizer, el: root });
 </script>
 
 <template>
-  <div ref="root">
+  <div ref="root" :class="cn('overflow-y-auto overflow-x-hidden', $props.class)">
     <div
       :ref="containerRef"
       :style="{ height: `${totalSize}px` }"
