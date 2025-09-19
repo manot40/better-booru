@@ -33,7 +33,7 @@ const vLoaded: Directive<HTMLImageElement> = {
         v-show="hideNSFW || loading"
         :class="[
           'w-full h-full absolute left-0 top-0 z-10',
-          loading ? 'backdrop-blur-sm bg-black/20' : 'backdrop-blur-xl bg-black/25',
+          hideNSFW ? 'backdrop-blur-xl bg-black/25' : 'backdrop-blur-sm bg-black/20',
         ]" />
     </Transition>
   </NuxtLink>
