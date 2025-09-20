@@ -1,6 +1,14 @@
 import type { Transaction } from 'db';
 
-export type DeserializedTags = Record<'eq' | 'ne', number[] | undefined>;
+export type TagsFilter = {
+  eq?: number[];
+  ne?: number[];
+};
+export type DeserializedTags = {
+  tags?: TagsFilter;
+  authors?: TagsFilter;
+  hasInequality: boolean;
+};
 
 export async function deserializeTags(tx: Transaction, tags: string[]): Promise<DeserializedTags> {
   const normalized = tags
@@ -26,16 +34,20 @@ export async function deserializeTags(tx: Transaction, tags: string[]): Promise<
     (t, { exc, tag }) => {
       if (!tag) return t;
 
+      const key = tag.category === 1 ? 'authors' : 'tags';
+      const target = (t[key] ??= {});
+
       if (exc) {
-        t.ne ||= [];
-        t.ne.push(tag.id);
+        target.ne ||= [];
+        target.ne.push(tag.id);
+        t.hasInequality ||= true;
       } else {
-        t.eq ||= [];
-        t.eq.push(tag.id);
+        target.eq ||= [];
+        target.eq.push(tag.id);
       }
 
       return t;
     },
-    <DeserializedTags>{}
+    <DeserializedTags>{ hasInequality: false }
   );
 }

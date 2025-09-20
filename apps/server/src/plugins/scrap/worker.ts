@@ -1,4 +1,5 @@
 import type { Setup } from 'server';
+import type { DBTagData } from 'db/schema';
 import type { DanbooruResponse } from '@boorugator/shared/types';
 
 import { desc } from 'drizzle-orm';
@@ -79,40 +80,76 @@ async function scrap(state: State): Promise<void> {
         const tagsName = tagsMap.map((t) => t.tagName.slice(0, 100));
 
         let tag_ids: number[];
-        const existingTags = await tx.query.tagsTable.findMany({
+        let author_ids: number[] | null = null;
+
+        const tagsFromDB = await tx.query.tagsTable.findMany({
           where: (table, { inArray }) => inArray(table.name, tagsName),
         });
 
-        if (existingTags.length === 0) {
-          const tags = tagsName.map((name, i) => <TagInsert>{ name, category: tagsMap[i].category });
-          tag_ids = await tx
+        const insertTags = (data: TagInsert[]) =>
+          tx
             .insert($s.tagsTable)
-            .values(tags)
+            .values(data)
             .returning({ id: $s.tagsTable.id })
-            .then((res) => (tag_ids = res.map((r) => r.id)));
-        } else {
-          const tagsToCreate = tagsName.reduce(
+            .then((res) => res.map((r) => r.id));
+
+        if (tagsFromDB.length === 0) {
+          const { tagsInsert, authorsInsert } = tagsName.reduce(
             (acc, name, i) => {
-              const existing = existingTags.some((t) => t.name === name);
-              if (existing) return acc;
-              acc.push({ name, category: tagsMap[i].category });
+              const category = tagsMap[i].category;
+              if (category === 1) acc.authorsInsert.push({ name, category });
+              else acc.tagsInsert.push({ name, category });
               return acc;
             },
-            <Omit<TagInsert, 'id'>[]>[]
+            { tagsInsert: [], authorsInsert: [] } as TagInsertMap
           );
 
-          if (tagsToCreate.length > 0) {
-            const newTags = await tx
-              .insert($s.tagsTable)
-              .values(tagsToCreate)
-              .returning({ id: $s.tagsTable.id });
-            tag_ids = [...existingTags.map((t) => t.id), ...newTags.map((r) => r.id)];
-          } else {
-            tag_ids = existingTags.map((t) => t.id);
+          tag_ids = await insertTags(tagsInsert);
+
+          if (authorsInsert.length > 0) {
+            author_ids = await insertTags(authorsInsert);
           }
+        } else {
+          const { existingTags, existingAuthors } = tagsFromDB.reduce(
+            (acc, tag) => {
+              if (tag.category === 1) acc.existingAuthors.push(tag);
+              else acc.existingTags.push(tag);
+              return acc;
+            },
+            { existingTags: [], existingAuthors: [] } as ExistingTagsMap
+          );
+
+          const { tagsInsert, authorsInsert } = tagsName.reduce(
+            (acc, name, i) => {
+              const category = tagsMap[i].category;
+              const existing = tagsFromDB.some((t) => t.name === name);
+
+              if (!existing) {
+                if (category === 1) acc.authorsInsert.push({ name, category });
+                else acc.tagsInsert.push({ name, category });
+              }
+
+              return acc;
+            },
+            { tagsInsert: [], authorsInsert: [] } as TagInsertMap
+          );
+
+          if (tagsInsert.length > 0) {
+            const inserted = await insertTags(tagsInsert);
+            tag_ids = [...existingTags.map((t) => t.id), ...inserted];
+          }
+
+          if (authorsInsert.length > 0) {
+            const inserted = await insertTags(authorsInsert);
+            author_ids = [...existingAuthors.map((t) => t.id), ...inserted];
+          } else if (existingAuthors.length > 0) {
+            author_ids = existingAuthors.map((t) => t.id);
+          }
+
+          tag_ids ??= existingTags.map((t) => t.id);
         }
 
-        data.push({ ...rest, tag_ids });
+        data.push({ ...rest, tag_ids, author_ids });
         lqipTasks.push([rest.sample_url || rest.file_url, rest.hash]);
       }
 
@@ -146,3 +183,5 @@ type State = { last: number; isEnd: boolean };
 type Payload = typeof $s.postTable.$inferInsert & { tags: Record<0 | 1 | 3 | 4 | 5, string[]> };
 type TagInsert = typeof $s.tagsTable.$inferInsert;
 type CronStore = Partial<Pick<Setup['store'], 'cron'>>;
+type TagInsertMap = Record<'tagsInsert' | 'authorsInsert', TagInsert[]>;
+type ExistingTagsMap = Record<'existingTags' | 'existingAuthors', DBTagData[]>;

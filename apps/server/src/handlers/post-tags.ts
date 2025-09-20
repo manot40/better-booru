@@ -7,6 +7,7 @@ import { queryPostTags } from 'lib/query/tags';
 
 export const handler: Handler = async ({ params: { id }, status }) => {
   const post = await db.query.postTable.findFirst({
+    columns: { tag_ids: false, author_ids: false },
     where: (post, { eq }) => eq(post.id, +id),
   });
 

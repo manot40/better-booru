@@ -33,9 +33,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
     }
 
     const postData = await db.query.postTable.findFirst({
-      columns: {
-        tag_ids: false,
-      },
+      columns: { tag_ids: false, author_ids: false },
       extras: ASSET_URL,
       where: (post, { eq }) => eq(post.id, +id),
     });

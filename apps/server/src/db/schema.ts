@@ -24,6 +24,7 @@ export const postTable = pgTable(
     source: text(),
     rating: ratingEnum().notNull(),
     tag_ids: integer().array(),
+    author_ids: integer().array(),
 
     preview_ext: text(),
     preview_width: integer(),
@@ -43,7 +44,11 @@ export const postTable = pgTable(
     has_children: boolean().notNull().default(false),
     created_at: timestamp().notNull().defaultNow(),
   },
-  (table) => [index('idx_posts_tag_ids').using('gin', table.tag_ids), index('idx_score').on(table.score)]
+  (table) => [
+    index('idx_posts_tag_ids').using('gin', table.tag_ids),
+    index('idx_posts_author_ids').using('gin', table.author_ids),
+    index('idx_score').on(table.score),
+  ]
 );
 
 export type DBTagData = (typeof tagsTable)['$inferSelect'];

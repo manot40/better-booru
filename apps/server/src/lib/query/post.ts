@@ -2,14 +2,15 @@ import type { SQL } from 'drizzle-orm';
 import type { DBPostData } from 'db/schema';
 import type { MaybeArray, StringHint } from 'types/util';
 
+import SQLiteStore from 'lib/cache/sqlite';
+
 import { log } from 'plugins/logger';
-import { SQLiteStore } from 'lib/cache/sqlite';
 import { waitForWorker } from 'utils/worker';
 import { db, schema as $s } from 'db';
 
 import * as fileUrl from './helpers/file-url-builder';
-import { deserializeTags } from './helpers/common';
 import { populatePreviewCache } from './helpers/cache';
+import { deserializeTags, type TagsFilter } from './helpers/common';
 
 import {
   and,
@@ -62,23 +63,27 @@ export async function queryPosts(qOpts: QueryOptions) {
     const order = (isAsc ? asc : desc)($s.postTable.id);
 
     /** Tags Filter */
-    const tags = await deserializeTags(tx, opts.tags);
-    // Equality Filter
-    if (tags.eq) {
-      filters.push(arrayContains($s.postTable.tag_ids, tags.eq));
-    }
-    // Inequality Filter
-    if (tags.ne) {
-      const exclusion = tx
-        .select({ id: $s.postTable.id })
-        .from($s.postTable)
-        .where(and(...cursor, arrayOverlaps($s.postTable.tag_ids, tags.ne)))
-        .orderBy(order)
-        .limit(opts.limit * 60);
-      filters.push(notInArray($s.postTable.id, exclusion));
-    }
+    const { authors, tags, hasInequality } = await deserializeTags(tx, opts.tags);
+    const addTagsFilter = <T extends 'author' | 'tag'>(type: T, tags: TagsFilter) => {
+      const column = type === 'author' ? $s.postTable.author_ids : $s.postTable.tag_ids;
+      if (tags.eq) {
+        filters.push(arrayContains(column, tags.eq));
+      }
+      if (tags.ne) {
+        const exclusion = tx
+          .select({ id: $s.postTable.id })
+          .from($s.postTable)
+          .where(and(...cursor, arrayOverlaps(column, tags.ne)))
+          .orderBy(order)
+          .limit(opts.limit * 60);
+        filters.push(notInArray($s.postTable.id, exclusion));
+      }
+    };
 
-    const { tag_ids: _, ...cols } = getTableColumns($s.postTable);
+    if (tags) addTagsFilter('tag', tags);
+    if (authors) addTagsFilter('author', authors);
+
+    const { tag_ids: _1, author_ids: _2, ...cols } = getTableColumns($s.postTable);
     const post = await tx
       .select({ ...cols, ...fileUrl })
       .from($s.postTable)
@@ -89,7 +94,7 @@ export async function queryPosts(qOpts: QueryOptions) {
 
     post.forEach(populatePreviewCache);
 
-    return { post, count: tags.ne ? 0 : getPostCount(filters, order) };
+    return { post, count: hasInequality ? 0 : getPostCount(filters, order) };
   });
 
   return { meta: { limit: opts.limit, count, offset }, post };
