@@ -21,14 +21,14 @@ export const ipxCache = new Elysia()
     cron({
       run: lqipWorker,
       name: 'lqip_worker',
-      pattern: Patterns.EVERY_MINUTE,
+      pattern: Patterns.EVERY_30_MINUTES,
     })
   )
   .use(
     cron({
       run: cleanupWorker,
       name: 'ipx_cleanup_worker',
-      pattern: Patterns.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT,
+      pattern: Patterns.EVERY_WEEK,
     })
   )
   .get('/image/*', async ({ set, params, status, redirect }) => {

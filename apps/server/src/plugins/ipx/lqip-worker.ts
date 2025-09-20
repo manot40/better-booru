@@ -1,4 +1,4 @@
-import type { Cron } from 'croner';
+import type { Setup } from 'server';
 
 import RedisStore from 'lib/cache/redis';
 import SQLiteStore from 'lib/cache/sqlite';
@@ -14,29 +14,12 @@ import { db, schema as $s } from 'db';
 const STORE_KEY = 'lqip_queue';
 const lqipQueue = Bun.env.REDIS_URL ? new RedisStore(STORE_KEY) : new SQLiteStore(`.data/${STORE_KEY}.db`);
 
-function addTask(url: URL): Promise<void>;
-function addTask(url: string, hash: string): Promise<void>;
-async function addTask(url: string | URL, hash?: string): Promise<void> {
-  if (url instanceof URL) {
-    hash = url.pathname
-      .split('/')
-      .pop()
-      ?.replace(/(^sample\-|\.\w+)/g, '');
-    if (!hash) throw new Error('Invalid URL');
-
-    await lqipQueue.set(hash, url.toString());
-  } else if (typeof url == 'string' && hash) {
-    await lqipQueue.set(hash, url);
-  } else {
-    throw new Error('Invalid arguments');
-  }
-}
-
 /** @internal */
-async function run(store: unknown) {
-  const cron = (store as { cron: { lqip_worker: Cron } }).cron.lqip_worker;
+async function run(store_: unknown) {
   const tasks = await lqipQueue.getEntries();
-  const initial = cron.currentRun()?.valueOf() || 0;
+  const { lqip_worker } = (store_ as CronStore)?.cron || {};
+
+  const initial = lqip_worker?.currentRun()?.valueOf() || 0;
 
   if (tasks.length === 0) {
     if ('vacuum' in lqipQueue) lqipQueue.vacuum();
@@ -46,7 +29,7 @@ async function run(store: unknown) {
   }
 
   for (const [hash, url] of tasks) {
-    const current = cron.currentRun()?.valueOf();
+    const current = lqip_worker?.currentRun()?.valueOf();
 
     if (initial !== current) return;
     if (/.*(mp4|webm|zip)$/.test(url)) {
@@ -71,7 +54,7 @@ async function run(store: unknown) {
         .where(eq($s.postTable.hash, hash))
         .then(() => lqipQueue.delete(hash));
 
-      await new Promise((r) => setTimeout(r, random(100, 600)));
+      await new Promise((r) => setTimeout(r, random(100, 300)));
     } catch (e) {
       log('WARNING', `[LQIP] Failed to process task ${hash}: ${e}`);
       continue;
@@ -90,4 +73,24 @@ async function getLQIP(data: Uint8Array<ArrayBufferLike>) {
   return await pipeline.toBuffer();
 }
 
+function addTask(url: URL): Promise<void>;
+function addTask(url: string, hash: string): Promise<void>;
+async function addTask(url: string | URL, hash?: string): Promise<void> {
+  if (url instanceof URL) {
+    hash = url.pathname
+      .split('/')
+      .pop()
+      ?.replace(/(^sample\-|\.\w+)/g, '');
+    if (!hash) throw new Error('Invalid URL');
+
+    await lqipQueue.set(hash, url.toString());
+  } else if (typeof url == 'string' && hash) {
+    await lqipQueue.set(hash, url);
+  } else {
+    throw new Error('Invalid arguments');
+  }
+}
+
 export { addTask, run };
+
+type CronStore = Partial<Pick<Setup['store'], 'cron'>>;

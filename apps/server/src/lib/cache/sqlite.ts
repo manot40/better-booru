@@ -74,7 +74,7 @@ const createStatements = (db: Database): StatementMap => ({
     'INSERT OR REPLACE INTO cache (key, value, expires) VALUES (?1, ?2, ?3)'
   ),
   delete: db.prepare<DBResult, [string]>('DELETE FROM cache WHERE key = ?'),
-  getAll: db.prepare<DBResult, []>('SELECT * FROM cache'),
+  getAll: db.prepare<DBResult, []>('SELECT * FROM cache ORDER BY ROWID ASC'),
 });
 
 type StatementMap = {

@@ -74,10 +74,10 @@ declare const setup: Elysia<
       logRequest: (opts: Omit<LogPayload, 'options'>) => void;
     };
     store: {
-      beforeTime: bigint;
       cron: Record<'scrap', import('croner').Cron> &
         Record<'lqip_worker', import('croner').Cron> &
         Record<'ipx_cleanup_worker', import('croner').Cron>;
+      beforeTime: bigint;
       cacheTTL: number | undefined;
     };
     derive: {
@@ -209,12 +209,27 @@ declare const setup: Elysia<
     response: {};
   }
 >;
-export declare const app: Elysia<
+declare const app: Elysia<
   '',
   {
-    decorator: {};
-    store: {};
-    derive: {};
+    decorator: {
+      log: (level: LogLevel, data: LogData | string) => void;
+      logRequest: (opts: Omit<LogPayload, 'options'>) => void;
+    };
+    store: {
+      cron: Record<'scrap', import('croner').Cron> &
+        Record<'lqip_worker', import('croner').Cron> &
+        Record<'ipx_cleanup_worker', import('croner').Cron>;
+      beforeTime: bigint;
+      cacheTTL: number | undefined;
+    };
+    derive: {
+      setETag: (etag: string) => void;
+      buildETagFor: (response: Bun.StringOrBuffer) => string;
+      isMatch: (etag: string) => boolean;
+      isNoneMatch: (etag: string) => boolean;
+      setVary: (headers: string | string[]) => void;
+    };
     resolve: {};
   },
   {
@@ -230,6 +245,95 @@ export declare const app: Elysia<
     response: {};
   },
   {
+    scrap: {
+      stop: {
+        get: {
+          body: unknown;
+          params: {};
+          query: unknown;
+          headers: unknown;
+          response: {
+            200: 'Success' | 'Failed' | 'Not Running';
+            401: 'Unauthorized';
+          };
+        };
+      };
+    };
+  } & {
+    scrap: {
+      start: {
+        get: {
+          body: unknown;
+          params: {};
+          query: unknown;
+          headers: unknown;
+          response: {
+            200: 'Success' | 'Failed' | 'Already Running';
+            401: 'Unauthorized';
+          };
+        };
+      };
+    };
+  } & {
+    scrap: {
+      trigger: {
+        get: {
+          body: unknown;
+          params: {};
+          query: unknown;
+          headers: unknown;
+          response: {
+            200: 'Success' | 'Currently Working';
+            401: 'Unauthorized';
+          };
+        };
+      };
+    };
+  } & {
+    scrap: {
+      status: {
+        get: {
+          body: unknown;
+          params: {};
+          query: unknown;
+          headers: unknown;
+          response: {
+            200: {
+              isRunning: boolean;
+              previous: Date | null;
+              next: Date[];
+            };
+            401: 'Unauthorized';
+          };
+        };
+      };
+    };
+  } & {
+    image: {
+      '*': {
+        get: {
+          body: unknown;
+          params: {
+            '*': string;
+          };
+          query: unknown;
+          headers: unknown;
+          response: {
+            200: string | ArrayBuffer | Response | Buffer<ArrayBufferLike>;
+            422: {
+              type: 'validation';
+              on: string;
+              summary?: string;
+              message?: string;
+              found?: unknown;
+              property?: string;
+              expected?: string;
+            };
+          };
+        };
+      };
+    };
+  } & {
     api: {
       posts: {
         get: {
@@ -423,7 +527,10 @@ export declare const app: Elysia<
     };
   },
   {
-    derive: {};
+    derive: {
+      readonly userConfig?: UserConfig | undefined;
+      readonly resolveTime: number;
+    };
     resolve: {};
     schema: {};
     standaloneSchema: {};

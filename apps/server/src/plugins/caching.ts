@@ -10,8 +10,8 @@ const VARIES = [`x-${STATIC.keys.userConfig}`];
 
 type Options = {
   varies?: string[];
+  matches?: RegExp[];
   cacheTTL?: number;
-  pathRegex?: RegExp[];
 };
 
 type ResponseCache = {
@@ -21,14 +21,14 @@ type ResponseCache = {
 
 export const caching = (options?: Options) => {
   const cache = new MemoryCache<ResponseCache>();
-  const { pathRegex, varies = VARIES, cacheTTL = TTL } = options || {};
+  const { matches, varies = VARIES, cacheTTL = TTL } = options || {};
 
   return new Elysia({ name: 'caching', seed: options })
     .state('cacheTTL', undefined as number | undefined)
     .derive({ as: 'local' }, () => ({ resolveTime: performance.now() }))
     .onBeforeHandle(({ request, headers, set }) => {
       const url = new URL(request.url);
-      if (pathRegex && !pathRegex.some((r) => r.test(url.pathname))) return;
+      if (matches && !matches.some((r) => r.test(url.pathname))) return;
 
       const key = generateKey(url, headers, varies);
       set.headers['vary'] = varies.join(', ');
@@ -49,7 +49,7 @@ export const caching = (options?: Options) => {
       const ttl = store.cacheTTL ?? (expensive ? Math.max(60 * 60, cacheTTL) : cacheTTL);
 
       /** Match cache path */
-      if (pathRegex && !pathRegex.some((r) => r.test(url.pathname))) return;
+      if (matches && !matches.some((r) => r.test(url.pathname))) return;
       /** Override when response non 200 status or when custom response returned */
       if (set.headers['expires'] || +(set.status || 400) >= 300 || response instanceof Response) return;
 

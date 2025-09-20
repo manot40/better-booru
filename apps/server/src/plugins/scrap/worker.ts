@@ -1,3 +1,4 @@
+import type { Setup } from 'server';
 import type { DanbooruResponse } from '@boorugator/shared/types';
 
 import { desc } from 'drizzle-orm';
@@ -9,11 +10,17 @@ import { getDanbooruImage } from 'utils/danbooru';
 import { log } from 'plugins/logger';
 import { addTask } from 'plugins/ipx/lqip-worker';
 
-export async function run() {
+export async function run(store_: unknown) {
+  const { lqip_worker } = (store_ as CronStore)?.cron || {};
   const state = { last: (await findFirst.execute())?.id || 0, isEnd: false };
+
   while (!state.isEnd) {
     const delay = random(800, 1800);
     await new Promise<void>((res) => setTimeout(() => scrap(state).then(res), delay));
+  }
+
+  if (lqip_worker && !lqip_worker.isBusy()) {
+    lqip_worker.trigger();
   }
 }
 
@@ -138,3 +145,4 @@ const getDanbooruURL = (lastId: number) => {
 type State = { last: number; isEnd: boolean };
 type Payload = typeof $s.postTable.$inferInsert & { tags: Record<0 | 1 | 3 | 4 | 5, string[]> };
 type TagInsert = typeof $s.tagsTable.$inferInsert;
+type CronStore = Partial<Pick<Setup['store'], 'cron'>>;
