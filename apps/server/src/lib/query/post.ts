@@ -75,7 +75,7 @@ export async function queryPosts(qOpts: QueryOptions) {
           .from($s.postTable)
           .where(and(...cursor, arrayOverlaps(column, tags.ne)))
           .orderBy(order)
-          .limit(SAFE_OFFSET);
+          .limit(Math.round(SAFE_OFFSET / 4));
         filters.push(notInArray($s.postTable.id, exclusion));
       }
     };
