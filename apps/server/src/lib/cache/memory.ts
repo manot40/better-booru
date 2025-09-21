@@ -8,11 +8,8 @@ export class MemoryStore<T = any> implements CacheStore<T, Key> {
 
   constructor() {}
 
-  set(k: Key, v: T, ttl = MemoryStore.DEFAULT_TTL) {
-    if (this.timers.has(k)) clearTimeout(this.timers.get(k));
-    const timer = setTimeout(() => this.delete(k), ttl * 1000);
-    this.timers.set(k, timer);
-    this.data.set(k, v);
+  has(k: Key) {
+    return this.data.has(k);
   }
 
   get(k: Key) {
@@ -23,8 +20,19 @@ export class MemoryStore<T = any> implements CacheStore<T, Key> {
     return Array.from(this.data.entries());
   }
 
-  has(k: Key) {
-    return this.data.has(k);
+  set(k: Key, v: T, ttl = MemoryStore.DEFAULT_TTL) {
+    if (this.timers.has(k)) clearTimeout(this.timers.get(k));
+    const timer = setTimeout(() => this.delete(k), ttl * 1000);
+    this.timers.set(k, timer);
+    this.data.set(k, v);
+  }
+
+  pop(): [Key, T] | undefined {
+    const target = this.data.entries().next().value;
+    if (target) {
+      this.delete(target[0]);
+      return target;
+    }
   }
 
   delete(k: Key) {

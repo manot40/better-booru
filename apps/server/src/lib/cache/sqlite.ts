@@ -28,13 +28,20 @@ export class SQLiteStore implements CacheStore<string, string> {
     this.op = createStatements(this.db);
   }
 
+  private isExpired(result: DBResult): boolean {
+    return result.expires ? result.expires < Math.round(Date.now() / 1000) : false;
+  }
+
+  has(k: string): boolean {
+    return !!this.op.check.get(k);
+  }
+
   get(k: string): string | undefined {
     const result = this.op.query.get(k);
-    if (!result) return;
-
-    const isExpired = result.expires ? result.expires < Math.round(Date.now() / 1000) : false;
-    if (isExpired) this.delete(k);
-    else return result.value;
+    if (result) {
+      if (this.isExpired(result)) this.delete(k);
+      else return result.value;
+    }
   }
 
   getEntries(): [string, string][] {
@@ -48,8 +55,12 @@ export class SQLiteStore implements CacheStore<string, string> {
     this.op.upsert.run(k, value, expires);
   }
 
-  has(k: string): boolean {
-    return !!this.op.check.get(k);
+  pop(): [string, string] | undefined {
+    const result = this.op.pop.get();
+    if (result) {
+      this.delete(result.key);
+      return [result.key, result.value];
+    }
   }
 
   clear(): void {
@@ -68,6 +79,7 @@ export class SQLiteStore implements CacheStore<string, string> {
 }
 
 const createStatements = (db: Database): StatementMap => ({
+  pop: db.prepare<DBResult, []>('SELECT * FROM cache ORDER BY ROWID ASC LIMIT 1'),
   check: db.prepare<1, [string]>('SELECT 1 FROM cache WHERE key = ?'),
   query: db.prepare<DBResult, [string]>('SELECT * FROM cache WHERE key = ?'),
   upsert: db.prepare<DBResult, [string, string, number | null]>(
@@ -78,6 +90,7 @@ const createStatements = (db: Database): StatementMap => ({
 });
 
 type StatementMap = {
+  pop: Statement<DBResult, []>;
   check: Statement<1, [string]>;
   query: Statement<DBResult, [string]>;
   upsert: Statement<DBResult, [string, string, number | null]>;

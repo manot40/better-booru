@@ -3,11 +3,13 @@ import type { CacheStore } from './types';
 class RedisStore implements CacheStore<string, string> {
   private redis: Bun.RedisClient;
   private connected = false;
+  private queueKey: string;
 
   constructor(
     private cacheKey: string,
     redisURL?: string
   ) {
+    this.queueKey = `queue:${cacheKey}`;
     this.redis = new Bun.RedisClient(redisURL);
     this.redis.connect().then(() => {
       this.connected = true;
@@ -35,12 +37,33 @@ class RedisStore implements CacheStore<string, string> {
     return item ?? undefined;
   }
 
+  async getEntries(): Promise<[string, string][]> {
+    if (!this.connected) await this.waitConnection();
+    const entries = await this.redis.hgetall(this.cacheKey);
+
+    if (!entries) return [];
+    return Object.entries(entries);
+  }
+
   async set(k: string, v: string, ttl?: number): Promise<void> {
     if (!this.connected) await this.waitConnection();
-    await this.redis.send('HSET', [this.cacheKey, k, v]);
 
-    if (ttl) {
-      this.redis.send('HEXPIRE', [this.cacheKey, ttl.toString(), 'FIELDS', '1', k]);
+    const exist = await this.has(k);
+    await this.redis.send('HSET', [this.cacheKey, k, v]).then(() => {
+      if (!exist) this.redis.rpush(this.queueKey, k);
+    });
+
+    if (ttl) this.redis.send('HEXPIRE', [this.cacheKey, ttl.toString(), 'FIELDS', '1', k]);
+  }
+
+  async pop(): Promise<[string, string] | undefined> {
+    if (!this.connected) await this.waitConnection();
+    const key = await this.redis.lpop(this.queueKey);
+
+    if (key) {
+      const value = await this.redis.hget(this.cacheKey, key);
+      this.redis.send('HDEL', [this.cacheKey, key]);
+      return [key, value ?? ''];
     }
   }
 
@@ -53,14 +76,6 @@ class RedisStore implements CacheStore<string, string> {
   async clear(): Promise<void> {
     if (!this.connected) await this.waitConnection();
     await this.redis.send('DEL', [this.cacheKey]);
-  }
-
-  async getEntries(): Promise<[string, string][]> {
-    if (!this.connected) await this.waitConnection();
-    const entries = await this.redis.hgetall(this.cacheKey);
-
-    if (!entries) return [];
-    return Object.entries(entries);
   }
 }
 

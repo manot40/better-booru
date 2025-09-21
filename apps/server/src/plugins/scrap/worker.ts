@@ -152,7 +152,8 @@ async function scrap(state: State): Promise<void> {
       await tx
         .insert($s.postTable)
         .values(data)
-        .then(() => lqipTasks.forEach(([url, hash]) => addTask(url, hash)));
+        .then(() => lqipTasks.reverse())
+        .then((tasks) => tasks.forEach((t) => addTask(...t)));
     });
 
     state.last = danbooruData.at(-1)!.id;

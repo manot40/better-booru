@@ -1,5 +1,3 @@
-import type { Setup } from 'server';
-
 import RedisStore from 'lib/cache/redis';
 import SQLiteStore from 'lib/cache/sqlite';
 
@@ -11,29 +9,21 @@ import { random } from 'utils/common';
 import { eq } from 'drizzle-orm';
 import { db, schema as $s } from 'db';
 
+const TTL = 60 * 60 * 2;
 const STORE_KEY = 'lqip_queue';
 const lqipQueue = Bun.env.REDIS_URL ? new RedisStore(STORE_KEY) : new SQLiteStore(`.data/${STORE_KEY}.db`);
 
 /** @internal */
-async function run(store_: unknown) {
-  const tasks = await lqipQueue.getEntries();
-  const { lqip_worker } = (store_ as CronStore)?.cron || {};
+async function run() {
+  log('INFO', '[LQIP] Processing tasks');
 
-  const initial = lqip_worker?.currentRun()?.valueOf() || 0;
+  let task = await lqipQueue.pop();
+  let taskCount = 0;
+  while (task) {
+    const [hash, url] = task;
 
-  if (tasks.length === 0) {
-    if ('vacuum' in lqipQueue) lqipQueue.vacuum();
-    return;
-  } else {
-    log('INFO', `[LQIP] Processing ${tasks.length} tasks`);
-  }
-
-  for (const [hash, url] of tasks) {
-    const current = lqip_worker?.currentRun()?.valueOf();
-
-    if (initial !== current) return;
-    if (/.*(mp4|webm|zip)$/.test(url)) {
-      lqipQueue.delete(hash);
+    if (!url || /.*(mp4|webm|zip)$/.test(url)) {
+      task = await lqipQueue.pop();
       continue;
     }
 
@@ -41,27 +31,26 @@ async function run(store_: unknown) {
     const isPict = res.headers.get('content-type')?.startsWith('image/');
 
     if (!res.ok || !isPict) {
-      if (!isPict) lqipQueue.delete(hash);
+      task = await lqipQueue.pop();
       continue;
     }
 
     try {
       const lqip = await getLQIP(await res.bytes());
-
       await db
         .update($s.postTable)
         .set({ lqip })
         .where(eq($s.postTable.hash, hash))
-        .then(() => lqipQueue.delete(hash));
-
-      await new Promise((r) => setTimeout(r, random(100, 300)));
+        .then(() => new Promise((r) => setTimeout(r, random(100, 300))));
     } catch (e) {
       log('WARNING', `[LQIP] Failed to process task ${hash}: ${e}`);
-      continue;
+    } finally {
+      taskCount++;
+      task = await lqipQueue.pop();
     }
   }
 
-  log('INFO', `[LQIP] Processed: ${tasks.length}`);
+  log('INFO', `[LQIP] Processed: ${taskCount}`);
 }
 
 async function getLQIP(data: Uint8Array<ArrayBufferLike>) {
@@ -83,14 +72,12 @@ async function addTask(url: string | URL, hash?: string): Promise<void> {
       ?.replace(/(^sample\-|\.\w+)/g, '');
     if (!hash) throw new Error('Invalid URL');
 
-    await lqipQueue.set(hash, url.toString());
+    await lqipQueue.set(hash, url.toString(), TTL);
   } else if (typeof url == 'string' && hash) {
-    await lqipQueue.set(hash, url);
+    await lqipQueue.set(hash, url, TTL);
   } else {
     throw new Error('Invalid arguments');
   }
 }
 
 export { addTask, run };
-
-type CronStore = Partial<Pick<Setup['store'], 'cron'>>;
