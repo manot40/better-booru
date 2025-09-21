@@ -63,9 +63,9 @@ export async function queryPosts(qOpts: QueryOptions) {
     const order = (isAsc ? asc : desc)($s.postTable.id);
 
     /** Tags Filter */
-    const { authors, tags, hasInequality } = await deserializeTags(tx, opts.tags);
-    const addTagsFilter = <T extends 'author' | 'tag'>(type: T, tags: TagsFilter) => {
-      const column = type === 'author' ? $s.postTable.author_ids : $s.postTable.tag_ids;
+    const { meta, tags, hasInequality } = await deserializeTags(tx, opts.tags);
+    const addTagsFilter = <T extends 'meta' | 'tag'>(type: T, tags: TagsFilter) => {
+      const column = type === 'meta' ? $s.postTable.meta_ids : $s.postTable.tag_ids;
       if (tags.eq) {
         filters.push(arrayContains(column, tags.eq));
       }
@@ -81,9 +81,9 @@ export async function queryPosts(qOpts: QueryOptions) {
     };
 
     if (tags) addTagsFilter('tag', tags);
-    if (authors) addTagsFilter('author', authors);
+    if (meta) addTagsFilter('meta', meta);
 
-    const { tag_ids: _1, author_ids: _2, ...cols } = getTableColumns($s.postTable);
+    const { tag_ids: _1, meta_ids: _2, ...cols } = getTableColumns($s.postTable);
     const post = await tx
       .select({ ...cols, ...fileUrl })
       .from($s.postTable)

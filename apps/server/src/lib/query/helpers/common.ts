@@ -1,12 +1,14 @@
 import type { Transaction } from 'db';
 
+import { isMetaTag } from 'utils/common';
+
 export type TagsFilter = {
   eq?: number[];
   ne?: number[];
 };
 export type DeserializedTags = {
   tags?: TagsFilter;
-  authors?: TagsFilter;
+  meta?: TagsFilter;
   hasInequality: boolean;
 };
 
@@ -34,7 +36,7 @@ export async function deserializeTags(tx: Transaction, tags: string[]): Promise<
     (t, { exc, tag }) => {
       if (!tag) return t;
 
-      const key = tag.category === 1 ? 'authors' : 'tags';
+      const key = isMetaTag(tag.category) ? 'meta' : 'tags';
       const target = (t[key] ??= {});
 
       if (exc) {

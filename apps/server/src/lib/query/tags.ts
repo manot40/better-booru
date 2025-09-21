@@ -7,7 +7,7 @@ export async function queryPostTags(post_id: number) {
     .$with('post')
     .as((qb) =>
       qb
-        .select({ tag_ids: $s.postTable.tag_ids, author_ids: $s.postTable.author_ids })
+        .select({ tag_ids: $s.postTable.tag_ids, meta_ids: $s.postTable.meta_ids })
         .from($s.postTable)
         .where(eq($s.postTable.id, post_id))
         .limit(1)
@@ -17,7 +17,7 @@ export async function queryPostTags(post_id: number) {
     .with(post)
     .select(getTableColumns($s.tagsTable))
     .from($s.tagsTable)
-    .innerJoin(post, eq($s.tagsTable.id, sql`ANY(${post.tag_ids} || ${post.author_ids})`))
+    .innerJoin(post, eq($s.tagsTable.id, sql`ANY(${post.tag_ids} || ${post.meta_ids})`))
     .orderBy(desc($s.tagsTable.category), asc($s.tagsTable.name));
 
   return result;

@@ -23,8 +23,8 @@ export const postTable = pgTable(
     score: integer(),
     source: text(),
     rating: ratingEnum().notNull(),
-    tag_ids: integer().array(),
-    author_ids: integer().array(),
+    tag_ids: integer().array().notNull(),
+    meta_ids: integer().array().notNull(),
 
     preview_ext: text(),
     preview_width: integer(),
@@ -46,7 +46,7 @@ export const postTable = pgTable(
   },
   (table) => [
     index('idx_posts_tag_ids').using('gin', table.tag_ids),
-    index('idx_posts_author_ids').using('gin', table.author_ids),
+    index('idx_posts_meta_ids').using('gin', table.meta_ids),
     index('idx_score').on(table.score),
   ]
 );

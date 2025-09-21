@@ -1,4 +1,4 @@
-import type { Setup } from 'index';
+import type { Setup } from 'server';
 
 import { type InferHandler, t } from 'elysia';
 
@@ -7,7 +7,7 @@ import { queryPostTags } from 'lib/query/tags';
 
 export const handler: Handler = async ({ params: { id }, status }) => {
   const post = await db.query.postTable.findFirst({
-    columns: { tag_ids: false, author_ids: false },
+    columns: { tag_ids: false, meta_ids: false },
     where: (post, { eq }) => eq(post.id, +id),
   });
 

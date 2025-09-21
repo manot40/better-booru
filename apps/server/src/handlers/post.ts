@@ -1,4 +1,4 @@
-import type { Setup } from 'index';
+import type { Setup } from 'server';
 import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
 import { type InferHandler, t } from 'elysia';

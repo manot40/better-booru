@@ -4,6 +4,8 @@ import type { DanbooruResponse } from '@boorugator/shared/types';
 
 import { isDanbooru, mapDanbooruData } from './danbooru';
 
+export const isMetaTag = (category: number) => [1, 3, 5].includes(category);
+
 export function processBooruData(data: BooruResponse): Post[] {
   if (isDanbooru(data)) return data.filter((v) => !!v.media_asset.variants).map(mapDanbooruData);
   return data.map((raw) => {

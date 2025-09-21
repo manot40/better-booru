@@ -43,6 +43,13 @@
       "when": 1758359938597,
       "tag": "0005_puzzling_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1758446457420,
+      "tag": "0006_early_jane_foster",
+      "breakpoints": true
     }
   ]
 }

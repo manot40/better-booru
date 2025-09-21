@@ -5,8 +5,8 @@ import type { DanbooruResponse } from '@boorugator/shared/types';
 import { desc } from 'drizzle-orm';
 import { db, schema as $s } from 'db';
 
-import { random } from 'utils/common';
 import { getDanbooruImage } from 'utils/danbooru';
+import { random, isMetaTag } from 'utils/common';
 
 import { log } from 'plugins/logger';
 import { addTask } from 'plugins/ipx/lqip-worker';
@@ -60,7 +60,7 @@ async function scrap(state: State): Promise<void> {
             4: dedupe(data.tag_string_character),
             5: dedupe(data.tag_string_meta),
           },
-        }) satisfies Payload
+        }) satisfies Omit<Payload, 'tag_ids' | 'meta_ids'>
     );
   if (danbooruData.length === 0) return;
 
@@ -80,10 +80,11 @@ async function scrap(state: State): Promise<void> {
         const tagsName = tagsMap.map((t) => t.tagName.slice(0, 100));
 
         let tag_ids: number[];
-        let author_ids: number[] | null = null;
+        let meta_ids: number[];
 
         const tagsFromDB = await tx.query.tagsTable.findMany({
           where: (table, { inArray }) => inArray(table.name, tagsName),
+          orderBy: (table, { asc }) => asc(table.category),
         });
 
         const insertTags = (data: TagInsert[]) =>
@@ -94,62 +95,57 @@ async function scrap(state: State): Promise<void> {
             .then((res) => res.map((r) => r.id));
 
         if (tagsFromDB.length === 0) {
-          const { tagsInsert, authorsInsert } = tagsName.reduce(
+          const { tagsInsert, metaInsert } = tagsName.reduce(
             (acc, name, i) => {
               const category = tagsMap[i].category;
-              if (category === 1) acc.authorsInsert.push({ name, category });
+              if (isMetaTag(category)) acc.metaInsert.push({ name, category });
               else acc.tagsInsert.push({ name, category });
               return acc;
             },
-            { tagsInsert: [], authorsInsert: [] } as TagInsertMap
+            { tagsInsert: [], metaInsert: [] } as TagInsertMap
           );
 
           tag_ids = await insertTags(tagsInsert);
-
-          if (authorsInsert.length > 0) {
-            author_ids = await insertTags(authorsInsert);
-          }
+          meta_ids = await insertTags(metaInsert);
         } else {
-          const { existingTags, existingAuthors } = tagsFromDB.reduce(
+          const { existingTags, existingMeta } = tagsFromDB.reduce(
             (acc, tag) => {
-              if (tag.category === 1) acc.existingAuthors.push(tag);
+              if (isMetaTag(tag.category)) acc.existingMeta.push(tag);
               else acc.existingTags.push(tag);
               return acc;
             },
-            { existingTags: [], existingAuthors: [] } as ExistingTagsMap
+            { existingTags: [], existingMeta: [] } as ExistingTagsMap
           );
 
-          const { tagsInsert, authorsInsert } = tagsName.reduce(
+          const { tagsInsert, metaInsert } = tagsName.reduce(
             (acc, name, i) => {
               const category = tagsMap[i].category;
               const existing = tagsFromDB.some((t) => t.name === name);
 
               if (!existing) {
-                if (category === 1) acc.authorsInsert.push({ name, category });
+                if (isMetaTag(category)) acc.metaInsert.push({ name, category });
                 else acc.tagsInsert.push({ name, category });
               }
 
               return acc;
             },
-            { tagsInsert: [], authorsInsert: [] } as TagInsertMap
+            { tagsInsert: [], metaInsert: [] } as TagInsertMap
           );
 
           if (tagsInsert.length > 0) {
             const inserted = await insertTags(tagsInsert);
             tag_ids = [...existingTags.map((t) => t.id), ...inserted];
           }
-
-          if (authorsInsert.length > 0) {
-            const inserted = await insertTags(authorsInsert);
-            author_ids = [...existingAuthors.map((t) => t.id), ...inserted];
-          } else if (existingAuthors.length > 0) {
-            author_ids = existingAuthors.map((t) => t.id);
+          if (metaInsert.length > 0) {
+            const inserted = await insertTags(metaInsert);
+            meta_ids = [...existingMeta.map((t) => t.id), ...inserted];
           }
 
           tag_ids ??= existingTags.map((t) => t.id);
+          meta_ids ??= existingMeta.map((t) => t.id);
         }
 
-        data.push({ ...rest, tag_ids, author_ids });
+        data.push({ ...rest, tag_ids, meta_ids });
         lqipTasks.push([rest.sample_url || rest.file_url, rest.hash]);
       }
 
@@ -183,5 +179,5 @@ type State = { last: number; isEnd: boolean };
 type Payload = typeof $s.postTable.$inferInsert & { tags: Record<0 | 1 | 3 | 4 | 5, string[]> };
 type TagInsert = typeof $s.tagsTable.$inferInsert;
 type CronStore = Partial<Pick<Setup['store'], 'cron'>>;
-type TagInsertMap = Record<'tagsInsert' | 'authorsInsert', TagInsert[]>;
-type ExistingTagsMap = Record<'existingTags' | 'existingAuthors', DBTagData[]>;
+type TagInsertMap = Record<'tagsInsert' | 'metaInsert', TagInsert[]>;
+type ExistingTagsMap = Record<'existingTags' | 'existingMeta', DBTagData[]>;

@@ -1,4 +1,4 @@
-import type { Setup } from 'index';
+import type { Setup } from 'server';
 import type { PostSchema } from './post';
 import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/shared/types';
 
@@ -33,7 +33,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
     }
 
     const postData = await db.query.postTable.findFirst({
-      columns: { tag_ids: false, author_ids: false },
+      columns: { tag_ids: false, meta_ids: false },
       extras: ASSET_URL,
       where: (post, { eq }) => eq(post.id, +id),
     });
