@@ -6,7 +6,7 @@ import { and, arrayContains, arrayOverlaps, not, or, type SQL } from 'drizzle-or
 
 const table = $s.postTable;
 
-export async function tagsToQuery(tagString: string): Promise<SQL | SQL[] | undefined> {
+export async function tagsToQuery(tagString: string): Promise<SQL | SQL[]> {
   const { ast, tags } = parseTags(tagString);
 
   const tagsMap = await db.query.tagsTable
@@ -63,9 +63,9 @@ export async function tagsToQuery(tagString: string): Promise<SQL | SQL[] | unde
     return acc;
   }, orFilters);
 
-  if (!andOp.meta && !andOp.tags) return or(...orFilters);
+  if (!andOp.meta && !andOp.tags) return or(...orFilters)!;
   else if (!orOp.meta && !orOp.tags) return andFilters;
-  else return or(...orFilters, and(...andFilters));
+  else return [...andFilters, or(...orFilters)!];
 }
 
 type TagsFilter = {

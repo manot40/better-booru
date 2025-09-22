@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ComboboxItemEmits } from 'reka-ui';
 
+import { Search, Loader } from 'lucide-vue-next';
 import { STORE_KEY } from '~/lib/query-store';
 
 defineOptions({ inheritAttrs: false });
@@ -14,18 +15,20 @@ const queryState = useState<{ tags?: string }>(STORE_KEY);
 const tags = computed(() => queryState.value?.tags?.split(' ') || []);
 
 const q = debouncedRef(searchTerm, 600);
-const { data: searchTags } = useAsyncData(q, fetchAutocomplete, { server: false, watch: [provider] });
+const { data: searchTags, status } = useAsyncData(q, fetchAutocomplete, { server: false, watch: [provider] });
 async function fetchAutocomplete() {
   const { data, error } = await eden.api.autocomplete.get({ query: { q: q.value } });
   if (data) return data as Array<Record<'value' | 'label', string> & { category: number }>;
   throw error;
 }
 
+const loading = computed(() => status.value === 'pending');
 const filtered = computed(() => searchTags.value?.filter((a) => !tags.value.includes(a.value)) || []);
 
 function handleFilter(...[ev]: ComboboxItemEmits['select']) {
+  const or = (<HTMLElement>ev.target).innerHTML === 'OR';
   const exclude = (<HTMLElement>ev.target).innerHTML === 'Exclude';
-  const value = exclude ? `-${ev.detail.value}` : ev.detail.value;
+  const value = exclude ? `-${ev.detail.value}` : or ? `~${ev.detail.value}` : ev.detail.value;
   if (typeof value == 'string')
     updateQuery(tags.value.includes(value) ? tags.value.filter((a) => a !== value) : [...tags.value, value]);
 }
@@ -56,7 +59,15 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
       <DialogDescription hidden />
       <DialogTitle hidden>Tags List</DialogTitle>
       <Command :modelValue="tags" v-bind="$attrs" class="bg-inherit">
-        <CommandInput placeholder="Search Tags..." v-model="searchTerm" />
+        <div class="flex h-12 items-center border-b px-4 gap-4">
+          <component
+            :is="loading ? Loader : Search"
+            :class="['size-4 shrink-0 opacity-50', loading && 'animate-spin']" />
+          <Input
+            v-model="searchTerm"
+            placeholder="Search Tags..."
+            class="border-0 px-0 !bg-transparent focus-visible:ring-0" />
+        </div>
 
         <TagsInput
           v-if="tags.length"
@@ -67,13 +78,23 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
             v-for="tag in tags"
             :key="tag"
             :value="tag"
-            :class="['rounded-sm py-3', tag.startsWith('-') && 'bg-red-900']">
-            <div class="ml-2 mr-1 mb-1">{{ tag.replace(/^-/, '') }}</div>
+            :class="[
+              'rounded-sm py-3',
+              tag.startsWith('-') && 'bg-red-900',
+              tag.startsWith('~') && 'bg-blue-700/80',
+            ]">
+            <div class="ml-2 mr-1 mb-1">{{ tag.replace(/^(-|~)/, '') }}</div>
             <TagsInputItemDelete />
           </TagsInputItem>
         </TagsInput>
 
-        <div class="px-4 py-6 text-center text-sm" v-if="!searchTerm">Type tags name in searchbar</div>
+        <div
+          class="grid place-content-center text-center text-sm text-muted-foreground p-4 min-h-36"
+          v-if="!searchTerm || !searchTags?.length">
+          {{
+            !searchTerm ? 'Type tags name in searchbar' : loading ? 'Finding matches...' : 'nothing. nada.'
+          }}
+        </div>
 
         <CommandList v-else>
           <CommandEmpty>Tags not found</CommandEmpty>
@@ -93,7 +114,10 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
                     class="inline w-3 h-3 ml-0.5 mt-px"
                     v-if="typeof item.category == 'string' && item.category != 'tag'" />
                 </div>
-                <Badge variant="destructive">Exclude</Badge>
+                <div class="flex gap-2.5 items-center">
+                  <Badge variant="info" class="max-md:px-3">OR</Badge>
+                  <Badge variant="destructive">Exclude</Badge>
+                </div>
               </div>
             </CommandItem>
           </CommandGroup>

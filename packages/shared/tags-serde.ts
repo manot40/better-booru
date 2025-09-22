@@ -1,82 +1,67 @@
 export function parseTags(input: string): ParseResult {
+  const tokens = input.split(' ');
+  const result: ParseResult = { ast: [], tags: [] };
+
   let i = 0;
-  const tagSet = new Set<string>();
-  const nestedTagsErr = new Error('Nested tag groups violation');
-  const invalidTagsErr = new Error('Malformed tags format');
 
-  function skipWs() {
-    while (input[i] === ' ') i++;
-  }
+  function parseExpr(token: string): TagAST | undefined {
+    const hasMod = /^(-|~|\()/.test(token);
 
-  function parseExpr(inGroup = false, ctx?: TagAST['type']): TagAST | undefined {
-    skipWs();
+    if (!hasMod) {
+      result.tags.push(token);
+      return { type: 'tag', value: token };
+    }
 
-    if (i >= input.length) return;
+    const mod = token[0] as '-' | '~' | '(';
+    const val = token.slice(1);
 
-    switch (input[i]) {
+    switch (mod) {
+      case '-':
+      case '~':
+        const value = parseExpr(val)!;
+        return { type: mod === '-' ? 'not' : 'or', value };
+
       case '(': {
-        const notGroup = input[i - 1] === '_';
-
-        if (inGroup) throw nestedTagsErr;
-        else i++;
-
-        if (notGroup) return;
-
+        let isEnding = val.endsWith(')');
+        let nextToken = val;
         const members: TagAST[] = [];
-        while (true) {
-          skipWs();
 
-          if (input[i] === ')') {
-            i++;
+        while (true) {
+          if (isEnding) {
+            const member = parseExpr(nextToken.slice(0, -1));
+            if (member) members.push(member);
             break;
           }
 
-          let child = parseExpr(true);
-          if (child) members.push(child);
-          skipWs();
+          const member = parseExpr(nextToken);
+          if (member) members.push(member);
+
+          nextToken = tokens[++i]?.trim() || '';
+          if (!nextToken) break;
+
+          isEnding = nextToken.endsWith(')');
         }
 
         return { type: 'group', value: members };
       }
 
-      case ')':
-        i++;
-        return;
-
-      case '-':
-        if (ctx && ctx !== 'group') throw invalidTagsErr;
-        i++;
-        return { type: 'not', value: parseExpr(inGroup, 'not')! };
-
-      case '~':
-        if (ctx && ctx !== 'group') throw invalidTagsErr;
-        i++;
-        return { type: 'or', value: parseExpr(inGroup, 'or')! };
-
       default:
-        let j = i;
-        let notGroup = false;
-
-        while (i < input.length && input[i] !== ' ') {
-          if ('()'.includes(input[i]) && input[i - 1] !== '_') break;
-          i++;
-        }
-
-        const tag = input.slice(j, i);
-        const value = tag.includes('_(') ? `${tag})` : tag;
-
-        tagSet.add(value);
-        return { type: 'tag', value };
+        throw new Error(`Unexpected token: ${token}`);
     }
   }
 
-  const ast: TagAST[] = [];
-  while (i < input.length) {
-    skipWs();
-    const node = parseExpr();
-    if (node) ast.push(node);
+  while (i < tokens.length) {
+    const sanitized = tokens[i].trim();
+
+    if (sanitized) {
+      const node = parseExpr(sanitized);
+      if (node) result.ast.push(node);
+    }
+
+    i++;
   }
-  return { ast, tags: Array.from(tagSet) };
+
+  return result;
 }
 
 export function serializeTags(exprs: TagAST[]): string {
