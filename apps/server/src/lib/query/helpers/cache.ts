@@ -39,7 +39,7 @@ export function populatePreviewCache(post: PostFromDB) {
   post.preview_width = w;
   post.preview_height = h;
 
-  const uncachedKey = `/image/${mod}/${src}`;
+  const uncachedUrl = new URL(`/image/${mod}/${src}`, Bun.env.BASE_URL);
   const s3PublicEndPoint = Bun.env.S3_PUBLIC_ENDPOINT;
 
   const { hash: cacheKey } = getModifiers(src, mod);
@@ -53,9 +53,9 @@ export function populatePreviewCache(post: PostFromDB) {
   }
 
   if (!cached) {
-    post.preview_url = uncachedKey;
+    post.preview_url = uncachedUrl.toString();
   } else if (!s3PublicEndPoint || !S3_ENABLED) {
-    post.preview_url = uncachedKey;
+    post.preview_url = uncachedUrl.toString();
   } else {
     post.preview_url = `${s3PublicEndPoint}/${PREVIEW_PATH}/${cacheKey}`;
   }

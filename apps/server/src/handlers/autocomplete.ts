@@ -1,4 +1,4 @@
-import type { Setup } from 'index';
+import type { Setup } from 'server';
 
 import { type InferHandler, t } from 'elysia';
 

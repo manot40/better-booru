@@ -43,7 +43,7 @@ async function run() {
         .where(eq($s.postTable.hash, hash))
         .then(() => new Promise((r) => setTimeout(r, random(100, 300))));
     } catch (e) {
-      log('WARNING', `[LQIP] Failed to process task ${hash}: ${e}`);
+      log('WARNING', `[LQIP] Failed to process task ${hash}. ${e}`);
     } finally {
       taskCount++;
       task = await lqipQueue.pop();
