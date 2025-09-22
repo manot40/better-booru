@@ -1,6 +1,7 @@
 import { extname, basename } from 'node:path';
 
 const dist = new Bun.Glob('./dist/*.js{,.map}');
+const elysia = import.meta.require('elysia/package.json').version;
 const bytesToSize = (bytes: number) => Math.max(0.01, bytes / (1024 * 1024)).toFixed(2) + ' MB';
 
 for await (const file of dist.scan()) {
@@ -15,6 +16,9 @@ const result = await Bun.build({
   splitting: true,
   sourcemap: 'linked',
   entrypoints: ['src/index.ts', 'src/worker.ts'],
+  define: {
+    'global.ELYSIA_VERSION': JSON.stringify(elysia),
+  },
 });
 
 if (result.success) {

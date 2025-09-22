@@ -1,5 +1,7 @@
 import { Options, Server } from '../types';
 
+declare var global: typeof globalThis & { ELYSIA_VERSION?: string };
+
 const createBoxText = (text: string, width: number): string => {
   const paddingLength = Math.max(0, (width - text.length) / 2);
   const padding = ' '.repeat(paddingLength);
@@ -33,10 +35,9 @@ export default function startServer(config: Server, options?: Options): void {
 
 function getElysiaVersion() {
   try {
-    const packageVersion = import.meta.require('elysia/package.json').version;
-    return packageVersion;
+    const elysia = import.meta.require('elysia/package.json');
+    return elysia.version;
   } catch {
-    const envVersion = Bun.env.ELYSIA_VERSION;
-    return envVersion ?? '[unknown]';
+    return global.ELYSIA_VERSION ?? '[unknown]';
   }
 }

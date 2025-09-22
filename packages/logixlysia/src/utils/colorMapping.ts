@@ -9,8 +9,9 @@ const createBunColorFn = (color: string) => (str: string) => `${Bun.color(color,
 
 export const LogLevelColorMap: ColorMap<LogLevel> = {
   INFO: createBgColorFn('30', '42'),
-  WARNING: createBgColorFn('30', '43'),
   ERROR: createBgColorFn('30', '41'),
+  WARNING: createBgColorFn('30', '43'),
+  NEUTRAL: createBgColorFn('30', '47'),
 };
 
 export const HttpMethodColorMap: ColorMap = {

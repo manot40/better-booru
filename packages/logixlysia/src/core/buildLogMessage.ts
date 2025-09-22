@@ -20,13 +20,17 @@ function shouldUseColors(useColors: boolean, options?: Options): boolean {
 
 export function buildLogMessage(opts: LogPayload): string {
   const { level, store, data, request: req, options, useColors = true } = opts;
-  const actuallyUseColors = shouldUseColors(useColors, options);
+  const { customLogFormat, timestamp, ip } = options?.config || {};
+
   const now = new Date();
   const clientIP = req?.headers.get('cf-connecting-ip') || req?.headers.get('x-forwarded-for');
+  const logFormat = customLogFormat || defaultLogFormat;
+  const actuallyUseColors = shouldUseColors(useColors, options);
+
   const components: LogComponents = {
     now: actuallyUseColors
-      ? LogLevelColorMap['WARNING'](formatTimestamp(now, options?.config?.timestamp))
-      : formatTimestamp(now, options?.config?.timestamp),
+      ? LogLevelColorMap['NEUTRAL'](formatTimestamp(now, timestamp))
+      : formatTimestamp(now, timestamp),
     epoch: Math.floor(now.getTime() / 1000).toString(),
     level: logString(level, useColors),
     duration: store ? durationString(store.beforeTime, useColors) : '',
@@ -34,15 +38,11 @@ export function buildLogMessage(opts: LogPayload): string {
     pathname: req ? pathString(req) : '',
     status: typeof data == 'object' ? statusString(data?.status || 200, useColors) : '',
     message: typeof data == 'string' ? data : data?.message || '',
-    ip: options?.config?.ip && clientIP ? `IP: ${clientIP}` : '',
+    ip: ip && clientIP ? `IP: ${clientIP}` : '',
   };
 
-  const logFormat = options?.config?.customLogFormat || defaultLogFormat;
-
-  return logFormat.replace(/{(\w+)}/g, (_, key: string) => {
-    if (key in components) {
-      return components[key as keyof LogComponents] || '';
-    }
+  return logFormat.replace(/{(\w+)}/g, (_, key: keyof LogComponents) => {
+    if (key in components) return components[key] || '';
     return '';
   });
 }

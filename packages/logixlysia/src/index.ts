@@ -7,11 +7,11 @@ import { createLogger } from './core';
 import { getStatusCode } from './utils/status';
 
 export default function createLogixlysia(options?: Options) {
-  const log = createLogger(options);
+  const logger = createLogger(options);
   const middleware = new Elysia({ name: 'Logixlysia', seed: options })
     .state('beforeTime', 0n)
-    .decorate('log', log.log)
-    .decorate('logRequest', log.logRequest)
+    .decorate('log', logger.log)
+    .decorate('logRequest', logger.logRequest)
     .onStart((ctx) => {
       const showStartupMessage = options?.config?.showStartupMessage ?? true;
       if (showStartupMessage) startServer(ctx.server as Server, options);
@@ -26,11 +26,11 @@ export default function createLogixlysia(options?: Options) {
     })
     .onError({ as: 'global' }, ({ request, error, set, store }) => {
       const status = getStatusCode(set.status || 500);
-      log.handleHttpError(request, { ...error, status } as HttpError, store);
+      logger.handleHttpError(request, { ...error, status } as HttpError, store);
     })
     .as('global');
 
-  return { log: log.log, middleware };
+  return { log: logger.log, middleware };
 }
 
 export { createLogger, handleHttpError } from './core';

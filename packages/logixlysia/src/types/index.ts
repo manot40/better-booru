@@ -10,7 +10,7 @@ export interface Server {
   protocol?: string;
 }
 
-export type LogLevel = 'INFO' | 'WARNING' | 'ERROR' | ({} & string);
+export type LogLevel = 'INFO' | 'WARNING' | 'ERROR' | 'NEUTRAL' | ({} & string);
 
 export interface LogData {
   status?: number;
