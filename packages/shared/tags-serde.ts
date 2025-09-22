@@ -15,8 +15,12 @@ export function parseTags(input: string): ParseResult {
 
     switch (input[i]) {
       case '(': {
+        const notGroup = input[i - 1] === '_';
+
         if (inGroup) throw nestedTagsErr;
         else i++;
+
+        if (notGroup) return;
 
         const members: TagAST[] = [];
         while (true) {
@@ -35,6 +39,10 @@ export function parseTags(input: string): ParseResult {
         return { type: 'group', value: members };
       }
 
+      case ')':
+        i++;
+        return;
+
       case '-':
         if (ctx && ctx !== 'group') throw invalidTagsErr;
         i++;
@@ -47,10 +55,18 @@ export function parseTags(input: string): ParseResult {
 
       default:
         let j = i;
-        while (i < input.length && !' ()'.includes(input[i])) i++;
+        let notGroup = false;
+
+        while (i < input.length && input[i] !== ' ') {
+          if ('()'.includes(input[i]) && input[i - 1] !== '_') break;
+          i++;
+        }
+
         const tag = input.slice(j, i);
-        tagSet.add(tag);
-        return { type: 'tag', value: tag };
+        const value = tag.includes('_(') ? `${tag})` : tag;
+
+        tagSet.add(value);
+        return { type: 'tag', value };
     }
   }
 

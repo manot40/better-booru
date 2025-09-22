@@ -17,8 +17,11 @@ import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, sql } from 'drizz
 const SAFE_OFFSET = 1000000;
 
 export async function queryPosts(qOpts: QueryOptions) {
-  const opts = { ...qOpts, tags: qOpts.tags || [], limit: Math.min(qOpts.limit || 50, 500) };
-  opts.page ||= '1';
+  const opts = {
+    ...qOpts,
+    page: qOpts.page || '1',
+    limit: Math.min(qOpts.limit || 50, 500),
+  };
 
   let isAsc = false;
   let offset = 0;
@@ -49,7 +52,7 @@ export async function queryPosts(qOpts: QueryOptions) {
   const order = (isAsc ? asc : desc)($s.postTable.id);
 
   /** Tags Filter */
-  if (opts.tags && typeof opts.tags === 'string') {
+  if (opts.tags) {
     const tagFilter = await tagsToQuery(opts.tags);
     if (Array.isArray(tagFilter)) filters.push(...tagFilter);
     else if (tagFilter) filters.push(tagFilter);
