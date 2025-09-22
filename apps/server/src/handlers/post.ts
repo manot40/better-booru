@@ -35,7 +35,7 @@ export const handler: Handler = async ({ query, userConfig }) => {
 
     const rating_ = userConfig?.rating;
     const rating = rating_?.some((r) => !['g', 's', 'q', 'e'].includes(r)) ? undefined : rating_;
-    const opts = { page: (page || 1).toString(), tags: <string[]>tags?.split(' '), limit: +limit, rating };
+    const opts = { tags, limit: +limit, rating, page: (page || 1).toString() };
 
     return await queryPosts(opts);
   }
@@ -85,4 +85,4 @@ export type PostSchema = typeof post;
 
 export const schema = { query, response: undefined as unknown as typeof response };
 
-type Handler = InferHandler<Setup, '/api/post', typeof schema>;
+type Handler = InferHandler<Setup, '/api/post', { query: typeof query.static }>;

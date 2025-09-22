@@ -6,26 +6,13 @@ import SQLiteStore from 'lib/cache/sqlite';
 
 import { log } from 'plugins/logger';
 import { waitForWorker } from 'utils/worker';
-import { db, schema as $s } from 'db';
 
+import { tagsToQuery } from './helpers/common';
 import * as fileUrl from './helpers/file-url-builder';
 import { populatePreviewCache } from './helpers/cache';
-import { deserializeTags, type TagsFilter } from './helpers/common';
 
-import {
-  and,
-  arrayContains,
-  arrayOverlaps,
-  asc,
-  desc,
-  eq,
-  getTableColumns,
-  gt,
-  inArray,
-  lt,
-  not,
-  sql,
-} from 'drizzle-orm';
+import { db, schema as $s } from 'db';
+import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, sql } from 'drizzle-orm';
 
 const SAFE_OFFSET = 1000000;
 
@@ -49,7 +36,7 @@ export async function queryPosts(qOpts: QueryOptions) {
     offset = (+opts.page - 1) * opts.limit;
   }
 
-  // Rating Filter
+  /** Rating Filter */
   if (opts.rating) {
     const rating = opts.rating as MaybeArray<DBPostData['rating']>;
     const filter = Array.isArray(rating)
@@ -58,38 +45,27 @@ export async function queryPosts(qOpts: QueryOptions) {
     filters.push(filter);
   }
 
-  const { post, count } = await db.transaction(async (tx) => {
-    /** Posts Ordering */
-    const order = (isAsc ? asc : desc)($s.postTable.id);
+  /** Posts Ordering */
+  const order = (isAsc ? asc : desc)($s.postTable.id);
 
-    /** Tags Filter */
-    const { meta, tags, hasInequality } = await deserializeTags(tx, opts.tags);
-    const addTagsFilter = <T extends 'meta' | 'tag'>(type: T, tags: TagsFilter) => {
-      const column = type === 'meta' ? $s.postTable.meta_ids : $s.postTable.tag_ids;
-      if (tags.eq) {
-        filters.push(arrayContains(column, tags.eq));
-      }
-      if (tags.ne) {
-        filters.push(not(arrayOverlaps(column, tags.ne)));
-      }
-    };
+  /** Tags Filter */
+  if (opts.tags && typeof opts.tags === 'string') {
+    const tagFilter = await tagsToQuery(opts.tags);
+    if (Array.isArray(tagFilter)) filters.push(...tagFilter);
+    else if (tagFilter) filters.push(tagFilter);
+  }
 
-    if (tags) addTagsFilter('tag', tags);
-    if (meta) addTagsFilter('meta', meta);
+  const { tag_ids: _1, meta_ids: _2, ...cols } = getTableColumns($s.postTable);
+  const count = getPostCount(filters, order);
+  const post = await db
+    .select({ ...cols, ...fileUrl })
+    .from($s.postTable)
+    .where(and(...cursor, ...filters))
+    .orderBy(order)
+    .limit(opts.limit)
+    .offset(offset);
 
-    const { tag_ids: _1, meta_ids: _2, ...cols } = getTableColumns($s.postTable);
-    const post = await tx
-      .select({ ...cols, ...fileUrl })
-      .from($s.postTable)
-      .where(and(...cursor, ...filters))
-      .orderBy(order)
-      .limit(opts.limit)
-      .offset(offset);
-
-    post.forEach(populatePreviewCache);
-
-    return { post, count: hasInequality ? 0 : getPostCount(filters, order) };
-  });
+  post.forEach(populatePreviewCache);
 
   return { meta: { limit: opts.limit, count, offset }, post };
 }
@@ -134,7 +110,7 @@ export function getPostCount(filters: SQL[], order: SQL): number {
 export interface QueryOptions {
   /** `a` for after and `b` for before specific id */
   page: StringHint<`${number}` | `a${number}` | `b${number}`>;
-  tags?: Array<`-${string}` | (string & {})>;
+  tags?: string;
   /** default 50 */
   limit?: number;
   rating?: MaybeArray<StringHint<DBPostData['rating']>>;
