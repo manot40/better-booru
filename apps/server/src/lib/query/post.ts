@@ -23,7 +23,7 @@ import {
   gt,
   inArray,
   lt,
-  notInArray,
+  not,
   sql,
 } from 'drizzle-orm';
 
@@ -70,13 +70,7 @@ export async function queryPosts(qOpts: QueryOptions) {
         filters.push(arrayContains(column, tags.eq));
       }
       if (tags.ne) {
-        const exclusion = tx
-          .select({ id: $s.postTable.id })
-          .from($s.postTable)
-          .where(and(...cursor, arrayOverlaps(column, tags.ne)))
-          .orderBy(order)
-          .limit(Math.round(SAFE_OFFSET / 4));
-        filters.push(notInArray($s.postTable.id, exclusion));
+        filters.push(not(arrayOverlaps(column, tags.ne)));
       }
     };
 
