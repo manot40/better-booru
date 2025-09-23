@@ -7,8 +7,8 @@ import SQLiteStore from 'lib/cache/sqlite';
 import { log } from 'plugins/logger';
 import { waitForWorker } from 'utils/worker';
 
-import { tagsToQuery } from './helpers/common';
 import * as fileUrl from './helpers/file-url-builder';
+import { tagsToQuery } from './helpers/tags-handler';
 import { populatePreviewCache } from './helpers/cache';
 
 import { db, schema as $s } from 'db';

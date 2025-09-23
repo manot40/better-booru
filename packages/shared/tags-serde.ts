@@ -39,7 +39,7 @@ export function parseTags(input: string): ParseResult {
           nextToken = tokens[++i]?.trim() || '';
           if (!nextToken) break;
 
-          isEnding = nextToken.endsWith(')');
+          isEnding = /^(?!.*_).*\)$/.test(nextToken) || nextToken.endsWith('))');
         }
 
         return { type: 'group', value: members };

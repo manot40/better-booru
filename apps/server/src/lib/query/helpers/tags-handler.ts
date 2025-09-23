@@ -1,4 +1,4 @@
-import { isMetaTag } from 'utils/common';
+import { isArrEmpty, isMetaTag } from 'utils/common';
 import { parseTags, type TagAST } from '@boorugator/shared';
 
 import { db, schema as $s } from 'db';
@@ -49,22 +49,20 @@ export async function tagsToQuery(tagString: string): Promise<SQL | SQL[]> {
   }
 
   const andFilters = <SQL[]>[];
-  Object.entries(andOp).reduce((acc, [key, value]) => {
+  Object.entries(andOp).forEach(([key, value]) => {
     const column = key === 'meta' ? table.meta_ids : table.tag_ids;
     if (value?.eq) andFilters.push(arrayContains(column, value.eq));
     if (value?.ne) andFilters.push(not(arrayOverlaps(column, value.ne)));
-    return acc;
-  }, andFilters);
+  });
 
   const orFilters = <SQL[]>[];
-  Object.entries(orOp).reduce((acc, [key, value]) => {
+  Object.entries(orOp).forEach(([key, value]) => {
     const column = key === 'meta' ? table.meta_ids : table.tag_ids;
     if (value?.length) orFilters.push(arrayOverlaps(column, value));
-    return acc;
-  }, orFilters);
+  });
 
-  if (!andOp.meta && !andOp.tags) return or(...orFilters)!;
-  else if (!orOp.meta && !orOp.tags) return andFilters;
+  if (isArrEmpty(andFilters) && !isArrEmpty(orFilters)) return or(...orFilters)!;
+  else if (isArrEmpty(orFilters) && !isArrEmpty(andFilters)) return andFilters;
   else return [...andFilters, or(...orFilters)!];
 }
 
