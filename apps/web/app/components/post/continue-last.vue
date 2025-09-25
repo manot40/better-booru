@@ -10,8 +10,7 @@ const props = defineProps<Props>();
 
 function continueBrowse() {
   const [page, tags] = props.lastSession;
-  /** @todo handle this using paginator when we figure out the navigation bugfix */
-  navigateTo({ query: { page, tags: tags || undefined } }, { external: true });
+  navigateTo({ query: { page, tags: tags || undefined } });
 }
 </script>
 

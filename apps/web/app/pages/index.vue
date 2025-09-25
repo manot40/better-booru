@@ -8,7 +8,7 @@ import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
 const router = useRouter();
 const userConfig = useUserConfig();
-const { lastSession, watcher: historyWatcher } = useBrowseHistory();
+const { watcher: historyWatcher } = useBrowseHistory();
 
 const masonry = useTemplateRef('masonry');
 const scrollEl = computed(() => masonry.value?.el || undefined);
@@ -152,13 +152,12 @@ onUnmounted(unsubRouteListener);
     </template>
     <template #end>
       <div
-        v-if="lastSession || !userConfig.isInfinite"
+        v-if="!userConfig.isInfinite"
         :data-show="top < 300 || isBottom || scrollUp"
         class="bottom-bar flex sticky z-30 bottom-14 my-4">
         <Card
           class="!flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
-          <PostContinueLast v-if="lastSession" :lastSession :paginator />
-          <PostFilter v-else :count="data.meta.count" :paginator @scroll-top="scrollTop" />
+          <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
         </Card>
       </div>
       <EmptyState class="py-8 px-4" v-else-if="loading">

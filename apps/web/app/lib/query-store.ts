@@ -106,7 +106,7 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
       /** When router query empty, fallback to initial query state */
       if (!Object.keys(to.query).length) super.reset();
       else super.set(<Query<T>>UrlQueryStore.processQuery(to.query));
-    });
+    }, 50);
 
     onUnmounted(router.afterEach(routeListener));
   }

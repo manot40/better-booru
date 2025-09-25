@@ -95,6 +95,7 @@ export declare interface ListParams {
   tags?: string;
   limit?: number;
   last_id?: number;
+  [q: string]: unknown;
 }
 
 export declare interface Autocomplete {

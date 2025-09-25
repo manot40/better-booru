@@ -34,7 +34,7 @@ export const useBooruFetch = (
     triggerRef(ids);
     return filtered;
   }
-  async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
+  async function fetchBooru(state?: InfiScrollState, reset = false as boolean | 'only-data') {
     if (import.meta.server || (state && !config.isInfinite)) return;
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
 
@@ -43,8 +43,9 @@ export const useBooruFetch = (
     };
 
     if (reset) {
-      query.page = 1;
       data.value = undefined;
+      if (reset === true) query.page = 1;
+      else paginator.update({ reset: undefined }, true);
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) {
@@ -79,7 +80,7 @@ export const useBooruFetch = (
       data.value = res as Result;
       ids.value = new Set(...res.post.map((p) => ids.value.add(p.id)));
       options?.onReset?.(res.post as Post[]);
-      if (reset) changePage(1);
+      if (reset === true) changePage(1);
       return (error.value = undefined);
     }
 
@@ -106,11 +107,13 @@ export const useBooruFetch = (
   const onQueryUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
     if (noUpdate.value) return (noUpdate.value = false);
     if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
-
     if (isEqual(a, b)) return;
+
     const { page: _1, ...restA } = a;
     const { page: _2, ...restB } = b;
-    fetchBooru(undefined, !isEqual(restA, restB));
+    const isReset = a.reset === 'only-data' ? 'only-data' : !isEqual(restA, restB);
+
+    fetchBooru(undefined, isReset);
   }, 200);
   watch(paginator.query, onQueryUpdate, { immediate: true });
 
