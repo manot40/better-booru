@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Pin, Settings, Settings2 } from 'lucide-vue-next';
+import { HistoryIcon, Settings, Settings2 } from 'lucide-vue-next';
 
 const configOpen = ref(false);
-const checkpointOpen = ref(false);
+const historyOpen = ref(false);
 </script>
 
 <template>
@@ -18,9 +18,9 @@ const checkpointOpen = ref(false);
           <Settings2 class="w-4 h-4" />
           <span>Site Config</span>
         </DropdownMenuItem>
-        <DropdownMenuItem class="cursor-pointer" @click="checkpointOpen = false">
-          <Pin class="w-4 h-4 -rotate-45" />
-          <span>Saved Checkpoint</span>
+        <DropdownMenuItem class="cursor-pointer" @click="historyOpen = true">
+          <HistoryIcon class="w-4 h-4" />
+          <span>Browse History</span>
         </DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
@@ -29,5 +29,5 @@ const checkpointOpen = ref(false);
   </DropdownMenu>
 
   <LazySettingSiteWide hydrateOnIdle v-model:open="configOpen" />
-  <LazySettingCheckpoint hydrateOnIdle v-model:open="checkpointOpen" />
+  <LazySettingBrowseHistory hydrateOnIdle v-model:open="historyOpen" />
 </template>

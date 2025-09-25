@@ -74,18 +74,14 @@ const updateQuery = useThrottleFn((tagList: string[]) => {
           :modelValue="tags"
           @removeTag="updateQuery(tags.filter((a) => a !== $event))"
           class="font-normal rounded-b-none border-0 border-b py-2.5 bg-inherit">
-          <TagsInputItem
+          <PostTag
             v-for="tag in tags"
+            asTagInput
+            :tag
             :key="tag"
-            :value="tag"
-            :class="[
-              'rounded-sm py-3',
-              tag.startsWith('-') && 'bg-red-900',
-              tag.startsWith('~') && 'bg-blue-700/80',
-            ]">
-            <div class="ml-2 mr-1 mb-1">{{ tag.replace(/^(-|~)/, '') }}</div>
+            :op="tag.startsWith('-') ? 'ne' : tag.startsWith('~') ? 'or' : 'eq'">
             <TagsInputItemDelete />
-          </TagsInputItem>
+          </PostTag>
         </TagsInput>
 
         <div
