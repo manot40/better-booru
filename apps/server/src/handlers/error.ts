@@ -1,7 +1,18 @@
-import { type ErrorContext, file } from 'elysia';
+import type { ErrorContext } from 'elysia';
 
-const handleError = ({ code }: Context) => {
-  if (code === 'NOT_FOUND') return file('./public/404.html');
+const Html404 = Bun.file('./public/404.html');
+
+const handleError = ({ code, path, redirect, request, set }: Context) => {
+  const isSuspicious = request.method === 'PROPFIND' || /\/(wp-|\.)\w+/.test(path);
+
+  if (isSuspicious) {
+    return redirect('https://youtu.be/dQw4w9WgXcQ', 301);
+  } else if (code === 'NOT_FOUND') {
+    set.status = 404;
+    set.headers['content-type'] = 'text/html';
+    set.headers['content-length'] = Html404.size;
+    return Html404.bytes();
+  }
 };
 
 type Context = ErrorContext & { code: ErrorCode };
