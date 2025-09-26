@@ -44,8 +44,12 @@ export const useBooruFetch = (
 
     if (reset) {
       data.value = undefined;
-      if (reset === true) query.page = 1;
-      else paginator.update({ reset: undefined }, true);
+      if (reset === true) {
+        query.page = 1;
+      } else {
+        const { reset: _, ...restQuery } = paginator.query.value;
+        paginator.set(restQuery, true);
+      }
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) {
@@ -109,9 +113,9 @@ export const useBooruFetch = (
     if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
     if (isEqual(a, b)) return;
 
-    const { page: _1, ...restA } = a;
-    const { page: _2, ...restB } = b;
-    const isReset = a.reset === 'only-data' ? 'only-data' : !isEqual(restA, restB);
+    const tagsAfter = a.tags?.split(' ').sort();
+    const tagsBefore = b.tags?.split(' ').sort();
+    const isReset = a.reset === 'only-data' ? 'only-data' : !isEqual(tagsAfter, tagsBefore);
 
     fetchBooru(undefined, isReset);
   }, 200);
