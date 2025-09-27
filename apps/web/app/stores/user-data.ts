@@ -1,5 +1,7 @@
 import type { UserData } from '@boorugator/shared/types';
 
+import { destr } from 'destr';
+
 export const useUserData = defineStore(STATIC.keys.userData, {
   state: () => <UserData>{ lastBrowse: {} },
 
@@ -31,10 +33,16 @@ export const useUserData = defineStore(STATIC.keys.userData, {
   hydrate(state) {
     try {
       const self = useUserData();
-      const fromStorage = JSON.parse(localStorage.getItem(STATIC.keys.userData) || '{}');
+      const fromStorage = destr(localStorage.getItem(STATIC.keys.userData)) || {};
 
       Object.assign(state, fromStorage);
-      self.$subscribe((_, state) => localStorage.setItem(STATIC.keys.userData, JSON.stringify(state)));
+      self.$subscribe((_, state) => {
+        const { lastBrowse: lsLastBrowse, ...rest } =
+          destr<UserData>(localStorage[STATIC.keys.userData]) || {};
+        const lastBrowse = { ...lsLastBrowse, ...state.lastBrowse };
+
+        localStorage.setItem(STATIC.keys.userData, JSON.stringify({ ...rest, ...state, lastBrowse }));
+      });
     } catch {}
   },
 });
