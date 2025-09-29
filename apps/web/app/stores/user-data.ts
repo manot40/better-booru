@@ -36,13 +36,7 @@ export const useUserData = defineStore(STATIC.keys.userData, {
       const fromStorage = destr(localStorage.getItem(STATIC.keys.userData)) || {};
 
       Object.assign(state, fromStorage);
-      self.$subscribe((_, state) => {
-        const { lastBrowse: lsLastBrowse, ...rest } =
-          destr<UserData>(localStorage[STATIC.keys.userData]) || {};
-        const lastBrowse = { ...lsLastBrowse, ...state.lastBrowse };
-
-        localStorage.setItem(STATIC.keys.userData, JSON.stringify({ ...rest, ...state, lastBrowse }));
-      });
+      self.$subscribe((_, state) => localStorage.setItem(STATIC.keys.userData, JSON.stringify(state)));
     } catch {}
   },
 });

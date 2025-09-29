@@ -5,7 +5,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "baseUrl": "./src",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
