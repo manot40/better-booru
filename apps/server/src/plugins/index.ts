@@ -1,3 +1,4 @@
+export { spa } from './spa';
 export { scrap } from './scrap';
 export { caching } from './caching';
 export { ipxCache } from './ipx';
