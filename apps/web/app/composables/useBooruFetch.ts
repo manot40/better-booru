@@ -43,6 +43,7 @@ export const useBooruFetch = (
     };
 
     if (reset) {
+      ids.value = new Set();
       data.value = undefined;
       if (reset === true) {
         query.page = 1;
@@ -102,6 +103,7 @@ export const useBooruFetch = (
   watchDebounced(noUpdate, () => (noUpdate.value &&= false), { debounce: 1000 });
 
   const onConfigUpdate = () => {
+    ids.value = new Set();
     data.value &&= undefined;
     noUpdate.value = true;
     fetchBooru(undefined, true);
