@@ -7,7 +7,7 @@ const glob = new Bun.Glob('./public/**/*.html');
 const cache = new MemoryStore<Uint8Array<ArrayBuffer>>();
 const routes = new Set(
   Array.from(glob.scanSync({ absolute: true })).map((r) => {
-    const route = r.split('/public').pop()!;
+    const route = r.replace(/\\/g, '/').split('/public').pop()!;
     const stripped = route.split('.');
     stripped.splice(-1);
     return stripped.join('.');

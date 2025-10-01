@@ -173,7 +173,7 @@ async function execute(inputData: Payload[]) {
       .insert($s.postTable)
       .values(data)
       .onConflictDoUpdate({
-        target: $s.postTable.id,
+        target: $s.postTable.hash,
         set: {
           tag_ids: sql.raw(`excluded.${$s.postTable.tag_ids.name}`),
           meta_ids: sql.raw(`excluded.${$s.postTable.meta_ids.name}`),
