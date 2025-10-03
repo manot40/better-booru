@@ -63,7 +63,9 @@ export async function queryPosts(qOpts: QueryOptions) {
   const post = await db
     .select({ ...cols, ...fileUrl })
     .from($s.postTable)
+    .leftJoin($s.postImagesTable, eq($s.postImagesTable.postId, $s.postTable.id))
     .where(and(...cursor, ...filters))
+    .groupBy($s.postTable.id)
     .orderBy(order)
     .limit(opts.limit)
     .offset(offset);

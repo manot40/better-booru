@@ -7,11 +7,14 @@ import { type InferHandler, type Static, t } from 'elysia';
 import * as ASSET_URL from 'lib/query/helpers/file-url-builder';
 
 import { db } from 'db';
-import { queryPostTags } from 'lib/query/tags';
+import { eq, getTableColumns } from 'drizzle-orm';
+import { postTable, postImagesTable } from 'db/schema';
 
-import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
-import { processBooruData } from 'utils/common';
 import { mapDanbooruData } from 'utils/danbooru';
+import { processBooruData } from 'utils/common';
+import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
+
+import { queryPostTags } from 'lib/query/tags';
 import { populatePreviewCache } from 'lib/query/helpers/cache';
 
 export const handler: Handler = async ({ params: { id }, userConfig, headers, status }) => {
@@ -32,11 +35,14 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
       return mapDanbooruData(data);
     }
 
-    const postData = await db.query.postTable.findFirst({
-      columns: { tag_ids: false, meta_ids: false },
-      extras: ASSET_URL,
-      where: (post, { eq }) => eq(post.id, +id),
-    });
+    const { tag_ids, meta_ids, ...table } = getTableColumns(postTable);
+    const [postData] = await db
+      .select({ ...table, ...ASSET_URL })
+      .from(postTable)
+      .leftJoin(postImagesTable, eq(postTable.id, postImagesTable.postId))
+      .where(eq(postTable.id, +id))
+      .groupBy(postTable.id)
+      .limit(1);
 
     if (!postData) throw status(404, 'Post Not Found');
 

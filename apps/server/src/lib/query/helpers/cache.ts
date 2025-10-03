@@ -52,6 +52,9 @@ export function populatePreviewCache(post: PostFromDB) {
     post.lqip = post.lqip.replaceAll('\n', '');
   }
 
+  const isDonmai = post.preview_url && post.preview_url.startsWith('https://cdn.donmai.us');
+  if (!isDonmai) return;
+
   if (!cached) {
     post.preview_url = uncachedUrl.toString();
   } else if (!s3PublicEndPoint || !S3_ENABLED) {
