@@ -9,7 +9,7 @@ import { getDanbooruImage } from 'utils/danbooru';
 import { random, isMetaTag } from 'utils/common';
 
 import { log } from 'plugins/logger';
-import { addTask } from 'plugins/ipx/lqip-worker';
+import { addTask } from 'plugins/images/lqip-worker';
 
 export async function run(store_: unknown) {
   const { lqip_worker } = (store_ as CronStore)?.cron || {};

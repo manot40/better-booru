@@ -3,7 +3,6 @@ CREATE TABLE "posts_images" (
 	"post_id" integer NOT NULL,
 	"loc" text NOT NULL,
 	"type" text NOT NULL,
-	"path" text NOT NULL,
 	"width" integer NOT NULL,
 	"height" integer NOT NULL,
 	"file_type" text NOT NULL,

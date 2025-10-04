@@ -32,12 +32,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "path": {
-          "name": "path",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "width": {
           "name": "width",
           "type": "integer",

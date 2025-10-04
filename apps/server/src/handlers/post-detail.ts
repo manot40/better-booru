@@ -14,6 +14,7 @@ import { mapDanbooruData } from 'utils/danbooru';
 import { processBooruData } from 'utils/common';
 import { $danbooruFetch, $gelbooruFetch } from 'utils/fetcher';
 
+import { getPreview } from 'lib/query/helpers/get-preview';
 import { queryPostTags } from 'lib/query/tags';
 import { populatePreviewCache } from 'lib/query/helpers/cache';
 
@@ -35,9 +36,14 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
       return mapDanbooruData(data);
     }
 
-    const { tag_ids, meta_ids, ...table } = getTableColumns(postTable);
+    const { tag_ids, meta_ids, preview_width, preview_height, ...table } = getTableColumns(postTable);
     const [postData] = await db
-      .select({ ...table, ...ASSET_URL })
+      .select({
+        ...table,
+        ...ASSET_URL,
+        preview_width: getPreview('width'),
+        preview_height: getPreview('height'),
+      })
       .from(postTable)
       .leftJoin(postImagesTable, eq(postTable.id, postImagesTable.postId))
       .where(eq(postTable.id, +id))

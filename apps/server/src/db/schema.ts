@@ -70,7 +70,6 @@ export const postImagesTable = pgTable(
       .references(() => postTable.id),
     loc: text().notNull().$type<'CDN' | 'LOCAL'>(),
     type: text().notNull().$type<'PREVIEW' | 'ORIGINAL'>(),
-    path: text().notNull(),
     width: integer().notNull(),
     height: integer().notNull(),
     fileType: text('file_type').notNull(),

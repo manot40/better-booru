@@ -1,9 +1,17 @@
+import { db } from 'db';
 import { s3 } from 'utils/s3';
-import { ipxMetaCache } from './cache';
+import { Const } from './helpers';
 
 export async function run() {
   let list: Bun.S3ListObjectsResponse | undefined;
-  const set = new Set(ipxMetaCache.getEntries().map(([hash]) => hash));
+
+  const cached = await db.query.postImagesTable.findMany({
+    columns: { id: true },
+    where: (t, { lt }) => lt(t.createdAt, new Date(Date.now() - Const.MAX_AGE * 1000)),
+  });
+
+  const set = new Set(cached.map((i) => i.id));
+
   const s3Opts: Bun.S3ListObjectsOptions = { prefix: 'images/preview/', fetchOwner: false };
 
   while (!list || list.contents?.length) {

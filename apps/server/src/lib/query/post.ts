@@ -8,10 +8,11 @@ import { log } from 'plugins/logger';
 import { waitForWorker } from 'utils/worker';
 
 import * as fileUrl from './helpers/file-url-builder';
+import { getPreview } from './helpers/get-preview';
 import { tagsToQuery } from './helpers/tags-handler';
 import { populatePreviewCache } from './helpers/cache';
 
-import { db, schema as $s } from 'db';
+import { db, $s } from 'db';
 import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, sql } from 'drizzle-orm';
 
 const SAFE_OFFSET = 1000000;
@@ -58,10 +59,14 @@ export async function queryPosts(qOpts: QueryOptions) {
     else if (tagFilter) filters.push(tagFilter);
   }
 
-  const { tag_ids: _1, meta_ids: _2, ...cols } = getTableColumns($s.postTable);
   const count = getPostCount(filters, order);
   const post = await db
-    .select({ ...cols, ...fileUrl })
+    .select({
+      ...cols,
+      preview_width: getPreview('width'),
+      preview_height: getPreview('height'),
+      ...fileUrl,
+    })
     .from($s.postTable)
     .leftJoin($s.postImagesTable, eq($s.postImagesTable.postId, $s.postTable.id))
     .where(and(...cursor, ...filters))
@@ -111,6 +116,14 @@ export function getPostCount(filters: SQL[], order: SQL): number {
 
   return 0;
 }
+
+const {
+  tag_ids: _1,
+  meta_ids: _2,
+  preview_height: _3,
+  preview_width: _4,
+  ...cols
+} = getTableColumns($s.postTable);
 
 export interface QueryOptions {
   /** `a` for after and `b` for before specific id */

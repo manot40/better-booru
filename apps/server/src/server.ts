@@ -4,7 +4,7 @@ import { cors } from '@elysiajs/cors';
 import { etag } from '@bogeychan/elysia-etag';
 import { staticPlugin } from '@elysiajs/static';
 
-import { caching, ipxCache, logixlysia, scrap, userConfig } from 'plugins';
+import { caching, images, logixlysia, scrap, userConfig } from 'plugins';
 
 import * as Post from 'handlers/post';
 import * as PostTags from 'handlers/post-tags';
@@ -17,7 +17,7 @@ const setup = new Elysia()
   .use(scrap)
   .use(etag())
   .use(cors())
-  .use(ipxCache)
+  .use(images)
   .use(userConfig)
   .use(logixlysia)
   .use(staticPlugin({ indexHTML: true, prefix: '/' }))
