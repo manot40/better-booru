@@ -20,6 +20,11 @@ export declare interface UserConfig {
   historyMode?: 'url_query' | 'session' | 'cookie';
 }
 
+export declare interface UserData {
+  lastBrowse: Record<string, [number, string?, number]>;
+  [key: string]: unknown;
+}
+
 export declare interface BooruData {
   preview_url: string;
   preview_width: number;
@@ -90,6 +95,7 @@ export declare interface ListParams {
   tags?: string;
   limit?: number;
   last_id?: number;
+  [q: string]: unknown;
 }
 
 export declare interface Autocomplete {

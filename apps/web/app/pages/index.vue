@@ -8,6 +8,7 @@ import { Bean, CloudLightning, LoaderCircle } from 'lucide-vue-next';
 
 const router = useRouter();
 const userConfig = useUserConfig();
+const { watcher: historyWatcher } = useBrowseHistory();
 
 const masonry = useTemplateRef('masonry');
 const scrollEl = computed(() => masonry.value?.el || undefined);
@@ -26,6 +27,8 @@ const { data, error, loading, paginator } = useBooruFetch(scrollEl, {
     slideData.value = slideData.value.concat(result);
   },
 });
+
+watch(paginator.query, historyWatcher, { immediate: true });
 
 const { lightbox, controlVisible } = useLightbox(slideData, {
   onSlideChange: (s) => s && registerPost(s.index),
@@ -51,30 +54,12 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
   },
 });
 
-const postToSlide = (post: Post): SlideData => ({
-  src: post.file_url,
-  msrc: post.preview_url || post.sample_url || post.file_url,
-  width: post.width,
-  height: post.height,
-});
+const gap = 6;
+const estimateSize = createEstimateSize(data, container, gap);
 
 function findElement(index: number) {
   const img = container.value?.querySelector(`[data-content-index="${index}"] img`);
   if (img instanceof HTMLImageElement) return img;
-}
-
-const gap = 6;
-function estimateSize(index: number, lane: number) {
-  const item = data.value?.post[index];
-  if (!item) return 0;
-
-  const [x, y] = imageAspectRatio(item.width, item.height);
-  const spacer = lane === 1 ? 0 : gap * lane;
-  const elWidth = (container.value?.clientWidth || window.innerWidth) - spacer;
-  const relWidth = +(elWidth / lane) / x;
-  const relHeight = relWidth * y + 2;
-
-  return relHeight > 900 ? 900 : relHeight;
 }
 
 function handleTagChange(tags: string) {
@@ -170,7 +155,10 @@ onUnmounted(unsubRouteListener);
         v-if="!userConfig.isInfinite"
         :data-show="top < 300 || isBottom || scrollUp"
         class="bottom-bar flex sticky z-30 bottom-14 my-4">
-        <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
+        <Card
+          class="!flex justify-between items-center p-2 gap-2 max-w-lg mx-auto bg-card/80 backdrop-blur-lg">
+          <PostFilter :count="data.meta.count" :paginator @scroll-top="scrollTop" />
+        </Card>
       </div>
       <EmptyState class="py-8 px-4" v-else-if="loading">
         <template #icon><LoaderCircle class="animate-spin !w-10 !h-10 !mb-3" /></template>

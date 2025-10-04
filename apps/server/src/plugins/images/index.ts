@@ -105,7 +105,11 @@ export const images = new Elysia()
       }
 
       const res = await fetch(src);
-      if (!res.ok) throw new Error(`Failed to fetch image: ${res.status} ${res.statusText}`);
+
+      if (!res.ok) {
+        if (res.status === 404) return status(404, 'Image Not found');
+        return status(500, `Failed to fetch image: ${res.status} ${res.statusText}`);
+      }
 
       const quality = isNaN(+query.q) ? 80 : +query.q;
       const theSharp = sharp(await res.bytes())

@@ -2,14 +2,14 @@ import type { CacheStore } from './types';
 
 import { Database, type Statement } from 'bun:sqlite';
 
-type DBResult = {
+export type CacheResult = {
   key: string;
   value: string;
   expires: number | null;
 };
 
 export class SQLiteStore implements CacheStore<string, string> {
-  private db: Database;
+  public db: Database;
   private op: StatementMap;
 
   constructor(dbFilePath = ':memory:') {
@@ -28,7 +28,7 @@ export class SQLiteStore implements CacheStore<string, string> {
     this.op = createStatements(this.db);
   }
 
-  private isExpired(result: DBResult): boolean {
+  private isExpired(result: CacheResult): boolean {
     return result.expires ? result.expires < Math.round(Date.now() / 1000) : false;
   }
 
@@ -79,23 +79,23 @@ export class SQLiteStore implements CacheStore<string, string> {
 }
 
 const createStatements = (db: Database): StatementMap => ({
-  pop: db.prepare<DBResult, []>('SELECT * FROM cache ORDER BY ROWID ASC LIMIT 1'),
+  pop: db.prepare<CacheResult, []>('SELECT * FROM cache ORDER BY ROWID ASC LIMIT 1'),
   check: db.prepare<1, [string]>('SELECT 1 FROM cache WHERE key = ?'),
-  query: db.prepare<DBResult, [string]>('SELECT * FROM cache WHERE key = ?'),
-  upsert: db.prepare<DBResult, [string, string, number | null]>(
+  query: db.prepare<CacheResult, [string]>('SELECT * FROM cache WHERE key = ?'),
+  upsert: db.prepare<CacheResult, [string, string, number | null]>(
     'INSERT OR REPLACE INTO cache (key, value, expires) VALUES (?1, ?2, ?3)'
   ),
-  delete: db.prepare<DBResult, [string]>('DELETE FROM cache WHERE key = ?'),
-  getAll: db.prepare<DBResult, []>('SELECT * FROM cache ORDER BY ROWID ASC'),
+  delete: db.prepare<CacheResult, [string]>('DELETE FROM cache WHERE key = ?'),
+  getAll: db.prepare<CacheResult, []>('SELECT * FROM cache ORDER BY ROWID ASC'),
 });
 
 type StatementMap = {
-  pop: Statement<DBResult, []>;
+  pop: Statement<CacheResult, []>;
   check: Statement<1, [string]>;
-  query: Statement<DBResult, [string]>;
-  upsert: Statement<DBResult, [string, string, number | null]>;
-  delete: Statement<DBResult, [string]>;
-  getAll: Statement<DBResult, []>;
+  query: Statement<CacheResult, [string]>;
+  upsert: Statement<CacheResult, [string, string, number | null]>;
+  delete: Statement<CacheResult, [string]>;
+  getAll: Statement<CacheResult, []>;
 };
 
 export default SQLiteStore;

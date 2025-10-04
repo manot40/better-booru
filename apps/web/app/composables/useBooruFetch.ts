@@ -34,7 +34,7 @@ export const useBooruFetch = (
     triggerRef(ids);
     return filtered;
   }
-  async function fetchBooru(state?: InfiScrollState, reset?: boolean) {
+  async function fetchBooru(state?: InfiScrollState, reset = false as boolean | 'only-data') {
     if (import.meta.server || (state && !config.isInfinite)) return;
     type PageAsString = Omit<ListParams, 'page'> & { page: string | number };
 
@@ -43,8 +43,14 @@ export const useBooruFetch = (
     };
 
     if (reset) {
-      query.page = 1;
+      ids.value = new Set();
       data.value = undefined;
+      if (reset === true) {
+        query.page = 1;
+      } else {
+        const { reset: _, ...restQuery } = paginator.query.value;
+        paginator.set(restQuery, true);
+      }
     } else if (config.isInfinite) {
       query.limit = LIMIT;
       if (!data.value) {
@@ -79,7 +85,7 @@ export const useBooruFetch = (
       data.value = res as Result;
       ids.value = new Set(...res.post.map((p) => ids.value.add(p.id)));
       options?.onReset?.(res.post as Post[]);
-      if (reset) changePage(1);
+      if (reset === true) changePage(1);
       return (error.value = undefined);
     }
 
@@ -97,6 +103,7 @@ export const useBooruFetch = (
   watchDebounced(noUpdate, () => (noUpdate.value &&= false), { debounce: 1000 });
 
   const onConfigUpdate = () => {
+    ids.value = new Set();
     data.value &&= undefined;
     noUpdate.value = true;
     fetchBooru(undefined, true);
@@ -106,11 +113,13 @@ export const useBooruFetch = (
   const onQueryUpdate = useThrottleFn((a: ListParams, b?: ListParams) => {
     if (noUpdate.value) return (noUpdate.value = false);
     if (typeof b == 'undefined' || !config.isInfinite) return fetchBooru();
-
     if (isEqual(a, b)) return;
-    const { page: _1, ...restA } = a;
-    const { page: _2, ...restB } = b;
-    fetchBooru(undefined, !isEqual(restA, restB));
+
+    const tagsAfter = a.tags?.split(' ').sort();
+    const tagsBefore = b.tags?.split(' ').sort();
+    const isReset = a.reset === 'only-data' ? 'only-data' : !isEqual(tagsAfter, tagsBefore);
+
+    fetchBooru(undefined, isReset);
   }, 200);
   watch(paginator.query, onQueryUpdate, { immediate: true });
 
