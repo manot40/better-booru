@@ -1,6 +1,7 @@
-import { db } from 'db';
+import { db, $s } from 'db';
 import { s3 } from 'utils/s3';
 import { Const } from './helpers';
+import { eq } from 'drizzle-orm';
 
 export async function run() {
   let list: Bun.S3ListObjectsResponse | undefined;
@@ -10,7 +11,7 @@ export async function run() {
     where: (t, { lt }) => lt(t.createdAt, new Date(Date.now() - Const.MAX_AGE * 1000)),
   });
 
-  const set = new Set(cached.map((i) => i.id));
+  const expired = new Set(cached.map((i) => i.id));
 
   const s3Opts: Bun.S3ListObjectsOptions = { prefix: 'images/preview/', fetchOwner: false };
 
@@ -24,10 +25,11 @@ export async function run() {
 
     for (const item of contents) {
       const hash = item.key.split('/').pop()!;
-      if (set.has(hash)) continue;
-
-      await s3.delete(item.key);
-      console.info('Deleted unused cache image:', hash);
+      if (expired.has(hash)) {
+        await s3.delete(item.key);
+        await db.update($s.postImagesTable).set({ orphaned: true }).where(eq($s.postImagesTable.id, hash));
+        console.info('Deleted unused cache image:', hash);
+      }
     }
   }
 }
