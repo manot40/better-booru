@@ -1,27 +1,23 @@
-import { isNotNull, ne, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
-import { postTable as table } from 'db/schema';
+import { postImagesTable as img } from 'db/schema';
 
-const linkPrepend = sql<string>`,SUBSTR(${table.hash},1,2),'/',SUBSTR(${table.hash},3,2),'/',`;
+import * as Booru from './booru-url.builder';
 
-export const file_url = sql<string>`CONCAT('https://cdn.donmai.us/original/'`
-  .append(linkPrepend)
-  .append(sql`${table.hash},'.',${table.file_ext})`)
+const S3_URL = Bun.env.S3_PUBLIC_ENDPOINT || '';
+const BASE_URL = Bun.env.BASE_URL || '';
+
+const locToHost = sql<string>`CASE WHEN ${eq(img.loc, 'CDN')} THEN '${sql.raw(S3_URL)}' ELSE '${sql.raw(BASE_URL)}' END`;
+const imagePath = sql`CONCAT((${locToHost}), '/images/', LOWER(${img.type}), '/', ${img.id})`;
+
+export const lqip = Booru.lqip.as('lqip');
+
+export const file_url = sql<string>`COALESCE(`
+  .append(sql`MAX(CASE WHEN ${eq(img.type, 'ORIGINAL')} THEN ${imagePath} END),`)
+  .append(sql`${Booru.file_url}${sql.raw(')')}`)
   .as('file_url');
-export const sample_url =
-  sql<Nullable>`CASE WHEN ${ne(table.sample_ext, '')} THEN CONCAT('https://cdn.donmai.us/sample/'`
-    .append(linkPrepend)
-    .append(sql`'sample-',${table.hash},'.',${table.sample_ext}) END`)
-    .as('sample_url');
-export const preview_url =
-  sql<Nullable>`CASE WHEN ${ne(table.preview_ext, '')} THEN CONCAT('https://cdn.donmai.us/720x720/'`
-    .append(linkPrepend)
-    .append(sql`${table.hash},'.',${table.preview_ext}) END`)
-    .as('preview_url');
-
-export const lqip =
-  sql<Nullable>`CASE WHEN ${isNotNull(table.lqip)} THEN CONCAT('data:image/webp;base64,', encode(${table.lqip}, 'base64')) END`.as(
-    'lqip'
-  );
-
-type Nullable = string | null;
+export const sample_url = Booru.sample_url.as('sample_url');
+export const preview_url = sql<Booru.Nullable>`COALESCE(`
+  .append(sql`MAX(CASE WHEN ${eq(img.type, 'PREVIEW')} THEN ${imagePath} END),`)
+  .append(sql`${Booru.preview_url}${sql.raw(')')}`)
+  .as('preview_url');

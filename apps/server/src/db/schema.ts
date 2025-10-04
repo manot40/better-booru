@@ -8,8 +8,10 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
 } from 'drizzle-orm/pg-core';
 import bytea from './bytea';
+import { relations } from 'drizzle-orm';
 
 export const ratingEnum = pgEnum('RATING', ['g', 's', 'q', 'e']);
 
@@ -45,9 +47,9 @@ export const postTable = pgTable(
     created_at: timestamp().notNull().defaultNow(),
   },
   (table) => [
+    index('idx_score').on(table.score),
     index('idx_posts_tag_ids').using('gin', table.tag_ids),
     index('idx_posts_meta_ids').using('gin', table.meta_ids),
-    index('idx_score').on(table.score),
   ]
 );
 
@@ -57,3 +59,28 @@ export const tagsTable = pgTable('tags', {
   name: text().unique().notNull(),
   category: smallint().notNull(),
 });
+
+export type DBImageData = (typeof postImagesTable)['$inferSelect'];
+export const postImagesTable = pgTable(
+  'posts_images',
+  {
+    id: text().primaryKey(),
+    postId: integer('post_id')
+      .notNull()
+      .references(() => postTable.id),
+    loc: text().notNull().$type<'CDN' | 'LOCAL'>(),
+    type: text().notNull().$type<'PREVIEW' | 'ORIGINAL'>(),
+    width: integer().notNull(),
+    height: integer().notNull(),
+    fileType: text('file_type').notNull(),
+    fileSize: integer('file_size').notNull(),
+    orphaned: boolean().notNull().default(false),
+    updatedAt: timestamp('updated_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [unique('posts_images_by_type').on(t.postId, t.type)]
+);
+
+export const postImages = relations(postTable, ({ many }) => ({
+  images: many(postImagesTable),
+}));

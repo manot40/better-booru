@@ -10,7 +10,7 @@ import { random, isMetaTag } from 'utils/common';
 import SQLiteStore, { type CacheResult } from 'lib/cache/sqlite';
 
 import { log } from 'plugins/logger';
-import { addTask } from 'plugins/ipx/lqip-worker';
+import { addTask } from 'plugins/images/lqip-worker';
 
 const pendingStore = new SQLiteStore('.data/pending_scrap.db');
 
