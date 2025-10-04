@@ -75,8 +75,8 @@ declare const app: Elysia<
     };
     store: {
       cron: Record<'scrap', import('croner').Cron> &
-        Record<'lqip_worker', import('croner').Cron> &
-        Record<'ipx_cleanup_worker', import('croner').Cron>;
+        Record<'images_worker', import('croner').Cron> &
+        Record<'images_cleanup_worker', import('croner').Cron>;
       beforeTime: bigint;
       cacheTTL: number | undefined;
     };

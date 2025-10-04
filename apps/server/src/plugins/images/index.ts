@@ -4,34 +4,31 @@ import { cron, Patterns } from '@elysiajs/cron';
 
 import { db } from 'db';
 
-import sharp from 'sharp';
-import { S3_ENABLED } from 'utils/s3';
-
 import * as BooruUrl from 'lib/query/helpers/booru-url.builder';
 
-import { run as lqipWorker } from './lqip-worker';
+import { run as imagesWorker } from './images-worker';
 import { run as cleanupWorker } from './cleanup-worker';
 
 import { getCache, setCache } from './cache';
-import { Const, getHash, reduceSize } from './helpers';
+import { Const, getHash, processImage, reduceSize } from './helpers';
 
 export const images = new Elysia()
   .use(
     cron({
-      run: lqipWorker,
-      name: 'lqip_worker',
+      run: imagesWorker,
+      name: 'images_worker',
       pattern: Patterns.EVERY_30_MINUTES,
     })
   )
   .use(
     cron({
       run: cleanupWorker,
-      name: 'ipx_cleanup_worker',
+      name: 'images_cleanup_worker',
       pattern: Patterns.EVERY_WEEK,
     })
   )
   .get('/images/preview/:hash', async ({ set, params, status }) => {
-    const path = join(process.cwd(), '.cache/ipx', params.hash);
+    const path = join(Const.CACHE_DIR, params.hash);
     const isExists = await Bun.file(path).exists();
 
     if (isExists) {
@@ -82,12 +79,11 @@ export const images = new Elysia()
       const reduced = reduceSize(post);
       if (!reduced) return status(400, 'Not an image');
 
-      const [src, w, h] = reduced;
-      const mods = { f: 'webp', w: w.toString(), h: h.toString() };
+      const [src, width, height] = reduced;
+      const mods = { f: 'webp', w: width.toString(), h: height.toString() };
 
       const hash = getHash(src, mods);
       const cached = await getCache(hash);
-
       const setHeaders = (type: string, size: number) => {
         set.headers['content-type'] = `image/${type}`;
         set.headers['cache-control'] = `public, max-age=${maxAge}`;
@@ -104,39 +100,19 @@ export const images = new Elysia()
         return cached.data;
       }
 
-      const res = await fetch(src);
+      const result = await processImage({ src, width, height, quality: +query.q });
 
-      if (!res.ok) {
-        if (res.status === 404) return status(404, 'Image Not found');
-        return status(500, `Failed to fetch image: ${res.status} ${res.statusText}`);
-      }
+      if ('error' in result) return status(result.error, result.message);
 
-      const quality = isNaN(+query.q) ? 80 : +query.q;
-      const theSharp = sharp(await res.bytes())
-        .resize({ width: w, height: h })
-        .webp({ quality });
+      const { data, meta } = result;
+      const cache = setCache(data, { id: hash, postId: post.id, ...meta });
 
-      const data = await theSharp.toBuffer();
-      const metadata = await theSharp.metadata();
-
-      const cache = setCache({
-        data,
-        id: hash,
-        postId: post.id,
-        loc: S3_ENABLED ? 'CDN' : 'LOCAL',
-        type: 'PREVIEW',
-        width: metadata.width,
-        height: metadata.height,
-        fileSize: data.byteLength,
-        fileType: 'webp',
-      });
-
-      if (S3_ENABLED) {
+      if (meta.loc === 'CDN') {
         const url = await cache;
         if (url instanceof URL) return redirect(url.toString(), 301);
       }
 
-      setHeaders(metadata.format, data.byteLength);
+      setHeaders(meta.fileType, data.byteLength);
 
       return data;
     } catch (e) {

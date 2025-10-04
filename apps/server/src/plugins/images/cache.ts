@@ -3,15 +3,12 @@ import { db, $s } from 'db';
 
 import { s3, S3_ENABLED } from 'utils/s3';
 
-import { getFileHandler, CachePayload } from './helpers';
+import { getFileHandler } from './helpers';
 
 export const PREVIEW_PATH = 'images/preview';
 
-export async function setCache(payload: CachePayload) {
-  const { data, ...meta } = payload;
-
+export async function setCache(data: Buffer<ArrayBufferLike>, meta: CachePayload) {
   const writeMeta = () => db.insert($s.postImagesTable).values(meta);
-
   if (S3_ENABLED) {
     const file = s3.file(`${PREVIEW_PATH}/${meta.id}`);
     await file.write(data, { acl: 'public-read', type: `image/${meta.fileType}` }).then(writeMeta);
@@ -48,3 +45,5 @@ export async function getCache(hash: string) {
 
   return { data, meta };
 }
+
+export type CachePayload = typeof $s.postImagesTable.$inferInsert;

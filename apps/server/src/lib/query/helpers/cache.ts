@@ -1,4 +1,4 @@
-import { addTask } from 'plugins/images/lqip-worker';
+import { addTask } from 'plugins/images/images-worker';
 
 const S3_URL = Bun.env.S3_PUBLIC_ENDPOINT ? new URL(Bun.env.S3_PUBLIC_ENDPOINT) : null;
 const BASE_URL = Bun.env.BASE_URL ? new URL(Bun.env.BASE_URL) : null;

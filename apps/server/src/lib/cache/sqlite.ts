@@ -48,11 +48,12 @@ export class SQLiteStore implements CacheStore<string, string> {
     return this.op.getAll.all().map((row) => <[string, string]>[row.key, row.value]);
   }
 
-  set(k: string, v: string, ttl = null as number | null): void {
+  set(k: string, v: string, ttl?: number, replace = true): void {
     const value = Array.isArray(v) || typeof v == 'object' ? JSON.stringify(v) : `${v}`;
     const expires = ttl ? Math.round(Date.now() / 1000 + ttl) : null;
 
-    this.op.upsert.run(k, value, expires);
+    if (replace) this.op.upsert.run(k, value, expires);
+    else if (!this.has(k)) this.op.insert.run(k, value, expires);
   }
 
   pop(): [string, string] | undefined {
@@ -85,6 +86,9 @@ const createStatements = (db: Database): StatementMap => ({
   upsert: db.prepare<CacheResult, [string, string, number | null]>(
     'INSERT OR REPLACE INTO cache (key, value, expires) VALUES (?1, ?2, ?3)'
   ),
+  insert: db.prepare<CacheResult, [string, string, number | null]>(
+    'INSERT INTO cache (key, value, expires) VALUES (?1, ?2, ?3)'
+  ),
   delete: db.prepare<CacheResult, [string]>('DELETE FROM cache WHERE key = ?'),
   getAll: db.prepare<CacheResult, []>('SELECT * FROM cache ORDER BY ROWID ASC'),
 });
@@ -94,6 +98,7 @@ type StatementMap = {
   check: Statement<1, [string]>;
   query: Statement<CacheResult, [string]>;
   upsert: Statement<CacheResult, [string, string, number | null]>;
+  insert: Statement<CacheResult, [string, string, number | null]>;
   delete: Statement<CacheResult, [string]>;
   getAll: Statement<CacheResult, []>;
 };

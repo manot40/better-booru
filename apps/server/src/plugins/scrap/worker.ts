@@ -10,12 +10,13 @@ import { random, isMetaTag } from 'utils/common';
 import SQLiteStore, { type CacheResult } from 'lib/cache/sqlite';
 
 import { log } from 'plugins/logger';
-import { addTask } from 'plugins/images/lqip-worker';
+import { reduceSize } from 'plugins/images/helpers';
+import { addTask, type TaskPayload } from 'plugins/images/images-worker';
 
 const pendingStore = new SQLiteStore('.data/pending_scrap.db');
 
 export async function run(store_: unknown) {
-  const { lqip_worker } = (store_ as CronStore)?.cron || {};
+  const { images_worker } = (store_ as CronStore)?.cron || {};
   const state = { last: (await findFirst.execute())?.id || 0, isEnd: false };
 
   while (!state.isEnd) {
@@ -23,8 +24,8 @@ export async function run(store_: unknown) {
     await new Promise<void>((res) => setTimeout(() => scrap(state).then(res), delay));
   }
 
-  if (lqip_worker && !lqip_worker.isBusy()) {
-    lqip_worker.trigger();
+  if (images_worker && !images_worker.isBusy()) {
+    images_worker.trigger();
   }
 
   const pendings = pendingStore.db
@@ -80,7 +81,7 @@ async function scrap(state: State): Promise<void> {
 async function execute(inputData: Payload[]) {
   await db.transaction(async (tx) => {
     const data: (typeof $s.postTable.$inferInsert)[] = [];
-    const lqipTasks: Parameters<typeof addTask>[] = [];
+    const imagesTask: (TaskPayload | Parameters<typeof addTask>)[] = [];
 
     for (let i = 0; i < inputData.length; i++) {
       const { tags: t, pending, ...rest } = inputData[i];
@@ -166,7 +167,25 @@ async function execute(inputData: Payload[]) {
       }
 
       data.push({ ...rest, tag_ids, meta_ids });
-      lqipTasks.push([rest.sample_url || rest.file_url, rest.hash]);
+
+      const reduced = reduceSize({
+        width: rest.width,
+        height: rest.height,
+        file_url: rest.file_url ?? null,
+        sample_url: rest.sample_url,
+        sample_width: rest.sample_width ?? null,
+        sample_height: rest.sample_height ?? null,
+        preview_url: rest.preview_url ?? null,
+        preview_width: rest.preview_width || null,
+        preview_height: rest.preview_height || null,
+      });
+
+      if (reduced) {
+        const [src, width, height] = reduced;
+        imagesTask.push({ hash: rest.hash, src, width, height });
+      } else {
+        imagesTask.push([rest.hash, rest.preview_url || rest.sample_url || rest.file_url]);
+      }
     }
 
     await tx
@@ -179,7 +198,7 @@ async function execute(inputData: Payload[]) {
           meta_ids: sql.raw(`excluded.${$s.postTable.meta_ids.name}`),
         },
       })
-      .then(() => lqipTasks.forEach((t) => addTask(...t)));
+      .then(() => imagesTask.forEach((t) => (Array.isArray(t) ? addTask(...t) : addTask(t))));
   });
 }
 
@@ -231,7 +250,12 @@ type CronStore = Partial<Pick<Setup['store'], 'cron'>>;
 type TagInsertMap = Record<'tagsInsert' | 'metaInsert', TagInsert[]>;
 type ExistingTagsMap = Record<'existingTags' | 'existingMeta', DBTagData[]>;
 
-export type Payload = { sample_url?: string | null; file_url: string; pending?: boolean } & Omit<
+export type Payload = {
+  pending?: boolean;
+  file_url: string;
+  sample_url?: string | null;
+  preview_url?: string | null;
+} & Omit<
   typeof $s.postTable.$inferInsert & { tags: Record<0 | 1 | 3 | 4 | 5, string[]> },
   'tag_ids' | 'meta_ids'
 >;

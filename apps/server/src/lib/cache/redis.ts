@@ -45,11 +45,13 @@ class RedisStore implements CacheStore<string, string> {
     return Object.entries(entries);
   }
 
-  async set(k: string, v: string, ttl?: number): Promise<void> {
+  async set(k: string, v: string, ttl?: number, replace = true): Promise<void> {
     if (!this.connected) await this.waitConnection();
 
     const exist = await this.has(k);
-    await this.redis.send('HSET', [this.cacheKey, k, v]).then(() => {
+    const action = !exist || replace ? this.redis.send('HSET', [this.cacheKey, k, v]) : Promise.resolve();
+
+    await action.then(() => {
       if (!exist) this.redis.rpush(this.queueKey, k);
     });
 

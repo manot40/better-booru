@@ -1,9 +1,13 @@
-import { db, $s } from 'db';
-import { s3 } from 'utils/s3';
-import { Const } from './helpers';
 import { eq } from 'drizzle-orm';
+import { db, $s } from 'db';
+
+import { Const } from './helpers';
+
+import { s3, S3_ENABLED } from 'utils/s3';
 
 export async function run() {
+  if (!S3_ENABLED) return;
+
   let list: Bun.S3ListObjectsResponse | undefined;
 
   const cached = await db.query.postImagesTable.findMany({
