@@ -7,6 +7,7 @@ import { S3_ENABLED } from 'utils/s3';
 
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
 const CACHE_DIR = join(process.cwd(), '.cache/ipx');
+const PREVIEW_PATH = 'images/preview' as const;
 const MODIFIER_SEP = /[&,]/g;
 const MODIFIER_VAL_SEP = /[:=_]/;
 const ALLOWED_HOSTS = ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'];
@@ -14,6 +15,7 @@ const ALLOWED_HOSTS = ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.
 export const Const = {
   MAX_AGE,
   CACHE_DIR,
+  PREVIEW_PATH,
   ALLOWED_HOSTS,
   MODIFIER_SEP,
   MODIFIER_VAL_SEP,

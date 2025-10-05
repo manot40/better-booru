@@ -1,39 +1,32 @@
+import { join } from 'node:path';
+
 import { eq } from 'drizzle-orm';
 import { db, $s } from 'db';
 
 import { Const } from './helpers';
-
 import { s3, S3_ENABLED } from 'utils/s3';
 
+const imgTbl = $s.postImagesTable;
+
 export async function run() {
-  if (!S3_ENABLED) return;
-
-  let list: Bun.S3ListObjectsResponse | undefined;
-
   const cached = await db.query.postImagesTable.findMany({
     columns: { id: true },
-    where: (t, { lt }) => lt(t.createdAt, new Date(Date.now() - Const.MAX_AGE * 1000)),
+    where: (t, { and, eq, lt }) =>
+      and(
+        lt(t.createdAt, new Date(Date.now() - Const.MAX_AGE * 1000)),
+        eq(t.orphaned, false),
+        eq(t.type, 'PREVIEW')
+      ),
   });
 
-  const expired = new Set(cached.map((i) => i.id));
-
-  const s3Opts: Bun.S3ListObjectsOptions = { prefix: 'images/preview/', fetchOwner: false };
-
-  while (!list || list.contents?.length) {
-    if (!list) list = await s3.list(s3Opts);
-    else list = await s3.list({ ...s3Opts, startAfter: list.contents?.at(-1)?.key });
-
-    const contents = list.contents || [];
-
-    if (contents.length === 0) break;
-
-    for (const item of contents) {
-      const hash = item.key.split('/').pop()!;
-      if (expired.has(hash)) {
-        await s3.delete(item.key);
-        await db.update($s.postImagesTable).set({ orphaned: true }).where(eq($s.postImagesTable.id, hash));
-        console.info('Deleted unused cache image:', hash);
-      }
+  for (const cache of cached) {
+    if (S3_ENABLED) {
+      await s3.delete(`${Const.PREVIEW_PATH}/${cache.id}`).catch(() => void 0);
+    } else {
+      const file = Bun.file(join(Const.CACHE_DIR, cache.id));
+      if (await file.exists()) await file.delete();
     }
+
+    await db.update(imgTbl).set({ orphaned: true }).where(eq(imgTbl.id, cache.id));
   }
 }

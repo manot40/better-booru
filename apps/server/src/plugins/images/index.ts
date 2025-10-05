@@ -27,6 +27,16 @@ export const images = new Elysia()
       pattern: Patterns.EVERY_WEEK,
     })
   )
+  .get('/images/cleanup', async ({ headers, store, query, status }) => {
+    const token = query.token || headers['authorization'];
+    if (token !== process.env.DANBOORU_API_KEY) return status(401, 'Unauthorized');
+
+    const cron = store.cron.images_cleanup_worker;
+    if (cron.isBusy()) return 'Cleanup Already Running';
+
+    cron.trigger();
+    return 'Cleanup Started';
+  })
   .get('/images/preview/:hash', async ({ set, params, status }) => {
     const path = join(Const.CACHE_DIR, params.hash);
     const isExists = await Bun.file(path).exists();
