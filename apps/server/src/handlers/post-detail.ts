@@ -4,7 +4,7 @@ import type { DanbooruResponse, GelbooruResponse, Provider } from '@boorugator/s
 
 import { type InferHandler, type Static, t } from 'elysia';
 
-import * as ASSET_URL from 'lib/query/helpers/file-url-builder';
+import * as ASSET_URL from 'lib/query/helpers/url-builder/processed';
 
 import { db } from 'db';
 import { eq, getTableColumns } from 'drizzle-orm';

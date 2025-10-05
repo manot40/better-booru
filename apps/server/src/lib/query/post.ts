@@ -7,7 +7,7 @@ import SQLiteStore from 'lib/cache/sqlite';
 import { log } from 'plugins/logger';
 import { waitForWorker } from 'utils/worker';
 
-import * as fileUrl from './helpers/file-url-builder';
+import * as fileUrl from './helpers/url-builder/processed';
 import { getPreview } from './helpers/get-preview';
 import { tagsToQuery } from './helpers/tags-handler';
 import { populatePreviewCache } from './helpers/cache';

@@ -1,3 +1,4 @@
+import { Const } from 'plugins/images/helpers';
 import { addTask } from 'plugins/images/images-worker';
 
 const S3_URL = Bun.env.S3_PUBLIC_ENDPOINT ? new URL(Bun.env.S3_PUBLIC_ENDPOINT) : null;
@@ -9,6 +10,11 @@ export function populatePreviewCache(post: PostData) {
     addTask(preview?.toString() || post.sample_url || post.file_url, post.hash);
   } else {
     post.lqip = post.lqip.replaceAll('\n', '');
+  }
+
+  if (Const.ENCODER_URL) {
+    const fileUrl = post.file_url.split('/').pop();
+    post.file_url = new URL(`/encode/${fileUrl}`, Const.ENCODER_URL).toString();
   }
 
   const cacheRegex = new RegExp(`^https?://(${S3_URL?.hostname || '_'}|${BASE_URL?.hostname || '_'})`);

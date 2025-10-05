@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm';
 
 import { postImagesTable as img } from 'db/schema';
 
-import * as Booru from './booru-url.builder';
+import * as Booru from './base';
 
 const S3_URL = Bun.env.S3_PUBLIC_ENDPOINT || '';
 const BASE_URL = Bun.env.BASE_URL || '';

@@ -7,6 +7,7 @@ import { S3_ENABLED } from 'utils/s3';
 
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
 const CACHE_DIR = join(process.cwd(), '.cache/ipx');
+const ENCODER_URL = Bun.env.IPX_ENCODER_URL;
 const PREVIEW_PATH = 'images/preview' as const;
 const MODIFIER_SEP = /[&,]/g;
 const MODIFIER_VAL_SEP = /[:=_]/;
@@ -15,6 +16,7 @@ const ALLOWED_HOSTS = ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.
 export const Const = {
   MAX_AGE,
   CACHE_DIR,
+  ENCODER_URL,
   PREVIEW_PATH,
   ALLOWED_HOSTS,
   MODIFIER_SEP,
@@ -25,7 +27,9 @@ export const getHash = (url: string, modifiers: Record<'f' | 'w' | 'h', string>)
   Bun.MD5.hash(JSON.stringify({ id: url, ...modifiers }), 'hex');
 
 export function getFileHandler(hash: string) {
-  const path = join(CACHE_DIR, hash);
+  const a = hash.slice(0, 2);
+  const b = hash.slice(2, 4);
+  const path = join(CACHE_DIR, a, b, hash);
   return Bun.file(Bun.pathToFileURL(path));
 }
 

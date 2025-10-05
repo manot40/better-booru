@@ -1,16 +1,14 @@
-import { join } from 'node:path';
-import { Elysia, file } from 'elysia';
+import { Elysia } from 'elysia';
 import { cron, Patterns } from '@elysiajs/cron';
 
 import { db } from 'db';
-
-import * as BooruUrl from 'lib/query/helpers/booru-url.builder';
+import * as FileUrl from 'lib/query/helpers/url-builder/base';
 
 import { run as imagesWorker } from './images-worker';
 import { run as cleanupWorker } from './cleanup-worker';
 
 import { getCache, setCache } from './cache';
-import { Const, getHash, processImage, reduceSize } from './helpers';
+import { Const, getFileHandler, getHash, processImage, reduceSize } from './helpers';
 
 export const images = new Elysia()
   .use(
@@ -38,13 +36,13 @@ export const images = new Elysia()
     return 'Cleanup Started';
   })
   .get('/images/preview/:hash', async ({ set, params, status }) => {
-    const path = join(Const.CACHE_DIR, params.hash);
-    const isExists = await Bun.file(path).exists();
+    const file = getFileHandler(params.hash);
+    const isExists = await file.exists();
 
     if (isExists) {
       set.headers['content-type'] = 'image/webp';
       set.headers['cache-control'] = `public, max-age=${Const.MAX_AGE}`;
-      return file(path);
+      return file;
     }
 
     return status(404);
@@ -79,9 +77,9 @@ export const images = new Elysia()
         where: (t, { eq }) => eq(t.hash, target),
         columns: { tag_ids: false, meta_ids: false },
         extras: {
-          file_url: BooruUrl.file_url.as('file_url'),
-          sample_url: BooruUrl.sample_url.as('sample_url'),
-          preview_url: BooruUrl.preview_url.as('preview_url'),
+          file_url: FileUrl.file_url.as('file_url'),
+          sample_url: FileUrl.sample_url.as('sample_url'),
+          preview_url: FileUrl.preview_url.as('preview_url'),
         },
       });
       if (!post) return status(404, 'Post not found');
