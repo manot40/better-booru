@@ -13,6 +13,9 @@ const MODIFIER_SEP = /[&,]/g;
 const MODIFIER_VAL_SEP = /[:=_]/;
 const ALLOWED_HOSTS = ['img2.gelbooru.com', 'img3.gelbooru.com', 'img4.gelbooru.com', 'cdn.donmai.us'];
 
+if (S3_ENABLED && Bun.env.S3_PUBLIC_ENDPOINT)
+  ALLOWED_HOSTS.push(new URL(Bun.env.S3_PUBLIC_ENDPOINT).hostname);
+
 export const Const = {
   MAX_AGE,
   CACHE_DIR,

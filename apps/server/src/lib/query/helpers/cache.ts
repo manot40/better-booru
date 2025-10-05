@@ -6,7 +6,8 @@ const BASE_URL = Bun.env.BASE_URL ? new URL(Bun.env.BASE_URL) : null;
 
 export function populatePreviewCache(post: PostData) {
   if (!post.lqip) {
-    const preview = post.preview_url?.startsWith('http') ? new URL(post.preview_url) : null;
+    const pre = post.preview_url;
+    const preview = pre && Const.ALLOWED_HOSTS.includes(pre) ? new URL(pre) : null;
     addTask(preview?.toString() || post.sample_url || post.file_url, post.hash);
   } else {
     post.lqip = post.lqip.replaceAll('\n', '');
