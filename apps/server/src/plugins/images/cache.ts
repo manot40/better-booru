@@ -11,7 +11,10 @@ export async function setCache(data: Buffer<ArrayBufferLike>, meta: CachePayload
     db
       .insert(imgTbl)
       .values(meta)
-      .onConflictDoUpdate({ target: imgTbl.id, set: { orphaned: false } });
+      .onConflictDoUpdate({
+        set: { id: meta.id, orphaned: false, updatedAt: new Date() },
+        target: [imgTbl.postId, imgTbl.type],
+      });
 
   if (S3_ENABLED) {
     const file = s3.file(`${Const.PREVIEW_PATH}/${meta.id}`);
@@ -24,7 +27,7 @@ export async function setCache(data: Buffer<ArrayBufferLike>, meta: CachePayload
 
 export async function getCache(hash: string) {
   const meta = await db.query.postImagesTable.findFirst({
-    where: (t, { eq }) => eq(t.id, hash),
+    where: (t, { and, eq }) => and(eq(t.id, hash), eq(t.orphaned, false)),
   });
 
   if (!meta) return;
@@ -42,7 +45,8 @@ export async function getCache(hash: string) {
   const fileExists = await fileHandler.exists();
 
   if (!fileExists) {
-    await db.delete(imgTbl).where(eq(imgTbl.id, hash));
+    await db.update(imgTbl).set({ orphaned: true }).where(eq(imgTbl.id, hash));
+    return;
   }
 
   const data = await fileHandler.arrayBuffer();

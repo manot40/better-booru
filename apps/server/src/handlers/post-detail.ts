@@ -8,7 +8,7 @@ import * as ASSET_URL from 'lib/query/helpers/url-builder/processed';
 
 import { db } from 'db';
 import { eq, getTableColumns } from 'drizzle-orm';
-import { postTable, postImagesTable } from 'db/schema';
+import { postTable, postImagesTable as imgTbl } from 'db/schema';
 
 import { mapDanbooruData } from 'utils/danbooru';
 import { processBooruData } from 'utils/common';
@@ -45,7 +45,7 @@ export const handler: Handler = async ({ params: { id }, userConfig, headers, st
         preview_height: getPreview('height'),
       })
       .from(postTable)
-      .leftJoin(postImagesTable, eq(postTable.id, postImagesTable.postId))
+      .leftJoin(imgTbl, eq(postTable.id, imgTbl.postId))
       .where(eq(postTable.id, +id))
       .groupBy(postTable.id)
       .limit(1);

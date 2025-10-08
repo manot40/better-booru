@@ -16,6 +16,7 @@ import { db, $s } from 'db';
 import { and, asc, desc, eq, getTableColumns, gt, inArray, lt, sql } from 'drizzle-orm';
 
 const SAFE_OFFSET = 1000000;
+const imgTbl = $s.postImagesTable;
 
 export async function queryPosts(qOpts: QueryOptions) {
   const opts = {
@@ -68,7 +69,7 @@ export async function queryPosts(qOpts: QueryOptions) {
       ...fileUrl,
     })
     .from($s.postTable)
-    .leftJoin($s.postImagesTable, eq($s.postImagesTable.postId, $s.postTable.id))
+    .leftJoin(imgTbl, and(eq(imgTbl.postId, $s.postTable.id), eq(imgTbl.orphaned, false)))
     .where(and(...cursor, ...filters))
     .groupBy($s.postTable.id)
     .orderBy(order)
