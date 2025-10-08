@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { S3_ENABLED } from 'utils/s3';
 
 const MAX_AGE = Bun.env.IPX_MAX_AGE ? +Bun.env.IPX_MAX_AGE : 60 * 60 * 24 * 7;
-const CACHE_DIR = join(process.cwd(), '.cache/ipx');
+const CACHE_DIR = join(process.cwd(), '.cache/preview_images');
 const ENCODER_URL = Bun.env.IPX_ENCODER_URL;
 const PREVIEW_PATH = 'images/preview' as const;
 const MODIFIER_SEP = /[&,]/g;

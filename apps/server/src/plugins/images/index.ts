@@ -25,16 +25,34 @@ export const images = new Elysia()
       pattern: Patterns.EVERY_WEEK,
     })
   )
-  .get('/images/cleanup', async ({ headers, store, query, status }) => {
-    const token = query.token || headers['authorization'];
-    if (token !== process.env.DANBOORU_API_KEY) return status(401, 'Unauthorized');
+  .group('/images/workers', (elysia) =>
+    elysia
+      .onBeforeHandle({ as: 'local' }, ({ headers, query, status }) => {
+        const token = query.token || headers['authorization'];
+        if (token !== process.env.DANBOORU_API_KEY) return status(401, 'Unauthorized');
+      })
+      .get('/cleanup', async ({ store }) => {
+        const cron = store.cron.images_cleanup_worker;
 
-    const cron = store.cron.images_cleanup_worker;
-    if (cron.isBusy()) return 'Cleanup Already Running';
+        if (!cron.isBusy()) {
+          cron.trigger();
+          return 'Cleanup Started';
+        }
 
-    cron.trigger();
-    return 'Cleanup Started';
-  })
+        return 'Already Running';
+      })
+      .get('/process', async ({ store }) => {
+        const cron = store.cron.images_worker;
+
+        if (!cron.isBusy()) {
+          cron.trigger();
+          return 'Image Processing Started';
+        }
+
+        return 'Already Running';
+      })
+  )
+
   .get('/images/preview/:hash', async ({ set, params, status }) => {
     const file = getFileHandler(params.hash);
     const isExists = await file.exists();
