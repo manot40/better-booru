@@ -46,6 +46,10 @@ export class MemoryStore<T = any> implements CacheStore<T, Key> {
     for (const v of this.timers.values()) clearTimeout(v);
     this.timers.clear();
   }
+
+  size(): number {
+    return this.data.size;
+  }
 }
 
 export default MemoryStore;

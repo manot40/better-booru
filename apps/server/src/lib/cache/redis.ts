@@ -79,6 +79,11 @@ class RedisStore implements CacheStore<string, string> {
     if (!this.connected) await this.waitConnection();
     await this.redis.send('DEL', [this.cacheKey]);
   }
+
+  async size(): Promise<number> {
+    if (!this.connected) await this.waitConnection();
+    return await this.redis.hlen(this.cacheKey);
+  }
 }
 
 export default RedisStore;

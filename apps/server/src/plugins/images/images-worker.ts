@@ -19,7 +19,10 @@ const imageQueue = Bun.env.REDIS_URL ? new RedisStore(STORE_KEY) : new SQLiteSto
 
 /** @internal */
 async function run() {
-  log('INFO', '[IMAGE] Processing tasks');
+  const size = await imageQueue.size();
+  if (size === 0) return;
+
+  log('INFO', `[IMAGE] Processing ${size} tasks`);
 
   let task = await imageQueue.pop();
   let taskCount = 0;

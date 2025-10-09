@@ -72,6 +72,10 @@ export class SQLiteStore implements CacheStore<string, string> {
     return this.op.delete.run(k).changes;
   }
 
+  size(): number {
+    return this.op.getCount.get()?.count ?? 0;
+  }
+
   vacuum(): void {
     try {
       this.db.run('VACUUM');
@@ -91,6 +95,7 @@ const createStatements = (db: Database): StatementMap => ({
   ),
   delete: db.prepare<CacheResult, [string]>('DELETE FROM cache WHERE key = ?'),
   getAll: db.prepare<CacheResult, []>('SELECT * FROM cache ORDER BY ROWID ASC'),
+  getCount: db.prepare<{ count: number }, []>('SELECT COUNT(ROWID) as count FROM cache'),
 });
 
 type StatementMap = {
@@ -101,6 +106,7 @@ type StatementMap = {
   insert: Statement<CacheResult, [string, string, number | null]>;
   delete: Statement<CacheResult, [string]>;
   getAll: Statement<CacheResult, []>;
+  getCount: Statement<{ count: number }, []>;
 };
 
 export default SQLiteStore;

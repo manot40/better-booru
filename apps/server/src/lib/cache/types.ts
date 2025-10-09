@@ -6,6 +6,7 @@ export interface CacheStore<T = any, K extends Key = Key> {
   set(k: K, v: T, ttl?: number): void;
   pop(): MaybePromise<[K, T] | undefined>;
   clear(): void;
+  size(): MaybePromise<number>;
   delete(k: K): MaybePromise<boolean | number>;
   getEntries(): MaybePromise<[K, T][]>;
 }
