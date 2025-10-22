@@ -93,8 +93,7 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
 
     const init = <Query<T>>UrlQueryStore.processQuery({ page: 1, ...initial, ...route.query });
     super(init);
-    // @ts-ignore
-    this.router = router;
+    this.router = router as Router;
 
     const routeListener = useThrottleFn<NavigationHookAfter>((to, from) => {
       if (to.query === from.query) return;
@@ -109,7 +108,6 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
       else super.set(<Query<T>>UrlQueryStore.processQuery(to.query));
     }, 50);
 
-    // @ts-expect-error -- This would not cause any problem
     onUnmounted(router.afterEach(routeListener));
   }
 

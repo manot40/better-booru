@@ -18,7 +18,7 @@ const vLoaded: Directive<HTMLImageElement> = {
 </script>
 
 <template>
-  <NuxtLink :id="item.id" :to="{ query: $route.query, hash: `#${item.id}` }" class="block relative z-0">
+  <NuxtLink :id="`${item.id}`" :to="{ query: $route.query, hash: `#${item.id}` }" class="block relative z-0">
     <img
       v-loaded
       :src="item.preview_url"
