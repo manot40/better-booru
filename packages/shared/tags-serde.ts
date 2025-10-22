@@ -51,7 +51,7 @@ export function parseTags(input: string): ParseResult {
   }
 
   while (i < tokens.length) {
-    const sanitized = tokens[i].trim();
+    const sanitized = tokens[i]!.trim();
 
     if (sanitized) {
       const node = parseExpr(sanitized);

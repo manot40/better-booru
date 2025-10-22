@@ -1,5 +1,5 @@
 import type { CookieRef } from '#app';
-import type { RouteLocationNormalized as RouteLoc, Router } from 'vue-router';
+import type { NavigationHookAfter, Router } from 'vue-router';
 
 export const STORE_KEY = 'nav_history';
 
@@ -93,9 +93,10 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
 
     const init = <Query<T>>UrlQueryStore.processQuery({ page: 1, ...initial, ...route.query });
     super(init);
+    // @ts-ignore
     this.router = router;
 
-    const routeListener = useThrottleFn((to: RouteLoc, from: RouteLoc) => {
+    const routeListener = useThrottleFn<NavigationHookAfter>((to, from) => {
       if (to.query === from.query) return;
 
       if (to.path !== from.path) {
@@ -108,6 +109,7 @@ export class UrlQueryStore<T extends object> extends BaseStore<T> implements His
       else super.set(<Query<T>>UrlQueryStore.processQuery(to.query));
     }, 50);
 
+    // @ts-expect-error -- This would not cause any problem
     onUnmounted(router.afterEach(routeListener));
   }
 

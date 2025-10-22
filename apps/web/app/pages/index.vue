@@ -43,7 +43,7 @@ const { lightbox, controlVisible } = useLightbox(slideData, {
     });
   },
   onLoadError({ content: { data }, slide }) {
-    if (data.proxied) return;
+    if (data.proxied || !data.src) return;
     const src = `/images/${btoa(data.src)}`;
     Object.assign(slide.data, { src, proxied: true });
     slide.pswp.refreshSlideContent(slide.index);
