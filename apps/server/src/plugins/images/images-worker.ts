@@ -28,52 +28,51 @@ async function run() {
   let taskCount = 0;
   while (task) {
     const [hash, dataStr] = task;
-
-    const post = await db.query.postTable.findFirst({
-      where: (t, { eq }) => eq(t.hash, hash),
-    });
+    const post = await db.query.postTable
+      .findFirst({ where: (t, { eq }) => eq(t.hash, hash) })
+      .catch(() => void 0);
 
     if (!post) {
       task = await imageQueue.pop();
       continue;
     }
 
-    let imgData: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>;
-    if (dataStr.startsWith('http')) {
-      if (/.*(mp4|webm|zip)$/.test(dataStr)) {
-        task = await imageQueue.pop();
-        continue;
-      }
-
-      const res = await fetch(dataStr);
-      const isPict = res.headers.get('content-type')?.startsWith('image/');
-
-      if (!res.ok || !isPict) {
-        task = await imageQueue.pop();
-        continue;
-      }
-
-      imgData = await res.bytes();
-    } else {
-      const taskData = destr<TaskPayload>(dataStr);
-      const processed = await processImage(taskData);
-
-      if ('error' in processed) {
-        task = await imageQueue.pop();
-        continue;
-      }
-
-      const id = getHash(taskData.src, {
-        f: 'webp',
-        w: taskData.width.toString(),
-        h: taskData.height.toString(),
-      });
-
-      await setCache(processed.data, { id, postId: post.id, ...processed.meta });
-      imgData = processed.data;
-    }
-
     try {
+      let imgData: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>;
+      if (dataStr.startsWith('http')) {
+        if (/.*(mp4|webm|zip)$/.test(dataStr)) {
+          task = await imageQueue.pop();
+          continue;
+        }
+
+        const res = await fetch(dataStr);
+        const isPict = res.headers.get('content-type')?.startsWith('image/');
+
+        if (!res.ok || !isPict) {
+          task = await imageQueue.pop();
+          continue;
+        }
+
+        imgData = await res.bytes();
+      } else {
+        const taskData = destr<TaskPayload>(dataStr);
+        const processed = await processImage(taskData);
+
+        if ('error' in processed) {
+          task = await imageQueue.pop();
+          continue;
+        }
+
+        const id = getHash(taskData.src, {
+          f: 'webp',
+          w: taskData.width.toString(),
+          h: taskData.height.toString(),
+        });
+
+        await setCache(processed.data, { id, postId: post.id, ...processed.meta });
+        imgData = processed.data;
+      }
+
       const lqip = await getLQIP(imgData);
       await db
         .update($s.postTable)
