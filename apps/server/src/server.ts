@@ -18,7 +18,7 @@ const setup = new Elysia()
   .use(images)
   .use(userConfig)
   .use(logixlysia)
-  .use(staticPlugin({ alwaysStatic: true, prefix: '/' }))
+  .use(staticPlugin({ alwaysStatic: true, prefix: '/', indexHTML: false }))
   .use(caching({ matches: [/^\/api\/(post|autocomplete)/] }));
 
 const api = new Elysia({ prefix: '/api' })

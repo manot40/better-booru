@@ -90,6 +90,14 @@ async function run() {
   log('INFO', `[IMAGE] Processed: ${taskCount}`);
 }
 
+export async function checkAndFix() {
+  const post = await db.query.postTable
+    .findMany({
+      where: (t, { and, isNull }) => isNull(t.lqip),
+    })
+    .catch(() => null);
+}
+
 async function getLQIP(data: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>) {
   const pipeline = createSharp(data)
     .blur(2)

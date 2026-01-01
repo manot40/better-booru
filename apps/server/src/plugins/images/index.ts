@@ -51,6 +51,9 @@ export const images = new Elysia()
 
         return 'Already Running';
       })
+      .get('/check-and-fix', async ({ store }) => {
+        return 'Already Running';
+      })
   )
 
   .get('/images/preview/:hash', async ({ set, params, status }) => {

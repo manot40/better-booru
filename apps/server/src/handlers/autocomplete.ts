@@ -17,17 +17,17 @@ const autocompleteSchema = t.Object({
 });
 
 export const handler: Handler = async ({ query, userConfig }) => {
-  const { q, provider: qProvider } = query;
+  const { q, limit = 50, provider: qProvider } = query;
   const provider = qProvider || userConfig?.provider;
 
   if (provider === 'gelbooru') {
     const data = await $gelbooruFetch<GelAutocomplete[]>('/index.php', {
-      query: { page: 'autocomplete2', term: q, type: 'tag_query', limit: '10' },
+      query: { page: 'autocomplete2', term: q, type: 'tag_query', limit },
     });
     return data.map((d) => ({ ...d, category: booruCategory(d.category), post_count: +d.post_count }));
   } else {
     const data = await $danbooruFetch<Autocomplete[]>('/autocomplete.json', {
-      query: { limit: '20', version: '1', 'search[type]': 'tag_query', 'search[query]': q },
+      query: { limit, version: '1', 'search[type]': 'tag_query', 'search[query]': q },
     });
     return data;
   }
@@ -36,7 +36,11 @@ export const handler: Handler = async ({ query, userConfig }) => {
 type Schema = { query: typeof query.static; response: typeof response.static };
 type Handler = InferHandler<Setup, '/api/autocomplete', Schema>;
 
-const query = t.Object({ q: t.String(), provider: t.Optional(t.UnionEnum(['danbooru', 'gelbooru'])) });
+const query = t.Object({
+  q: t.String(),
+  limit: t.Optional(t.Number()),
+  provider: t.Optional(t.UnionEnum(['danbooru', 'gelbooru'])),
+});
 const response = t.Array(autocompleteSchema);
 export const schema = { query, response };
 
