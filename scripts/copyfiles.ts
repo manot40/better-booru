@@ -4,7 +4,7 @@ import { cpSync, existsSync, rmSync } from 'node:fs';
 import { S3_ENABLED, NUXT_DIR } from './common';
 
 const DIST_DIR = join(process.cwd(), 'dist');
-const MOD_PATH = join(process.cwd(), 'node_modules');
+const MOD_PATH = join(process.cwd(), 'node_modules/.bun');
 const ARTIFACTS = 'apps/web/.output/public/**/*';
 
 if (existsSync(DIST_DIR)) {
@@ -13,11 +13,11 @@ if (existsSync(DIST_DIR)) {
 
 /** Copy server build files */
 cpSync('./apps/server/dist', DIST_DIR, { recursive: true });
-const sharpGlob = new Bun.Glob('@img/sharp-*');
+const sharpGlob = new Bun.Glob('sharp@*/node_modules/@img/sharp-*');
 for await (const mod of sharpGlob.scan({ cwd: MOD_PATH, onlyFiles: false, followSymlinks: true })) {
-  const pkg = mod.split('/').pop()!;
+  const pkg = mod.split(/(\\|\/)/).pop()!;
   const src = join(MOD_PATH, mod);
-  const dest = join(DIST_DIR, 'node_modules', pkg);
+  const dest = join(DIST_DIR, 'node_modules/@img', pkg);
   cpSync(src, dest, { recursive: true, dereference: true });
 }
 
