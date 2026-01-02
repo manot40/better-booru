@@ -9,6 +9,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+  WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
 
 jobs:
   build-and-publish:
@@ -43,6 +45,9 @@ jobs:
         uses: docker/metadata-action@v5.5.1
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -53,3 +58,24 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           provenance: false
+
+  notify-webhook:
+    runs-on: ubuntu-latest
+
+    needs: [build-and-publish]
+
+    steps:
+      - id: checksecrets
+        name: Check Required Secrets
+        run: |
+          if [[ -z "$WEBHOOK_URL" || -z "$WEBHOOK_SECRET" ]]; then
+            echo "SKIP=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Deploy Server
+        if: (steps.checksecrets.outputs.SKIP != 'true')
+        run: |
+          curl -X POST "$WEBHOOK_URL/pull" \
+            -H "Authorization: Bearer $WEBHOOK_SECRET" && \
+          curl -X POST "$WEBHOOK_URL/redeploy" \
+            -H "Authorization: Bearer $WEBHOOK_SECRET"
