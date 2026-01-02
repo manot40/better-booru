@@ -13,7 +13,7 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  compatibilityDate: '2025-09-25',
+  compatibilityDate: '2025-12-25',
 
   vite: {
     plugins: [tailwindcss()],
