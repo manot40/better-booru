@@ -1,6 +1,5 @@
 .git
 
-**/dist
 **/.env*
 **/.nuxt
 **/.data

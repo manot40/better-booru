@@ -8,7 +8,9 @@
   "scripts": {
     "all": "bun --bun --filter '*'",
     "all:node": "bun --filter '*'",
-    "copyfiles": "bun scripts/copyfiles.ts && bun run scripts/upload-to-cdn.ts"
+    "copy:bin": "bun scripts/copy-binaries.ts",
+    "copy:dist": "bun scripts/copy-dist.ts",
+    "postbuild": "bun copy:dist && bun copy:bin && bun scripts/upload-to-cdn.ts"
   },
   "workspaces": [
     "apps/*",

@@ -5,9 +5,7 @@ WORKDIR /usr/app
 COPY . .
 
 RUN bun ci
-RUN --mount=type=secret,id=build_env,target=/usr/app/.env \
-    bun --env-file=./.env all build && \
-    bun run postbuild
+RUN bun copy:bin
 
 # Runtime image
 FROM base AS runtime
