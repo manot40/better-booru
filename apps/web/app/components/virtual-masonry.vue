@@ -76,10 +76,11 @@ defineExpose({ virtualizer, el: root });
         :key="row.index"
         :data-index="i"
         :data-content-index="row.index"
-        class="absolute top-0 transition-all duration-300"
+        class="grid absolute top-0 transition-all duration-300"
         :style="{
           left: `calc(${row.lane * width}% + ${row.lane * (gap / lanes)}px)`,
           width: `calc(${width}% - ${lanes == 1 ? 0 : gap}px)`,
+          minHeight: `${row.size}px`,
           transform: `translate3d(0,${row.start}px,0)`,
         }">
         <slot :row :virtualizer />
