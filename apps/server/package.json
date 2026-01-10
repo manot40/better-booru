@@ -27,9 +27,9 @@
     "destr": "^2.x",
     "drizzle-kit": "0.31.8",
     "drizzle-orm": "0.45.1",
-    "elysia": "1.4.19",
+    "elysia": "1.4.21",
     "ofetch": "1.5.1",
-    "postgres": "3.4.7",
-    "sharp": "0.34.4"
+    "postgres": "3.4.8",
+    "sharp": "0.34.5"
   }
 }
