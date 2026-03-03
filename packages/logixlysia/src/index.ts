@@ -19,10 +19,12 @@ export default function createLogixlysia(options?: Options) {
     .onRequest(({ store }) => {
       store.beforeTime = process.hrtime.bigint();
     })
-    .onAfterHandle({ as: 'global' }, ({ request, set, store, logRequest }) => {
+    .onAfterHandle({ as: 'global' }, ({ path, request, set, store, logRequest }) => {
       const status = getStatusCode(set.status || 200);
       const data = { status, message: String(set.headers?.['x-message'] || '') };
-      logRequest({ data, level: 'INFO', store, request });
+
+      if (request.method === 'HEAD' && path === '/') return;
+      else logRequest({ data, level: 'INFO', store, request });
     })
     .onError({ as: 'global' }, ({ request, error, set, store }) => {
       const status = getStatusCode(set.status || 500);
