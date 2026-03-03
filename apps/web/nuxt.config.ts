@@ -1,4 +1,4 @@
-import tailwindcss from '@tailwindcss/vite';
+import tailwind from '@tailwindcss/vite';
 
 const CDN_URL = process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT;
 
@@ -6,17 +6,26 @@ const CDN_URL = process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT;
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  css: ['~/assets/css/main.css'],
+
   app: {
     cdnURL: CDN_URL || undefined,
     buildAssetsDir: 'web_assets',
   },
 
-  css: ['~/assets/css/main.css'],
+  compatibilityDate: '2026-02-01',
 
-  compatibilityDate: '2025-12-25',
+  future: {
+    compatibilityVersion: 5,
+  },
+
+  experimental: {
+    inlineRouteRules: true,
+    nitroAutoImports: true,
+  },
 
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwind()],
   },
 
   nitro: {

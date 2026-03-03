@@ -18,16 +18,16 @@
     "prettier:check": "prettier -c ."
   },
   "devDependencies": {
+    "@bogeychan/elysia-etag": "^0.1.0",
     "@boorugator/logixlysia": "workspace:*",
     "@boorugator/shared": "workspace:*",
-    "@bogeychan/elysia-etag": "^0.1.0",
     "@elysiajs/cors": "1.4.1",
     "@elysiajs/cron": "1.4.1",
     "@elysiajs/static": "1.4.7",
     "destr": "^2.x",
-    "drizzle-kit": "0.31.8",
+    "drizzle-kit": "0.31.9",
     "drizzle-orm": "0.45.1",
-    "elysia": "1.4.21",
+    "elysia": "1.4.27",
     "ofetch": "1.5.1",
     "postgres": "3.4.8",
     "sharp": "0.34.5"
