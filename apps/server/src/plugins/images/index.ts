@@ -95,12 +95,12 @@ export const images = new Elysia()
       if (!isPostHash) return status(501);
 
       const post = await db.query.postTable.findFirst({
-        where: (t, { eq }) => eq(t.hash, target),
+        where: { hash: target },
         columns: { tag_ids: false, meta_ids: false },
         extras: {
-          file_url: FileUrl.file_url.as('file_url'),
-          sample_url: FileUrl.sample_url.as('sample_url'),
-          preview_url: FileUrl.preview_url.as('preview_url'),
+          file_url: (p) => FileUrl.createFileUrl(p).as('file_url'),
+          sample_url: (p) => FileUrl.createSampleUrl(p).as('sample_url'),
+          preview_url: (p) => FileUrl.createPreviewUrl(p).as('preview_url'),
         },
       });
       if (!post) return status(404, 'Post not found');

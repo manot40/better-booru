@@ -17,7 +17,8 @@ const pendingStore = new SQLiteStore('.data/pending_scrap.db');
 
 export async function run(store_: unknown) {
   const { images_worker } = (store_ as CronStore)?.cron || {};
-  const state = { last: (await findFirst.execute())?.id || 0, isEnd: false };
+  const [{ id: lastPostId = 0 }] = await findFirst.execute();
+  const state = { last: lastPostId, isEnd: false };
 
   while (!state.isEnd) {
     const delay = random(800, 1800);
@@ -95,8 +96,8 @@ async function execute(inputData: Payload[]) {
       let meta_ids: number[];
 
       const tagsFromDB = await tx.query.tagsTable.findMany({
-        where: (table, { inArray }) => inArray(table.name, tagsName),
-        orderBy: (table, { asc }) => asc(table.category),
+        where: { name: { in: tagsName } },
+        orderBy: { category: 'asc' },
       });
 
       const insertTags = (data: TagInsert[]) =>
@@ -198,11 +199,19 @@ async function execute(inputData: Payload[]) {
           meta_ids: sql.raw(`excluded.${$s.postTable.meta_ids.name}`),
         },
       })
-      .then(() => imagesTask.forEach((t) => (Array.isArray(t) ? addTask(...t) : addTask(t))));
+      .then(() => {
+        imagesTask.reverse();
+        imagesTask.forEach((t) => (Array.isArray(t) ? addTask(...t) : addTask(t)));
+      });
   });
 }
 
-const findFirst = db.query.postTable.findFirst({ orderBy: desc($s.postTable.id) }).prepare('findFirstPost');
+const findFirst = db
+  .select({ id: $s.postTable.id })
+  .from($s.postTable)
+  .orderBy(desc($s.postTable.id))
+  .limit(1)
+  .prepare('findFirstPost');
 
 const dedupe = (tags: string) =>
   Array.from(new Set(tags.split(' ')))

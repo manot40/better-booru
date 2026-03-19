@@ -11,12 +11,11 @@ const imgTbl = $s.postImagesTable;
 export async function run() {
   const cached = await db.query.postImagesTable.findMany({
     columns: { id: true },
-    where: (t, { and, eq, lt }) =>
-      and(
-        lt(t.createdAt, new Date(Date.now() - Const.MAX_AGE * 1000)),
-        eq(t.orphaned, false),
-        eq(t.type, 'PREVIEW')
-      ),
+    where: {
+      createdAt: { lt: new Date(Date.now() - Const.MAX_AGE * 1000) },
+      orphaned: false,
+      type: 'PREVIEW',
+    },
   });
 
   for (const cache of cached) {

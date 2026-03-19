@@ -1,5 +1,6 @@
 import {
   boolean,
+  bytea,
   index,
   integer,
   pgEnum,
@@ -10,8 +11,6 @@ import {
   timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
-import bytea from './bytea';
-import { relations } from 'drizzle-orm';
 
 export const ratingEnum = pgEnum('RATING', ['g', 's', 'q', 'e']);
 
@@ -80,7 +79,3 @@ export const postImagesTable = pgTable(
   },
   (t) => [unique('posts_images_by_type').on(t.postId, t.type)]
 );
-
-export const postImages = relations(postTable, ({ many }) => ({
-  images: many(postImagesTable),
-}));

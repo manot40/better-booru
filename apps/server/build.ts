@@ -42,6 +42,4 @@ if (result.success) {
   result.logs.forEach((log) => console.warn(Bun.color('yellow', 'ansi'), log));
 }
 
-export {};
-
 type OutputMap = Record<string, Record<'chunk' | 'map', string>>;

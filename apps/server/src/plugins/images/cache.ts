@@ -27,7 +27,7 @@ export async function setCache(data: Buffer<ArrayBufferLike>, meta: CachePayload
 
 export async function getCache(hash: string) {
   const meta = await db.query.postImagesTable.findFirst({
-    where: (t, { and, eq }) => and(eq(t.id, hash), eq(t.orphaned, false)),
+    where: { id: hash, orphaned: false },
   });
 
   if (!meta) return;

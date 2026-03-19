@@ -11,6 +11,7 @@ import { random } from 'utils/common';
 
 import { eq } from 'drizzle-orm';
 import { db, schema as $s } from 'db';
+
 import { setCache } from './cache';
 
 const TTL = 60 * 60 * 2;
@@ -28,9 +29,11 @@ async function run() {
   let taskCount = 0;
   while (task) {
     const [hash, dataStr] = task;
-    const post = await db.query.postTable
-      .findFirst({ where: (t, { eq }) => eq(t.hash, hash) })
-      .catch(() => void 0);
+    const [post] = await db
+      .select({ id: $s.postTable.id })
+      .from($s.postTable)
+      .where(eq($s.postTable.hash, hash))
+      .limit(1);
 
     if (!post) {
       task = await imageQueue.pop();
@@ -88,14 +91,6 @@ async function run() {
   }
 
   log('INFO', `[IMAGE] Processed: ${taskCount}`);
-}
-
-export async function checkAndFix() {
-  const post = await db.query.postTable
-    .findMany({
-      where: (t, { and, isNull }) => isNull(t.lqip),
-    })
-    .catch(() => null);
 }
 
 async function getLQIP(data: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>) {

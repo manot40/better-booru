@@ -11,8 +11,8 @@ export async function tagsToQuery(tagString: string): Promise<SQL | SQL[]> {
 
   const tagsMap = await db.query.tagsTable
     .findMany({
-      where: (table, { inArray }) => inArray(table.name, tags),
-      orderBy: (table, { asc }) => asc(table.name),
+      where: { name: { in: tags } },
+      orderBy: { name: 'asc' },
     })
     .then((tags) => {
       return new Map(tags.map((t) => [t.name, { id: t.id, isMeta: isMetaTag(t.category) }]));
