@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "boorugator",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "author": "manot40 <kevinsandiho290100@gmail.com>",
   "license": "MIT",
   "private": true,
