@@ -13,7 +13,7 @@ export default defineNuxtConfig({
     buildAssetsDir: 'web_assets',
   },
 
-  compatibilityDate: '2026-02-01',
+  compatibilityDate: '2026-03-01',
 
   future: {
     compatibilityVersion: 5,
@@ -24,8 +24,31 @@ export default defineNuxtConfig({
     nitroAutoImports: true,
   },
 
+  sourcemap: {
+    client: 'hidden',
+  },
+
   vite: {
     plugins: [tailwind()],
+    optimizeDeps: {
+      include: [
+        'dayjs', // CJS
+        'dayjs/plugin/updateLocale', // CJS
+        'dayjs/plugin/relativeTime', // CJS
+        'dayjs/plugin/utc', // CJS
+        'dayjs/plugin/timezone', // CJS
+        'lucide-vue-next',
+        'photoswipe',
+        'photoswipe/lightbox',
+        '@tanstack/vue-virtual',
+        'class-variance-authority',
+        '@elysiajs/eden',
+        'clsx',
+        'tailwind-merge',
+        'reka-ui',
+        'vaul-vue',
+      ],
+    },
   },
 
   nitro: {
