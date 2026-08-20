@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -110,7 +111,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 
 	// Rating Filter
 	if len(opts.Rating) > 0 {
-		q = q.Where("p.rating IN (?)", bun.In(opts.Rating))
+		q = q.Where("p.rating IN (?)", bun.List(opts.Rating))
 	}
 
 	// Tags Filter
@@ -128,7 +129,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	}
 
 	q = q.Group("p.id").Limit(limit).Offset(offset)
-
+	log.Printf("%s", q.String())
 	var posts []PostDTO
 	if err := q.Scan(ctx, &posts); err != nil {
 		return nil, fmt.Errorf("querying posts: %w", err)
@@ -181,7 +182,7 @@ func GetPostCount(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, opts Qu
 			TableExpr("posts AS p")
 
 		if len(opts.Rating) > 0 {
-			countQ = countQ.Where("p.rating IN (?)", bun.In(opts.Rating))
+			countQ = countQ.Where("p.rating IN (?)", bun.List(opts.Rating))
 		}
 
 		var err error

@@ -39,7 +39,7 @@ func ApplyTagsFilter(ctx context.Context, bunDB *bun.DB, q *bun.SelectQuery, tag
 	var tagsInDB []db.Tag
 	err := bunDB.NewSelect().
 		Model(&tagsInDB).
-		Where("name IN (?)", bun.In(parseRes.Tags)).
+		Where("name IN (?)", bun.List(parseRes.Tags)).
 		Scan(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("querying tags: %w", err)
@@ -110,10 +110,10 @@ func ApplyTagsFilter(ctx context.Context, bunDB *bun.DB, q *bun.SelectQuery, tag
 		}
 
 		if len(val.EQ) > 0 {
-			q = q.Where(fmt.Sprintf("%s @> ARRAY[?]::integer[]", col), bun.In(val.EQ))
+			q = q.Where(fmt.Sprintf("%s @> ARRAY[?]::integer[]", col), bun.List(val.EQ))
 		}
 		if len(val.NE) > 0 {
-			q = q.Where(fmt.Sprintf("NOT (%s && ARRAY[?]::integer[])", col), bun.In(val.NE))
+			q = q.Where(fmt.Sprintf("NOT (%s && ARRAY[?]::integer[])", col), bun.List(val.NE))
 		}
 	}
 
@@ -130,7 +130,7 @@ func ApplyTagsFilter(ctx context.Context, bunDB *bun.DB, q *bun.SelectQuery, tag
 			col = "p.meta_ids"
 		}
 		orClauses = append(orClauses, fmt.Sprintf("%s && ARRAY[?]::integer[]", col))
-		orArgs = append(orArgs, bun.In(ids))
+		orArgs = append(orArgs, bun.List(ids))
 	}
 
 	if len(orClauses) > 0 {

@@ -78,7 +78,7 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 		_, err = c.bunDB.NewUpdate().
 			Model((*db.PostImage)(nil)).
 			Set("orphaned = true").
-			Where("id IN (?)", bun.In(cleanedIDs)).
+			Where("id IN (?)", bun.List(cleanedIDs)).
 			Exec(ctx)
 		if err != nil {
 			return len(cleanedIDs), fmt.Errorf("updating orphaned status: %w", err)

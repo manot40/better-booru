@@ -256,8 +256,6 @@ func (s *Scraper) processBatch(ctx context.Context, posts []danbooru.DanbooruRes
 }
 
 func (s *Scraper) resolveTagIDs(ctx context.Context, tx bun.Tx, tagList []tagItem) (tagIDs []int, metaIDs []int, err error) {
-	// Always initialize to empty slices (not nil) — a nil []int marshals to
-	// PostgreSQL NULL, violating NOT NULL constraints on tag_ids / meta_ids.
 	tagIDs = []int{}
 	metaIDs = []int{}
 
@@ -282,7 +280,7 @@ func (s *Scraper) resolveTagIDs(ctx context.Context, tx bun.Tx, tagList []tagIte
 	var existing []db.Tag
 	err = tx.NewSelect().
 		Model(&existing).
-		Where("name IN (?)", bun.In(names)).
+		Where("name IN (?)", bun.List(names)).
 		Order("category ASC").
 		Scan(ctx)
 	if err != nil {
@@ -292,10 +290,11 @@ func (s *Scraper) resolveTagIDs(ctx context.Context, tx bun.Tx, tagList []tagIte
 	existingMap := make(map[string]int, len(existing))
 	for _, t := range existing {
 		existingMap[t.Name] = t.ID
-		if t.Category == 5 {
-			metaIDs = append(metaIDs, t.ID)
-		} else {
+		// All general category
+		if t.Category == 0 {
 			tagIDs = append(tagIDs, t.ID)
+		} else {
+			metaIDs = append(metaIDs, t.ID)
 		}
 	}
 
