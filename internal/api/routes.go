@@ -56,7 +56,7 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 	// UserConfig & Caching middleware
 	apiGroup := app.Group("/api")
 	apiGroup.Use(middleware.UserConfigMiddleware())
-	apiGroup.Use(middleware.CacheControlMiddleware(deps.Config.IPXMaxAge))
+	apiGroup.Use(middleware.CacheControlMiddleware(60 * 5))
 	apiGroup.Use(middleware.ETagMiddleware())
 
 	// Post Handlers
@@ -71,13 +71,7 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 
 	// Image Preview Handlers
 	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, deps.Config.IPXCacheDir)
-	apiGroup.Get("/images/preview/:hash", imageHandler.ImagePreviewHandler)
-	app.Get("/_ipx/*", func(c fiber.Ctx) error {
-		// Compatibility alias with IPX preview path
-		hash := c.Params("*")
-		c.Bind().URI(fiber.Map{"hash": hash})
-		return imageHandler.ImagePreviewHandler(c)
-	})
+	app.Get("/images/preview/:hash", middleware.CacheControlMiddleware(deps.Config.IPXMaxAge), imageHandler.ImagePreviewHandler)
 
 	// Admin & Background Worker Handlers (Protected by API Key)
 	adminHandler := NewAdminHandler(deps.Scraper, deps.ImageWorker, deps.CleanupWorker)

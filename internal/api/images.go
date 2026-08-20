@@ -42,7 +42,7 @@ func NewImageHandler(bunDB *bun.DB, s3Storage image.S3Storage, baseCacheDir stri
 // @Success      302   "Redirect to CDN storage"
 // @Failure      404   {object} api.ErrorResponse
 // @Failure      500   {object} api.ErrorResponse
-// @Router       /api/images/preview/{hash} [get]
+// @Router       /images/preview/{hash} [get]
 func (h *ImageHandler) ImagePreviewHandler(c fiber.Ctx) error {
 	hash := strings.TrimSpace(c.Params("hash"))
 	if hash == "" {

@@ -44,7 +44,7 @@ func ProcessedFileURLExpr(baseURL, s3PublicURL string) string {
 // ProcessedPreviewURLExpr returns SQL expression prioritizing cached local/S3 preview images over Danbooru CDN.
 func ProcessedPreviewURLExpr(baseURL, s3PublicURL string) string {
 	return fmt.Sprintf(`COALESCE(
-		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' ELSE '%s' END, '/api/images/preview/', pi.id) END),
+		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' ELSE '%s' END, '/images/preview/', pi.id) END),
 		%s
 	)`, s3PublicURL, baseURL, BasePreviewURL())
 }
