@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/manot40/better-booru/internal/db"
@@ -45,7 +46,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 
 	if s3Storage != nil && s3Storage.Enabled() {
 		loc = "CDN"
-		key := fmt.Sprintf("images/%s/%s", meta.Type, meta.ID)
+		key := strings.ToLower(fmt.Sprintf("images/%s/%s", meta.Type, meta.ID))
 		if err := s3Storage.Upload(ctx, key, data, "image/"+meta.FileType); err != nil {
 			return "", fmt.Errorf("uploading to s3: %w", err)
 		}
@@ -111,7 +112,7 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	}
 
 	if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
-		key := fmt.Sprintf("images/%s/%s", record.Type, record.ID)
+		key := strings.ToLower(fmt.Sprintf("images/%s/%s", record.Type, record.ID))
 		return &CachedResult{
 			RedirectURL: s3Storage.PublicURL(key),
 		}, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -71,7 +72,7 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 			filePath := GetFilePath(c.baseCacheDir, img.ID)
 			_ = os.Remove(filePath)
 		} else if img.Loc == "CDN" && c.s3Storage != nil && c.s3Storage.Enabled() {
-			key := fmt.Sprintf("images/%s/%s", img.Type, img.ID)
+			key := strings.ToLower(fmt.Sprintf("images/%s/%s", img.Type, img.ID))
 			_ = c.s3Storage.Delete(ctx, key)
 		}
 		cleanedIDs = append(cleanedIDs, img.ID)

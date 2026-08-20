@@ -14,9 +14,8 @@ coverage.txt
 # Go build cache (usually in GOCACHE, but local vendor dir if used)
 vendor/
 
-.env
-.env.local
-.env.*.local
+.env*
+!.env.example
 
 # Local image / preview cache (populated at runtime by the image worker)
 .cache/
