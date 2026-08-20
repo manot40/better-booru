@@ -4,7 +4,9 @@ const CDN_URL = process.env.S3_PUBLIC_ENDPOINT || process.env.S3_ENDPOINT;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  ssr: false,
   devtools: { enabled: true },
+  compatibilityDate: '2026-03-01',
 
   css: ['~/assets/css/main.css'],
 
@@ -13,7 +15,9 @@ export default defineNuxtConfig({
     buildAssetsDir: 'web_assets',
   },
 
-  compatibilityDate: '2026-03-01',
+  nitro: {
+    preset: 'static',
+  },
 
   future: {
     compatibilityVersion: 5,
@@ -48,10 +52,6 @@ export default defineNuxtConfig({
         'vaul-vue',
       ],
     },
-  },
-
-  nitro: {
-    preset: 'static',
   },
 
   runtimeConfig: {
