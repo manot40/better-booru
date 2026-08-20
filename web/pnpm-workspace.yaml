@@ -1,0 +1,12 @@
+allowBuilds:
+  esbuild: false
+  vue-demi: false
+
+minimumReleaseAgeExclude:
+  - '@lucide/vue'
+
+publicHoistPattern:
+  - destr
+  - ofetch
+  - ohash
+  - ufo

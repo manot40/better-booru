@@ -1,0 +1,7 @@
+DROP INDEX IF EXISTS "idx_posts_meta_ids";
+DROP INDEX IF EXISTS "idx_posts_tag_ids";
+DROP INDEX IF EXISTS "idx_score";
+DROP TABLE IF EXISTS "posts_images";
+DROP TABLE IF EXISTS "tags";
+DROP TABLE IF EXISTS "posts";
+DROP TYPE IF EXISTS "RATING";

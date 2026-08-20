@@ -1,0 +1,75 @@
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries and coverage output
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Go build cache (usually in GOCACHE, but local vendor dir if used)
+vendor/
+
+.env
+.env.local
+.env.*.local
+
+# Local image / preview cache (populated at runtime by the image worker)
+.cache/
+
+# Swagger / OpenAPI generated docs
+docs/docs.go
+docs/swagger.json
+docs/swagger.yaml
+
+# GoLand / IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+\#*\#
+.\#*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*.pprof
+cpu.out
+mem.out
+trace.out
+
+# Docker / Compose local overrides
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Temporary files
+tmp/
+temp/

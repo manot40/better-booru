@@ -1,0 +1,14 @@
+.git
+.github
+.cache
+.data
+bin
+*.exe
+.env
+scratch
+
+web/dist
+web/.env*
+web/.nuxt
+web/.output
+web/node_modules

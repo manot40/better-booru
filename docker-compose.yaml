@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      tags: [booru-go:latest]
+      context: .
+    env_file:
+      - .env
+    ports:
+      - 3001:3001
