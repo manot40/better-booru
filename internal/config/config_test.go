@@ -19,7 +19,16 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.Equal(t, "postgresql://booru:booru@localhost:5432/booru", cfg.DatabaseURL)
 	assert.Equal(t, "redis://localhost:6379", cfg.RedisURL)
 	assert.Equal(t, 604800, cfg.IPXMaxAge)
+	assert.False(t, cfg.IPXAllowParallel)
 	assert.False(t, cfg.S3Enabled())
+}
+
+func TestLoad_ImageAllowParallel(t *testing.T) {
+	v := viper.New()
+	v.Set("image_allow_parallel", true)
+	cfg, err := config.LoadWithViper(v)
+	require.NoError(t, err)
+	assert.True(t, cfg.IPXAllowParallel)
 }
 
 func TestConfig_S3Enabled(t *testing.T) {

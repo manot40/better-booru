@@ -1,10 +1,12 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -78,15 +80,18 @@ func setupTestApp(t *testing.T) (*fiber.App, *miniredis.Miniredis, *httptest.Ser
 		}
 	}))
 
-	danClient := danbooru.NewClientWithHTTP(upstreamServer.URL, "testuser", "testapikey", upstreamServer.Client())
-	s := scraper.NewScraper(nil, rdb, danClient)
-	iw := image.NewWorker(nil, rdb, nil, "")
-	cw := image.NewCleanupWorker(nil, nil, "", 0)
-
 	cfg := &config.Config{
 		DanbooruAPIKey: "admin-secret-token",
-		IPXMaxAge:      3600,
+
+		IPXAllowParallel: false,
+		IPXCacheDir:      t.TempDir(),
+		IPXMaxAge:        3600,
 	}
+
+	danClient := danbooru.NewClientWithHTTP(upstreamServer.URL, "testuser", "testapikey", upstreamServer.Client())
+	s := scraper.NewScraper(nil, rdb, danClient)
+	iw := image.NewWorker(nil, rdb, cfg, nil)
+	cw := image.NewCleanupWorker(nil, cfg, nil)
 
 	app := fiber.New()
 	api.SetupRoutes(app, api.Dependencies{
@@ -98,7 +103,6 @@ func setupTestApp(t *testing.T) (*fiber.App, *miniredis.Miniredis, *httptest.Ser
 		Scraper:       s,
 		ImageWorker:   iw,
 		CleanupWorker: cw,
-		BaseCacheDir:  t.TempDir(),
 	})
 
 	return app, mr, upstreamServer
@@ -181,4 +185,88 @@ func TestAPI_AdminEndpoints(t *testing.T) {
 	resp3, err := app.Test(req3)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp3.StatusCode)
+
+	// 4. Images Trigger without auth -> 401
+	req4 := httptest.NewRequest(http.MethodGet, "/api/images/trigger", nil)
+	resp4, err := app.Test(req4)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnauthorized, resp4.StatusCode)
+
+	// 5. Images Trigger with auth -> 200
+	req5 := httptest.NewRequest(http.MethodGet, "/api/images/trigger?token=admin-secret-token", nil)
+	resp5, err := app.Test(req5)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp5.StatusCode)
+}
+
+func TestAPI_ImagesTrigger_Parallel(t *testing.T) {
+	mr, err := miniredis.Run()
+	require.NoError(t, err)
+	defer mr.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	defer rdb.Close()
+
+	// Block task processing via a slow HTTP server
+	started := make(chan struct{})
+	unblock := make(chan struct{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		<-unblock
+		rw.Header().Set("Content-Type", "image/png")
+		_, _ = rw.Write([]byte("mock"))
+	}))
+	defer server.Close()
+
+	// Setup app with allowParallel = false
+	cfg := &config.Config{
+		DanbooruAPIKey:   "admin-secret-token",
+		IPXAllowParallel: true,
+		IPXCacheDir:      t.TempDir(),
+		IPXMaxAge:        3600,
+	}
+
+	iw := image.NewWorker(nil, rdb, cfg, nil)
+
+	app := fiber.New()
+	api.SetupRoutes(app, api.Dependencies{
+		Config:      cfg,
+		RedisClient: rdb,
+		ImageWorker: iw,
+	})
+
+	// Add a task to queue
+	err = image.AddTask(context.Background(), rdb, "test_hash", server.URL+"/img.png")
+	require.NoError(t, err)
+
+	// Start worker in background
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		_ = iw.Run(context.Background())
+	}()
+
+	<-started
+
+	// 1. While worker is running and allowParallel is false -> 409 Conflict
+	reqConflict := httptest.NewRequest(http.MethodGet, "/api/images/trigger?token=admin-secret-token", nil)
+	respConflict, err := app.Test(reqConflict)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusConflict, respConflict.StatusCode)
+
+	// 2. Enable allowParallel -> now triggers should return 200 OK even while running
+	iw.SetAllowParallel(true)
+	reqParallel := httptest.NewRequest(http.MethodGet, "/api/images/trigger?token=admin-secret-token", nil)
+	respParallel, err := app.Test(reqParallel)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, respParallel.StatusCode)
+
+	// Unblock worker
+	close(unblock)
+	wg.Wait()
 }

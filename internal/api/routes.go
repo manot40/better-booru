@@ -37,7 +37,6 @@ type Dependencies struct {
 	Scraper       *scraper.Scraper
 	ImageWorker   *image.Worker
 	CleanupWorker *image.CleanupWorker
-	BaseCacheDir  string
 }
 
 // SetupRoutes registers all application handlers and middlewares onto the Fiber app.
@@ -71,7 +70,7 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 	apiGroup.Get("/autocomplete", autocompleteHandler.Autocomplete)
 
 	// Image Preview Handlers
-	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, deps.BaseCacheDir)
+	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, deps.Config.IPXCacheDir)
 	apiGroup.Get("/images/preview/:hash", imageHandler.ImagePreviewHandler)
 	app.Get("/_ipx/*", func(c fiber.Ctx) error {
 		// Compatibility alias with IPX preview path

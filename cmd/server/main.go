@@ -87,11 +87,9 @@ func main() {
 	danClient := danbooru.NewClient(cfg)
 
 	// Initialize Workers
-	baseCacheDir := ".cache/preview_images"
-	maxAge := time.Duration(cfg.IPXMaxAge) * time.Second
 	sc := scraper.NewScraper(bunDB, rdb, danClient)
-	iw := image.NewWorker(bunDB, rdb, s3Client, baseCacheDir)
-	cw := image.NewCleanupWorker(bunDB, s3Client, baseCacheDir, maxAge)
+	iw := image.NewWorker(bunDB, rdb, cfg, s3Client)
+	cw := image.NewCleanupWorker(bunDB, cfg, s3Client)
 
 	// Setup Cron Scheduler
 	cronRunner := cron.New(cron.WithSeconds())
@@ -144,7 +142,6 @@ func main() {
 		Scraper:       sc,
 		ImageWorker:   iw,
 		CleanupWorker: cw,
-		BaseCacheDir:  baseCacheDir,
 	})
 
 	// Mount Static / SPA filesystem

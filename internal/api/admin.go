@@ -97,7 +97,7 @@ func (h *AdminHandler) ImagesTriggerHandler(c fiber.Ctx) error {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(ErrorResponse{Error: "Image worker not configured"})
 	}
 
-	if h.imageWorker.IsRunning() {
+	if !h.imageWorker.AllowParallel() && h.imageWorker.IsRunning() {
 		return c.Status(fiber.StatusConflict).JSON(ErrorResponse{Error: "Image worker is already running"})
 	}
 

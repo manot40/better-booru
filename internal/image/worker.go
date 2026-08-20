@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/db"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
@@ -59,36 +60,58 @@ func AddTask(ctx context.Context, rdb *redis.Client, key string, payload any) er
 
 // Worker coordinates processing tasks from the image queue.
 type Worker struct {
-	bunDB        *bun.DB
-	rdb          *redis.Client
-	s3Storage    S3Storage
-	baseCacheDir string
-	httpClient   *http.Client
-	running      atomic.Bool
+	bunDB         *bun.DB
+	rdb           *redis.Client
+	s3Storage     S3Storage
+	baseCacheDir  string
+	httpClient    *http.Client
+	allowParallel bool
+	activeCount   atomic.Int32
 }
 
 // NewWorker creates a new image processing worker.
-func NewWorker(bunDB *bun.DB, rdb *redis.Client, s3Storage S3Storage, baseCacheDir string) *Worker {
+func NewWorker(bunDB *bun.DB, rdb *redis.Client, cfg *config.Config, s3Storage S3Storage) *Worker {
 	return &Worker{
-		bunDB:        bunDB,
-		rdb:          rdb,
-		s3Storage:    s3Storage,
-		baseCacheDir: baseCacheDir,
-		httpClient:   &http.Client{Timeout: 30 * time.Second},
+		bunDB:         bunDB,
+		rdb:           rdb,
+		s3Storage:     s3Storage,
+		baseCacheDir:  cfg.IPXCacheDir,
+		httpClient:    &http.Client{Timeout: 30 * time.Second},
+		allowParallel: cfg.IPXAllowParallel,
 	}
 }
 
 // IsRunning returns whether the worker is currently processing tasks.
 func (w *Worker) IsRunning() bool {
-	return w.running.Load()
+	return w.activeCount.Load() > 0
+}
+
+// AllowParallel returns whether multiple workers are allowed to run concurrently.
+func (w *Worker) AllowParallel() bool {
+	return w.allowParallel
+}
+
+// SetAllowParallel updates the parallel execution setting.
+func (w *Worker) SetAllowParallel(allow bool) {
+	w.allowParallel = allow
+}
+
+// ActiveCount returns the number of active workers currently running.
+func (w *Worker) ActiveCount() int {
+	return int(w.activeCount.Load())
 }
 
 // Run processes all pending items in the image queue.
 func (w *Worker) Run(ctx context.Context) error {
-	if !w.running.CompareAndSwap(false, true) {
-		return errors.New("image worker is already running")
+	if !w.allowParallel {
+		if !w.activeCount.CompareAndSwap(0, 1) {
+			return errors.New("image worker is already running")
+		}
+		defer w.activeCount.Add(-1)
+	} else {
+		w.activeCount.Add(1)
+		defer w.activeCount.Add(-1)
 	}
-	defer w.running.Store(false)
 
 	if w.rdb == nil {
 		return nil
@@ -149,12 +172,15 @@ func (w *Worker) processTask(ctx context.Context, key, val string) error {
 			return err
 		}
 
-		_, err = w.bunDB.NewUpdate().
-			Model((*db.Post)(nil)).
-			Set("lqip = ?", lqip).
-			Where("hash = ?", key).
-			Exec(ctx)
-		return err
+		if w.bunDB != nil {
+			_, err = w.bunDB.NewUpdate().
+				Model((*db.Post)(nil)).
+				Set("lqip = ?", lqip).
+				Where("hash = ?", key).
+				Exec(ctx)
+			return err
+		}
+		return nil
 	}
 
 	// Structured TaskPayload
@@ -189,13 +215,15 @@ func (w *Worker) processTask(ctx context.Context, key, val string) error {
 	}
 
 	// Generate and update LQIP
-	lqip, err := GenerateLQIP(processed.Data)
-	if err == nil {
-		_, _ = w.bunDB.NewUpdate().
-			Model((*db.Post)(nil)).
-			Set("lqip = ?", lqip).
-			Where("id = ?", task.PostID).
-			Exec(ctx)
+	if w.bunDB != nil {
+		lqip, err := GenerateLQIP(processed.Data)
+		if err == nil {
+			_, _ = w.bunDB.NewUpdate().
+				Model((*db.Post)(nil)).
+				Set("lqip = ?", lqip).
+				Where("id = ?", task.PostID).
+				Exec(ctx)
+		}
 	}
 
 	return nil

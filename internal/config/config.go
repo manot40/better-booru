@@ -23,8 +23,10 @@ type Config struct {
 	S3AccessKeyID     string `mapstructure:"s3_access_key_id"`
 	S3SecretAccessKey string `mapstructure:"s3_secret_access_key"`
 	S3PublicEndpoint  string `mapstructure:"s3_public_endpoint"`
-	IPXMaxAge         int    `mapstructure:"ipx_max_age"`
+	IPXAllowParallel  bool   `mapstructure:"ipx_allow_parallel"`
+	IPXCacheDir       string `mapstructure:"ipx_cache_dir"`
 	IPXEncoderURL     string `mapstructure:"ipx_encoder_url"`
+	IPXMaxAge         int    `mapstructure:"ipx_max_age"`
 }
 
 // S3Enabled returns true if S3 storage is configured.
@@ -62,7 +64,9 @@ func LoadWithViper(v *viper.Viper) (*Config, error) {
 	v.SetDefault("redis_url", "redis://localhost:6379")
 	v.SetDefault("s3_region", "auto")
 	v.SetDefault("s3_bucket", "booru")
+	v.SetDefault("ipx_allow_parallel", false)
 	v.SetDefault("ipx_max_age", 604800) // 7 days in seconds
+	v.SetDefault("ipx_cache_dir", ".cache/preview_images")
 
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()

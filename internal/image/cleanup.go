@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/db"
 	"github.com/uptrace/bun"
 )
@@ -21,14 +22,16 @@ type CleanupWorker struct {
 }
 
 // NewCleanupWorker creates a new cleanup worker.
-func NewCleanupWorker(bunDB *bun.DB, s3Storage S3Storage, baseCacheDir string, maxAge time.Duration) *CleanupWorker {
+func NewCleanupWorker(bunDB *bun.DB, cfg *config.Config, s3Storage S3Storage) *CleanupWorker {
+	maxAge := time.Duration(cfg.IPXMaxAge) * time.Second
+
 	if maxAge <= 0 {
 		maxAge = 7 * 24 * time.Hour // Default 7 days
 	}
 	return &CleanupWorker{
 		bunDB:        bunDB,
 		s3Storage:    s3Storage,
-		baseCacheDir: baseCacheDir,
+		baseCacheDir: cfg.IPXCacheDir,
 		maxAge:       maxAge,
 	}
 }

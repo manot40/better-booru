@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -129,7 +128,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	}
 
 	q = q.Group("p.id").Limit(limit).Offset(offset)
-	log.Printf("%s", q.String())
+
 	var posts []PostDTO
 	if err := q.Scan(ctx, &posts); err != nil {
 		return nil, fmt.Errorf("querying posts: %w", err)

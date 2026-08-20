@@ -41,6 +41,9 @@ func TestScraper_IsBusyAndLastRun(t *testing.T) {
 func TestScraper_FetchLiveDanbooru(t *testing.T) {
 	userID := os.Getenv("DANBOORU_USER_ID")
 	apiKey := os.Getenv("DANBOORU_API_KEY")
+	if userID == "" || apiKey == "" {
+		t.Skip("DANBOORU_USER_ID and DANBOORU_API_KEY not set; skipping live Danbooru test")
+	}
 
 	danClient := danbooru.NewClientWithHTTP("https://danbooru.donmai.us", userID, apiKey, nil)
 
