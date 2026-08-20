@@ -1,1 +1,0 @@
-CREATE INDEX "idx_score" ON "posts" USING btree ("score");

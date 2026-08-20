@@ -1,9 +1,0 @@
-{
-  "css.lint.unknownAtRules": "ignore",
-  "scss.lint.unknownAtRules": "ignore",
-  "vue.complete.casing.tags": "pascal",
-  "vue.complete.casing.props": "camel",
-  "editor.quickSuggestions": {
-    "strings": "on"
-  }
-}

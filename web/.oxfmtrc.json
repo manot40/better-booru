@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 110,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "bracketSameLine": true,
+  "checkIgnorePragma": true,
+  "htmlWhitespaceSensitivity": "ignore",
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".output",
+    ".data",
+    ".nuxt",
+    ".nitro",
+    ".cache",
+    ".agents",
+    ".claude",
+    "dist",
+    "deployment",
+    "docker-compose.yml",
+    "graphql",
+    "deployment",
+    "azure-pipelines.*"
+  ]
+}
