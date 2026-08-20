@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -132,6 +133,12 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	var posts []PostDTO
 	if err := q.Scan(ctx, &posts); err != nil {
 		return nil, fmt.Errorf("querying posts: %w", err)
+	}
+
+	for i := range posts {
+		if cfg.IPXEnableAvif {
+			posts[i].FileURL = fmt.Sprintf("%s/images/encoder/%s", cfg.BaseURL, path.Base(posts[i].FileURL))
+		}
 	}
 
 	// Calculate or fetch cached count

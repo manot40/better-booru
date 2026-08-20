@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"sync"
 	"testing"
 
@@ -225,7 +226,7 @@ func TestAPI_ImagesTrigger_Parallel(t *testing.T) {
 	// Setup app with allowParallel = false
 	cfg := &config.Config{
 		DanbooruAPIKey:   "admin-secret-token",
-		IPXAllowParallel: true,
+		IPXAllowParallel: false,
 		IPXCacheDir:      t.TempDir(),
 		IPXMaxAge:        3600,
 	}
@@ -270,3 +271,61 @@ func TestAPI_ImagesTrigger_Parallel(t *testing.T) {
 	close(unblock)
 	wg.Wait()
 }
+
+func TestAPI_ImageEncoder_Disabled(t *testing.T) {
+	cfg := &config.Config{
+		IPXEnableAvif: false,
+		IPXCacheDir:   t.TempDir(),
+	}
+
+	app := fiber.New()
+	api.SetupRoutes(app, api.Dependencies{
+		Config: cfg,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/images/encoder/testimage.jpg", nil)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestAPI_ImageEncoder_Enabled_VideoAndCache(t *testing.T) {
+	tempCacheDir := t.TempDir()
+	cfg := &config.Config{
+		IPXEnableAvif: true,
+		IPXCacheDir:   tempCacheDir,
+	}
+
+	app := fiber.New()
+	api.SetupRoutes(app, api.Dependencies{
+		Config: cfg,
+	})
+
+	// 1. Video files -> 415 Unsupported Media Type
+	reqVideo := httptest.NewRequest(http.MethodGet, "/images/encoder/video1234.mp4", nil)
+	respVideo, err := app.Test(reqVideo)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusUnsupportedMediaType, respVideo.StatusCode)
+
+	// 2. Cached file -> 200 OK with ETag & Cache-Control
+	cachedFilePath := tempCacheDir + "/original_images/12/34/12345678.avif"
+	require.NoError(t, os.MkdirAll(tempCacheDir+"/original_images/12/34", 0755))
+	require.NoError(t, os.WriteFile(cachedFilePath, []byte("avif-binary-data"), 0644))
+
+	reqCache := httptest.NewRequest(http.MethodGet, "/images/encoder/12345678.jpg", nil)
+	respCache, err := app.Test(reqCache)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, respCache.StatusCode)
+	assert.Equal(t, "image/avif", respCache.Header.Get("Content-Type"))
+	assert.Contains(t, respCache.Header.Get("Cache-Control"), "public")
+	etag := respCache.Header.Get("ETag")
+	assert.NotEmpty(t, etag)
+
+	// 3. ETag If-None-Match -> 304 Not Modified
+	reqEtag := httptest.NewRequest(http.MethodGet, "/images/encoder/12345678.jpg", nil)
+	reqEtag.Header.Set("If-None-Match", etag)
+	respEtag, err := app.Test(reqEtag)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotModified, respEtag.StatusCode)
+}
+

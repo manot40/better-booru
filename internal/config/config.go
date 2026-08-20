@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config holds the application configuration loaded from environment variables and/or config files.
 type Config struct {
 	Port              string `mapstructure:"port"`
 	BaseURL           string `mapstructure:"base_url"`
@@ -25,7 +24,7 @@ type Config struct {
 	S3PublicEndpoint  string `mapstructure:"s3_public_endpoint"`
 	IPXAllowParallel  bool   `mapstructure:"ipx_allow_parallel"`
 	IPXCacheDir       string `mapstructure:"ipx_cache_dir"`
-	IPXEncoderURL     string `mapstructure:"ipx_encoder_url"`
+	IPXEnableAvif     bool   `mapstructure:"ipx_enable_avif"`
 	IPXMaxAge         int    `mapstructure:"ipx_max_age"`
 }
 
@@ -40,9 +39,11 @@ func Load() (*Config, error) {
 
 	if envFile := os.Getenv("ENV_FILE"); envFile != "" {
 		v.SetConfigFile(envFile)
-		_ = v.ReadInConfig()
+		if err := v.ReadInConfig(); err != nil {
+			return nil, fmt.Errorf("reading config file %q: %w", envFile, err)
+		}
 	} else {
-		// Discover .env in current dir, executable dir, or parent dir
+		// Discover .env in CWD, executable directory, or its parent.
 		v.SetConfigName(".env")
 		v.SetConfigType("env")
 		v.AddConfigPath(".")
@@ -50,7 +51,15 @@ func Load() (*Config, error) {
 			v.AddConfigPath(filepath.Dir(execPath))
 			v.AddConfigPath(filepath.Join(filepath.Dir(execPath), ".."))
 		}
-		_ = v.ReadInConfig()
+
+		if err := v.ReadInConfig(); err != nil {
+			// ConfigFileNotFoundError is expected when running in Docker / CI
+			// with environment variables injected directly — not a fatal error.
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return nil, fmt.Errorf("reading .env file: %w", err)
+			}
+			// No .env file found; proceed with system environment only.
+		}
 	}
 
 	return LoadWithViper(v)
@@ -65,10 +74,11 @@ func LoadWithViper(v *viper.Viper) (*Config, error) {
 	v.SetDefault("s3_region", "auto")
 	v.SetDefault("s3_bucket", "booru")
 	v.SetDefault("ipx_allow_parallel", false)
+	v.SetDefault("ipx_enable_avif", false)
 	v.SetDefault("ipx_max_age", 604800) // 7 days in seconds
-	v.SetDefault("ipx_cache_dir", ".cache/preview_images")
+	v.SetDefault("ipx_cache_dir", ".cache")
 
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
 
 	var cfg Config

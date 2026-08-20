@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
@@ -194,6 +195,11 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 			})
 		}
 
+		fileUrl := postDTO.FileURL
+		if h.cfg.IPXEnableAvif {
+			fileUrl = fmt.Sprintf("%s/images/encoder/%s", h.cfg.BaseURL, path.Base(postDTO.FileURL))
+		}
+
 		return c.JSON(PostItem{
 			ID:            postDTO.ID,
 			Hash:          postDTO.Hash,
@@ -209,7 +215,7 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 			Height:        postDTO.Height,
 			FileExt:       postDTO.FileExt,
 			FileSize:      postDTO.FileSize,
-			FileURL:       postDTO.FileURL,
+			FileURL:       fileUrl,
 			SampleURL:     postDTO.SampleURL,
 			SampleWidth:   postDTO.SampleWidth,
 			SampleHeight:  postDTO.SampleHeight,

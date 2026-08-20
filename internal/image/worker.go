@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -75,7 +76,7 @@ func NewWorker(bunDB *bun.DB, rdb *redis.Client, cfg *config.Config, s3Storage S
 		bunDB:         bunDB,
 		rdb:           rdb,
 		s3Storage:     s3Storage,
-		baseCacheDir:  cfg.IPXCacheDir,
+		baseCacheDir:  filepath.Join(cfg.IPXCacheDir, "preview_images"),
 		httpClient:    &http.Client{Timeout: 30 * time.Second},
 		allowParallel: cfg.IPXAllowParallel,
 	}

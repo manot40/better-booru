@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -32,7 +33,7 @@ func NewCleanupWorker(bunDB *bun.DB, cfg *config.Config, s3Storage S3Storage) *C
 	return &CleanupWorker{
 		bunDB:        bunDB,
 		s3Storage:    s3Storage,
-		baseCacheDir: cfg.IPXCacheDir,
+		baseCacheDir: filepath.Join(cfg.IPXCacheDir, "preview_images"),
 		maxAge:       maxAge,
 	}
 }

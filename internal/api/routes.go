@@ -13,6 +13,8 @@ package api
 // @description Token or API Key for administrative routes
 
 import (
+	"path/filepath"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/logger"
@@ -20,6 +22,7 @@ import (
 	_ "github.com/manot40/better-booru/docs"
 	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/danbooru"
+	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/manot40/better-booru/internal/middleware"
 	"github.com/manot40/better-booru/internal/scraper"
@@ -69,9 +72,25 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 	autocompleteHandler := NewAutocompleteHandler(deps.BunDB, deps.DanClient)
 	apiGroup.Get("/autocomplete", autocompleteHandler.Autocomplete)
 
-	// Image Preview Handlers
-	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, deps.Config.IPXCacheDir)
-	app.Get("/images/preview/:hash", middleware.CacheControlMiddleware(deps.Config.IPXMaxAge), imageHandler.ImagePreviewHandler)
+	// Image Preview and Encoder Handlers
+	var enc *encoder.Encoder
+	baseCacheDir := ".cache/preview_images"
+	encoderEnabled := false
+	maxAge := 604800
+	if deps.Config != nil {
+		baseCacheDir = filepath.Join(deps.Config.IPXCacheDir, "preview_images")
+		encoderEnabled = deps.Config.IPXEnableAvif
+		if deps.Config.IPXEnableAvif {
+			enc = encoder.New(deps.Config.IPXCacheDir)
+		}
+		if deps.Config.IPXMaxAge > 0 {
+			maxAge = deps.Config.IPXMaxAge
+		}
+	}
+
+	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, baseCacheDir, enc, encoderEnabled)
+	app.Get("/images/preview/:hash", middleware.CacheControlMiddleware(maxAge), middleware.ETagMiddleware(), imageHandler.ImagePreviewHandler)
+	app.Get("/images/encoder/:hash", middleware.CacheControlMiddleware(365*24*3600), middleware.ETagMiddleware(), imageHandler.ImageEncoderHandler)
 
 	// Admin & Background Worker Handlers (Protected by API Key)
 	adminHandler := NewAdminHandler(deps.Scraper, deps.ImageWorker, deps.CleanupWorker)
