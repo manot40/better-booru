@@ -1,0 +1,30 @@
+FROM golang:1.26-alpine3.24 AS builder
+WORKDIR /app
+
+RUN apk add --no-cache build-base make pkgconfig vips-dev
+# Cache dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy pre-built docs and web public from GitHub Actions artifacts
+COPY docs/ ./docs/
+COPY public/ ./internal/static/public/
+
+COPY . .
+
+ENV CGO_ENABLED=1 \
+    GOOS=linux
+RUN make build
+
+FROM alpine:3.24 AS runner
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates tzdata vips
+
+RUN addgroup -S booru && adduser -S booru -G booru
+RUN mkdir -p /app/.cache/preview_images && chown -R booru:booru /app
+
+COPY --from=builder --chown=booru:booru /app/bin/booru-server /app/booru-server
+
+USER booru
+ENTRYPOINT ["/app/booru-server"]

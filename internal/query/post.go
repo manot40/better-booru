@@ -85,7 +85,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 
 	q := bunDB.NewSelect().
 		TableExpr("posts AS p").
-		Join("LEFT JOIN posts_images AS pi ON pi.post_id = p.id AND pi.orphaned = false")
+		Join("LEFT JOIN posts_images AS pi ON pi.post_id = p.id")
 
 	// Apply Dynamic Fields (processed URLs, LQIP, dimensions)
 	s3PublicURL := ""

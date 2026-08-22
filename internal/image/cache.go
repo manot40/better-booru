@@ -102,10 +102,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 // GetCache checks if the image exists in cache (S3 or local disk).
 func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCacheDir, hash string) (*CachedResult, error) {
 	var record db.PostImage
-	err := bunDB.NewSelect().
-		Model(&record).
-		Where("id = ? AND orphaned = false", hash).
-		Scan(ctx)
+	err := bunDB.NewSelect().Model(&record).Where("id = ?", hash).Scan(ctx)
 
 	if err != nil {
 		return nil, nil // Cache miss

@@ -15,7 +15,73 @@ env:
   WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
 
 jobs:
+  build-docs:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloning Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Install swaggo
+        run: go install github.com/swaggo/swag/cmd/swag@v1
+
+      - name: Build docs
+        run: make swagger
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: docs/
+          retention-days: 1
+
+  build-web:
+    needs: [build-docs]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloning Repository
+        uses: actions/checkout@v4
+
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: docs/
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install dependencies
+        working-directory: ./web
+        run: pnpm install
+
+      - name: Build web
+        working-directory: ./web
+        run: pnpm run build
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-public
+          path: web/.output/public/
+          retention-days: 1
+
   build-and-publish:
+    needs: [build-docs, build-web]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -28,6 +94,18 @@ jobs:
     steps:
       - name: Cloning Repository
         uses: actions/checkout@v4
+
+      - name: Download docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: docs/
+
+      - name: Download web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-public
+          path: public/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -55,7 +133,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          file: ./Dockerfile
+          file: ./Dockerfile.ci
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           context: .
