@@ -2,6 +2,8 @@ import type { UserData } from '~/types';
 
 import { destr } from 'destr';
 
+let init: (() => void) | null = null;
+
 export const useUserData = defineStore(STATIC.keys.userData, {
   state: () => <UserData>{ lastBrowse: {} },
 
@@ -9,7 +11,7 @@ export const useUserData = defineStore(STATIC.keys.userData, {
     browseHistory: (state) =>
       Object.entries(state.lastBrowse)
         .sort(([, a], [, b]) => {
-          return b[2] - a[2];
+          return b[2]! - a[2]!;
         })
         .map(([key, value]) => ({
           key,
@@ -19,11 +21,19 @@ export const useUserData = defineStore(STATIC.keys.userData, {
             return { op: op as 'eq' | 'ne' | 'or', val: op !== 'eq' ? t.slice(1) : t, raw: t };
           }),
           rawTags: value[1],
-          lastMod: new Date(value[2]),
+          lastMod: new Date(value[2] ?? Date.now()),
         })),
   },
 
   actions: {
+    initialize() {
+      if (import.meta.server || init) return;
+
+      const fromStorage: UserData = destr(localStorage.getItem(STATIC.keys.userData)) || { lastBrowse: {} };
+      Object.assign(this.$state, fromStorage);
+
+      init = this.$subscribe((_, state) => localStorage.setItem(STATIC.keys.userData, JSON.stringify(state)));
+    },
     deleteHistory(key: string) {
       const removed = Object.entries(this.lastBrowse).filter(([k]) => k !== key);
       this.lastBrowse = Object.fromEntries(removed);

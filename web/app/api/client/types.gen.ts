@@ -4,7 +4,10 @@ import type { FetchOptions as OfetchOptions, ResponseType as OfetchResponseType 
 import type { ofetch } from 'ofetch';
 
 import type { Auth } from '../core/auth.gen';
-import type { ServerSentEventsOptions, ServerSentEventsResult } from '../core/serverSentEvents.gen';
+import type {
+  ServerSentEventsOptions,
+  ServerSentEventsResult,
+} from '../core/serverSentEvents.gen';
 import type { Client as CoreClient, Config as CoreConfig } from '../core/types.gen';
 import type { Middleware } from './utils.gen';
 
@@ -127,7 +130,11 @@ export interface RequestOptions<
     }>,
     Pick<
       ServerSentEventsOptions<TData>,
-      'onSseError' | 'onSseEvent' | 'sseDefaultRetryDelay' | 'sseMaxRetryAttempts' | 'sseMaxRetryDelay'
+      | 'onSseError'
+      | 'onSseEvent'
+      | 'sseDefaultRetryDelay'
+      | 'sseMaxRetryAttempts'
+      | 'sseMaxRetryDelay'
     > {
   /**
    * Any body that you want to add to your request.
@@ -202,7 +209,7 @@ type MethodFn = <
   ThrowOnError extends boolean = false,
   TResponseStyle extends ResponseStyle = 'fields',
 >(
-  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'>
+  options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'>,
 ) => RequestResult<TData, TError, ThrowOnError, TResponseStyle>;
 
 type SseFn = <
@@ -212,7 +219,7 @@ type SseFn = <
   ThrowOnError extends boolean = false,
   TResponseStyle extends ResponseStyle = 'fields',
 >(
-  options: Omit<RequestOptions<never, TResponseStyle, ThrowOnError>, 'method'>
+  options: Omit<RequestOptions<never, TResponseStyle, ThrowOnError>, 'method'>,
 ) => Promise<ServerSentEventsResult<TData>>;
 
 type RequestFn = <
@@ -222,7 +229,7 @@ type RequestFn = <
   TResponseStyle extends ResponseStyle = 'fields',
 >(
   options: Omit<RequestOptions<TData, TResponseStyle, ThrowOnError>, 'method'> &
-    Pick<Required<RequestOptions<TData, TResponseStyle, ThrowOnError>>, 'method'>
+    Pick<Required<RequestOptions<TData, TResponseStyle, ThrowOnError>>, 'method'>,
 ) => RequestResult<TData, TError, ThrowOnError, TResponseStyle>;
 
 type BuildUrlFn = <
@@ -233,7 +240,7 @@ type BuildUrlFn = <
     url: string;
   },
 >(
-  options: TData & Options<TData>
+  options: TData & Options<TData>,
 ) => string;
 
 export type Client = CoreClient<RequestFn, Config, MethodFn, BuildUrlFn, SseFn> & {
@@ -249,7 +256,7 @@ export type Client = CoreClient<RequestFn, Config, MethodFn, BuildUrlFn, SseFn> 
  * to ensure your client always has the correct values.
  */
 export type CreateClientConfig<T extends ClientOptions = ClientOptions> = (
-  override?: Config<ClientOptions & T>
+  override?: Config<ClientOptions & T>,
 ) => Config<Required<ClientOptions> & T>;
 
 export interface TDataShape {
@@ -267,5 +274,8 @@ export type Options<
   ThrowOnError extends boolean = boolean,
   TResponse = unknown,
   TResponseStyle extends ResponseStyle = 'fields',
-> = OmitKeys<RequestOptions<TResponse, TResponseStyle, ThrowOnError>, 'body' | 'path' | 'query' | 'url'> &
+> = OmitKeys<
+  RequestOptions<TResponse, TResponseStyle, ThrowOnError>,
+  'body' | 'path' | 'query' | 'url'
+> &
   ([TData] extends [never] ? unknown : Omit<TData, 'url'>);

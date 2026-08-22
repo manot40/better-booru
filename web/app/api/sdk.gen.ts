@@ -2,55 +2,20 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type {
-  GetApiAutocompleteData,
-  GetApiAutocompleteErrors,
-  GetApiAutocompleteResponses,
-  GetApiImagesCleanupData,
-  GetApiImagesCleanupErrors,
-  GetApiImagesCleanupResponses,
-  GetApiImagesPreviewByHashData,
-  GetApiImagesPreviewByHashErrors,
-  GetApiImagesPreviewByHashResponses,
-  GetApiImagesStatusData,
-  GetApiImagesStatusErrors,
-  GetApiImagesStatusResponses,
-  GetApiImagesTriggerData,
-  GetApiImagesTriggerErrors,
-  GetApiImagesTriggerResponses,
-  GetApiPostsByIdData,
-  GetApiPostsByIdErrors,
-  GetApiPostsByIdResponses,
-  GetApiPostsByIdTagsData,
-  GetApiPostsByIdTagsErrors,
-  GetApiPostsByIdTagsResponses,
-  GetApiPostsData,
-  GetApiPostsErrors,
-  GetApiPostsResponses,
-  GetApiScrapStatusData,
-  GetApiScrapStatusErrors,
-  GetApiScrapStatusResponses,
-  GetApiScrapTriggerData,
-  GetApiScrapTriggerErrors,
-  GetApiScrapTriggerResponses,
-} from './types.gen';
+import type { GetApiAutocompleteData, GetApiAutocompleteErrors, GetApiAutocompleteResponses, GetApiImagesCleanupData, GetApiImagesCleanupErrors, GetApiImagesCleanupResponses, GetApiImagesStatusData, GetApiImagesStatusErrors, GetApiImagesStatusResponses, GetApiImagesTriggerData, GetApiImagesTriggerErrors, GetApiImagesTriggerResponses, GetApiPostsByIdData, GetApiPostsByIdErrors, GetApiPostsByIdResponses, GetApiPostsByIdTagsData, GetApiPostsByIdTagsErrors, GetApiPostsByIdTagsResponses, GetApiPostsData, GetApiPostsErrors, GetApiPostsResponses, GetApiScrapStatusData, GetApiScrapStatusErrors, GetApiScrapStatusResponses, GetApiScrapTriggerData, GetApiScrapTriggerErrors, GetApiScrapTriggerResponses, GetImagesEncoderByHashData, GetImagesEncoderByHashErrors, GetImagesEncoderByHashResponses, GetImagesPreviewByHashData, GetImagesPreviewByHashErrors, GetImagesPreviewByHashResponses } from './types.gen';
 
-export type Options<
-  TData extends TDataShape = TDataShape,
-  ThrowOnError extends boolean = boolean,
-  TResponse = unknown,
-> = Options2<TData, ThrowOnError, TResponse> & {
-  /**
-   * You can provide a client instance returned by `createClient()` instead of
-   * individual options. This might be also useful if you want to implement a
-   * custom client.
-   */
-  client?: Client;
-  /**
-   * You can pass arbitrary values through the `meta` object. This can be
-   * used to access values that aren't defined as part of the SDK function.
-   */
-  meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
+export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
+    /**
+     * You can provide a client instance returned by `createClient()` instead of
+     * individual options. This might be also useful if you want to implement a
+     * custom client.
+     */
+    client?: Client;
+    /**
+     * You can pass arbitrary values through the `meta` object. This can be
+     * used to access values that aren't defined as part of the SDK function.
+     */
+    meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
 
 /**
@@ -58,163 +23,116 @@ export type Options<
  *
  * Returns tag autocomplete suggestions matching the query prefix
  */
-export const getApiAutocomplete = <ThrowOnError extends boolean = false>(
-  options: Options<GetApiAutocompleteData, ThrowOnError>
-): RequestResult<GetApiAutocompleteResponses, GetApiAutocompleteErrors, ThrowOnError> =>
-  (options.client ?? client).get<GetApiAutocompleteResponses, GetApiAutocompleteErrors, ThrowOnError>({
-    url: '/api/autocomplete',
-    ...options,
-  });
+export const getApiAutocomplete = <ThrowOnError extends boolean = false>(options: Options<GetApiAutocompleteData, ThrowOnError>): RequestResult<GetApiAutocompleteResponses, GetApiAutocompleteErrors, ThrowOnError> => (options.client ?? client).get<GetApiAutocompleteResponses, GetApiAutocompleteErrors, ThrowOnError>({ url: '/api/autocomplete', ...options });
 
 /**
  * Trigger image cache cleanup
  *
  * Removes expired image previews past TTL
  */
-export const getApiImagesCleanup = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiImagesCleanupData, ThrowOnError>
-): RequestResult<GetApiImagesCleanupResponses, GetApiImagesCleanupErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiImagesCleanupResponses, GetApiImagesCleanupErrors, ThrowOnError>({
-    security: [
-      {
-        in: 'query',
-        name: 'token',
-        type: 'apiKey',
-      },
-    ],
+export const getApiImagesCleanup = <ThrowOnError extends boolean = false>(options?: Options<GetApiImagesCleanupData, ThrowOnError>): RequestResult<GetApiImagesCleanupResponses, GetApiImagesCleanupErrors, ThrowOnError> => (options?.client ?? client).get<GetApiImagesCleanupResponses, GetApiImagesCleanupErrors, ThrowOnError>({
+    security: [{
+            in: 'query',
+            name: 'token',
+            type: 'apiKey'
+        }],
     url: '/api/images/cleanup',
-    ...options,
-  });
-
-/**
- * Get image preview thumbnail
- *
- * Serves cached optimized WebP thumbnail or generates it on-demand
- */
-export const getApiImagesPreviewByHash = <ThrowOnError extends boolean = false>(
-  options: Options<GetApiImagesPreviewByHashData, ThrowOnError>
-): RequestResult<GetApiImagesPreviewByHashResponses, GetApiImagesPreviewByHashErrors, ThrowOnError> =>
-  (options.client ?? client).get<
-    GetApiImagesPreviewByHashResponses,
-    GetApiImagesPreviewByHashErrors,
-    ThrowOnError
-  >({ url: '/api/images/preview/{hash}', ...options });
+    ...options
+});
 
 /**
  * Get image worker status
  *
  * Returns whether image optimization worker is currently processing tasks
  */
-export const getApiImagesStatus = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiImagesStatusData, ThrowOnError>
-): RequestResult<GetApiImagesStatusResponses, GetApiImagesStatusErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiImagesStatusResponses, GetApiImagesStatusErrors, ThrowOnError>({
-    security: [
-      {
-        in: 'query',
-        name: 'token',
-        type: 'apiKey',
-      },
-    ],
+export const getApiImagesStatus = <ThrowOnError extends boolean = false>(options?: Options<GetApiImagesStatusData, ThrowOnError>): RequestResult<GetApiImagesStatusResponses, GetApiImagesStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetApiImagesStatusResponses, GetApiImagesStatusErrors, ThrowOnError>({
+    security: [{
+            in: 'query',
+            name: 'token',
+            type: 'apiKey'
+        }],
     url: '/api/images/status',
-    ...options,
-  });
+    ...options
+});
 
 /**
  * Trigger image optimization worker
  *
  * Processes pending tasks from the Redis image optimization queue
  */
-export const getApiImagesTrigger = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiImagesTriggerData, ThrowOnError>
-): RequestResult<GetApiImagesTriggerResponses, GetApiImagesTriggerErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiImagesTriggerResponses, GetApiImagesTriggerErrors, ThrowOnError>({
-    security: [
-      {
-        in: 'query',
-        name: 'token',
-        type: 'apiKey',
-      },
-    ],
+export const getApiImagesTrigger = <ThrowOnError extends boolean = false>(options?: Options<GetApiImagesTriggerData, ThrowOnError>): RequestResult<GetApiImagesTriggerResponses, GetApiImagesTriggerErrors, ThrowOnError> => (options?.client ?? client).get<GetApiImagesTriggerResponses, GetApiImagesTriggerErrors, ThrowOnError>({
+    security: [{
+            in: 'query',
+            name: 'token',
+            type: 'apiKey'
+        }],
     url: '/api/images/trigger',
-    ...options,
-  });
+    ...options
+});
 
 /**
  * List posts
  *
  * Get paginated list of booru posts with tag filtering and cursor pagination
  */
-export const getApiPosts = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiPostsData, ThrowOnError>
-): RequestResult<GetApiPostsResponses, GetApiPostsErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiPostsResponses, GetApiPostsErrors, ThrowOnError>({
-    url: '/api/posts',
-    ...options,
-  });
+export const getApiPosts = <ThrowOnError extends boolean = false>(options?: Options<GetApiPostsData, ThrowOnError>): RequestResult<GetApiPostsResponses, GetApiPostsErrors, ThrowOnError> => (options?.client ?? client).get<GetApiPostsResponses, GetApiPostsErrors, ThrowOnError>({ url: '/api/posts', ...options });
 
 /**
  * Get post by ID
  *
  * Returns detailed post metadata, image URLs, and tags
  */
-export const getApiPostsById = <ThrowOnError extends boolean = false>(
-  options: Options<GetApiPostsByIdData, ThrowOnError>
-): RequestResult<GetApiPostsByIdResponses, GetApiPostsByIdErrors, ThrowOnError> =>
-  (options.client ?? client).get<GetApiPostsByIdResponses, GetApiPostsByIdErrors, ThrowOnError>({
-    url: '/api/posts/{id}',
-    ...options,
-  });
+export const getApiPostsById = <ThrowOnError extends boolean = false>(options: Options<GetApiPostsByIdData, ThrowOnError>): RequestResult<GetApiPostsByIdResponses, GetApiPostsByIdErrors, ThrowOnError> => (options.client ?? client).get<GetApiPostsByIdResponses, GetApiPostsByIdErrors, ThrowOnError>({ url: '/api/posts/{id}', ...options });
 
 /**
  * Get post tags
  *
  * Returns all tags associated with the given post ID
  */
-export const getApiPostsByIdTags = <ThrowOnError extends boolean = false>(
-  options: Options<GetApiPostsByIdTagsData, ThrowOnError>
-): RequestResult<GetApiPostsByIdTagsResponses, GetApiPostsByIdTagsErrors, ThrowOnError> =>
-  (options.client ?? client).get<GetApiPostsByIdTagsResponses, GetApiPostsByIdTagsErrors, ThrowOnError>({
-    url: '/api/posts/{id}/tags',
-    ...options,
-  });
+export const getApiPostsByIdTags = <ThrowOnError extends boolean = false>(options: Options<GetApiPostsByIdTagsData, ThrowOnError>): RequestResult<GetApiPostsByIdTagsResponses, GetApiPostsByIdTagsErrors, ThrowOnError> => (options.client ?? client).get<GetApiPostsByIdTagsResponses, GetApiPostsByIdTagsErrors, ThrowOnError>({ url: '/api/posts/{id}/tags', ...options });
 
 /**
  * Get scraper status
  *
  * Returns whether scraper worker is currently active and its last run time
  */
-export const getApiScrapStatus = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiScrapStatusData, ThrowOnError>
-): RequestResult<GetApiScrapStatusResponses, GetApiScrapStatusErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiScrapStatusResponses, GetApiScrapStatusErrors, ThrowOnError>({
-    security: [
-      {
-        in: 'query',
-        name: 'token',
-        type: 'apiKey',
-      },
-    ],
+export const getApiScrapStatus = <ThrowOnError extends boolean = false>(options?: Options<GetApiScrapStatusData, ThrowOnError>): RequestResult<GetApiScrapStatusResponses, GetApiScrapStatusErrors, ThrowOnError> => (options?.client ?? client).get<GetApiScrapStatusResponses, GetApiScrapStatusErrors, ThrowOnError>({
+    security: [{
+            in: 'query',
+            name: 'token',
+            type: 'apiKey'
+        }],
     url: '/api/scrap/status',
-    ...options,
-  });
+    ...options
+});
 
 /**
  * Trigger Danbooru scraper
  *
  * Manually starts the Danbooru scrape worker in the background
  */
-export const getApiScrapTrigger = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApiScrapTriggerData, ThrowOnError>
-): RequestResult<GetApiScrapTriggerResponses, GetApiScrapTriggerErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetApiScrapTriggerResponses, GetApiScrapTriggerErrors, ThrowOnError>({
-    security: [
-      {
-        in: 'query',
-        name: 'token',
-        type: 'apiKey',
-      },
-    ],
+export const getApiScrapTrigger = <ThrowOnError extends boolean = false>(options?: Options<GetApiScrapTriggerData, ThrowOnError>): RequestResult<GetApiScrapTriggerResponses, GetApiScrapTriggerErrors, ThrowOnError> => (options?.client ?? client).get<GetApiScrapTriggerResponses, GetApiScrapTriggerErrors, ThrowOnError>({
+    security: [{
+            in: 'query',
+            name: 'token',
+            type: 'apiKey'
+        }],
     url: '/api/scrap/trigger',
-    ...options,
-  });
+    ...options
+});
+
+/**
+ * Encode image to AVIF
+ *
+ * Fetches the original image from Danbooru CDN and encodes it to AVIF using ffmpeg.
+ * Returns 404 if IPX_ENABLE_AVIF is false or image is not found.
+ * Returns 415 for video file types (.mp4, .webm).
+ */
+export const getImagesEncoderByHash = <ThrowOnError extends boolean = false>(options: Options<GetImagesEncoderByHashData, ThrowOnError>): RequestResult<GetImagesEncoderByHashResponses, GetImagesEncoderByHashErrors, ThrowOnError> => (options.client ?? client).get<GetImagesEncoderByHashResponses, GetImagesEncoderByHashErrors, ThrowOnError>({ url: '/images/encoder/{hash}', ...options });
+
+/**
+ * Get image preview thumbnail
+ *
+ * Serves cached optimized WebP thumbnail or generates it on-demand
+ */
+export const getImagesPreviewByHash = <ThrowOnError extends boolean = false>(options: Options<GetImagesPreviewByHashData, ThrowOnError>): RequestResult<GetImagesPreviewByHashResponses, GetImagesPreviewByHashErrors, ThrowOnError> => (options.client ?? client).get<GetImagesPreviewByHashResponses, GetImagesPreviewByHashErrors, ThrowOnError>({ url: '/images/preview/{hash}', ...options });

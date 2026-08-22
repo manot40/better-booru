@@ -95,7 +95,9 @@ export const getParseAs = (contentType: string | null): Exclude<Config['parseAs'
     return 'formData';
   }
 
-  if (['application/', 'audio/', 'image/', 'video/'].some((type) => cleanContent.startsWith(type))) {
+  if (
+    ['application/', 'audio/', 'image/', 'video/'].some((type) => cleanContent.startsWith(type))
+  ) {
     return 'blob';
   }
 
@@ -111,7 +113,7 @@ export const getParseAs = (contentType: string | null): Exclude<Config['parseAs'
  */
 export const mapParseAsToResponseType = (
   parseAs: Config['parseAs'] | undefined,
-  explicit?: OfetchResponseType
+  explicit?: OfetchResponseType,
 ): OfetchResponseType | undefined => {
   if (explicit) return explicit;
   switch (parseAs) {
@@ -132,7 +134,7 @@ const checkForExistence = (
   options: Pick<RequestOptions, 'auth' | 'query'> & {
     headers: Headers;
   },
-  name?: string
+  name?: string,
 ): boolean => {
   if (!name) {
     return false;
@@ -150,7 +152,7 @@ const checkForExistence = (
 export async function setAuthParams(
   options: Pick<RequestOptions, 'auth' | 'query' | 'security'> & {
     headers: Headers;
-  }
+  },
 ): Promise<void> {
   for (const auth of options.security ?? []) {
     if (checkForExistence(options, auth.name)) {
@@ -212,7 +214,9 @@ const headersEntries = (headers: Headers): Array<[string, string]> => {
   return entries;
 };
 
-export const mergeHeaders = (...headers: Array<Required<Config>['headers'] | undefined>): Headers => {
+export const mergeHeaders = (
+  ...headers: Array<Required<Config>['headers'] | undefined>
+): Headers => {
   const mergedHeaders = new Headers();
   for (const header of headers) {
     if (!header) {
@@ -231,7 +235,10 @@ export const mergeHeaders = (...headers: Array<Required<Config>['headers'] | und
       } else if (value !== undefined) {
         // assume object headers are meant to be JSON stringified, i.e., their
         // content value in OpenAPI specification is 'application/json'
-        mergedHeaders.set(key, typeof value === 'object' ? JSON.stringify(value) : (value as string));
+        mergedHeaders.set(
+          key,
+          typeof value === 'object' ? JSON.stringify(value) : (value as string),
+        );
       }
     }
   }
@@ -261,7 +268,7 @@ export const isRepeatableBody = (body: unknown): boolean => {
 export const wrapDataReturn = <T>(
   data: T,
   result: { request: Request; response: Response },
-  responseStyle: ResponseStyle | undefined
+  responseStyle: ResponseStyle | undefined,
 ): T | ((T extends Record<string, unknown> ? { data: T } : { data: T }) & typeof result) =>
   (responseStyle ?? 'fields') === 'data' ? (data as any) : ({ data, ...result } as any);
 
@@ -271,8 +278,10 @@ export const wrapDataReturn = <T>(
 export const wrapErrorReturn = <E>(
   error: E,
   result: { request: Request | undefined; response: Response | undefined },
-  responseStyle: ResponseStyle | undefined
-): undefined | ((E extends Record<string, unknown> ? { error: E } : { error: E }) & typeof result) =>
+  responseStyle: ResponseStyle | undefined,
+):
+  | undefined
+  | ((E extends Record<string, unknown> ? { error: E } : { error: E }) & typeof result) =>
   (responseStyle ?? 'fields') === 'data' ? undefined : ({ error, ...result } as any);
 
 /**
@@ -282,7 +291,7 @@ export const buildOfetchOptions = (
   opts: ResolvedRequestOptions,
   body: BodyInit | null | undefined,
   responseType: OfetchResponseType | undefined,
-  retryOverride?: OfetchOptions['retry']
+  retryOverride?: OfetchOptions['retry'],
 ): OfetchOptions =>
   ({
     agent: opts.agent as OfetchOptions['agent'],
@@ -313,7 +322,7 @@ export const buildOfetchOptions = (
 export const parseSuccess = async (
   response: Response,
   opts: ResolvedRequestOptions,
-  ofetchResponseType?: OfetchResponseType
+  ofetchResponseType?: OfetchResponseType,
 ): Promise<unknown> => {
   // Stream requested: return stream body
   if (ofetchResponseType === 'stream') {
@@ -321,7 +330,8 @@ export const parseSuccess = async (
   }
 
   const inferredParseAs =
-    (opts.parseAs === 'auto' ? getParseAs(response.headers.get('Content-Type')) : opts.parseAs) ?? 'json';
+    (opts.parseAs === 'auto' ? getParseAs(response.headers.get('Content-Type')) : opts.parseAs) ??
+    'json';
 
   // Handle empty responses
   if (response.status === 204 || response.headers.get('Content-Length') === '0') {
@@ -399,7 +409,7 @@ type ErrInterceptor<Err, Res, Req, Options> = (
   response: Res | undefined,
   /** request may be undefined, because error may be from building the request object itself */
   request: Req | undefined,
-  options: Options
+  options: Options,
 ) => Err | Promise<Err>;
 
 type ReqInterceptor<Req, Options> = (request: Req, options: Options) => Req | Promise<Req>;
@@ -407,7 +417,7 @@ type ReqInterceptor<Req, Options> = (request: Req, options: Options) => Req | Pr
 type ResInterceptor<Res, Req, Options> = (
   response: Res,
   request: Req,
-  options: Options
+  options: Options,
 ) => Res | Promise<Res>;
 
 class Interceptors<Interceptor> {
@@ -457,7 +467,12 @@ export interface Middleware<Req, Res, Err, Options> {
   response: Interceptors<ResInterceptor<Res, Req, Options>>;
 }
 
-export const createInterceptors = <Req, Res, Err, Options>(): Middleware<Req, Res, Err, Options> => ({
+export const createInterceptors = <Req, Res, Err, Options>(): Middleware<
+  Req,
+  Res,
+  Err,
+  Options
+> => ({
   error: new Interceptors<ErrInterceptor<Err, Res, Req, Options>>(),
   request: new Interceptors<ReqInterceptor<Req, Options>>(),
   response: new Interceptors<ResInterceptor<Res, Req, Options>>(),
@@ -480,7 +495,7 @@ const defaultHeaders = {
 };
 
 export const createConfig = <T extends ClientOptions = ClientOptions>(
-  override: Config<Omit<ClientOptions, keyof T> & T> = {}
+  override: Config<Omit<ClientOptions, keyof T> & T> = {},
 ): Config<Omit<ClientOptions, keyof T> & T> => ({
   ...jsonBodySerializer,
   headers: defaultHeaders,

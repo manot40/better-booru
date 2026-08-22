@@ -17,7 +17,12 @@ const vLoaded: Directive<HTMLImageElement> = {
 </script>
 
 <template>
-  <NuxtLink :id="`${item.id}`" :to="{ query: $route.query, hash: `#${item.id}` }" class="block relative z-0">
+  <NuxtLink
+    :id="`${item.id}`"
+    :to="{ query: $route.query, hash: `#${item.id}` }"
+    class="block relative z-0 h-full">
+    <img v-if="!loaded && item.lqip" :src="item.lqip" class="absolute top-0 left-0 size-full" />
+
     <img
       v-loaded
       :src="item.preview_url"
@@ -25,13 +30,13 @@ const vLoaded: Directive<HTMLImageElement> = {
       :height="item.preview_height"
       :key="item.hash"
       :alt="item.source || item.hash!"
-      :style="item.lqip ? { backgroundImage: `url(${item.lqip})` } : undefined"
-      class="w-full h-full object-cover bg-cover bg-no-repeat max-h-225" />
+      class="size-full object-cover bg-cover bg-no-repeat max-h-225" />
+
     <Transition name="blur-fade">
       <div
         v-show="hideNSFW || loading"
         :class="[
-          'w-full h-full absolute left-0 top-0 z-10',
+          'size-full absolute left-0 top-0 z-10',
           hideNSFW ? 'backdrop-blur-xl bg-black/25' : 'backdrop-blur-sm bg-black/20',
         ]" />
     </Transition>

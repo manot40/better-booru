@@ -8,8 +8,6 @@ const userConfig = useUserConfig();
 
 const header: [string, string] = ['Browse History', 'Your recent searches and post browsing history'];
 
-const confirmDeleteKey = ref<string>();
-
 const dateFmt = Intl.DateTimeFormat('en-US', {
   hour12: false,
   dateStyle: 'long',

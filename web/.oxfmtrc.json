@@ -7,19 +7,5 @@
   "checkIgnorePragma": true,
   "htmlWhitespaceSensitivity": "ignore",
   "sortPackageJson": false,
-  "ignorePatterns": [
-    ".output",
-    ".data",
-    ".nuxt",
-    ".nitro",
-    ".cache",
-    ".agents",
-    ".claude",
-    "dist",
-    "deployment",
-    "docker-compose.yml",
-    "graphql",
-    "deployment",
-    "azure-pipelines.*"
-  ]
+  "ignorePatterns": [".data", ".nuxt", ".nitro", ".cache", ".output", "api", "dist"]
 }

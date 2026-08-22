@@ -30,7 +30,7 @@ export const useUserConfig = defineStore(STATIC.keys.userConfig, {
   },
 
   actions: {
-    populate() {
+    initialize() {
       const config = useCookie<UserConfig>(STATIC.keys.userConfig, { readonly: true });
       const local = import.meta.client && localStorage[STATIC.keys.userConfig];
 

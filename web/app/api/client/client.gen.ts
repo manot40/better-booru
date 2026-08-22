@@ -102,7 +102,7 @@ export const createClient = (config: Config = {}): Client => {
   const applyRequestInterceptors = async (
     request: Request,
     opts: ResolvedRequestOptions,
-    body: BodyInit | null | undefined
+    body: BodyInit | null | undefined,
   ) => {
     for (const fn of interceptors.request.fns) {
       if (fn) {
@@ -135,7 +135,7 @@ export const createClient = (config: Config = {}): Client => {
   const buildNetworkOptions = (
     opts: ResolvedRequestOptions,
     body: BodyInit | null | undefined,
-    responseType: OfetchResponseType | undefined
+    responseType: OfetchResponseType | undefined,
   ) => {
     const effectiveRetry = isRepeatableBody(body) ? opts.retry : 0;
     return buildOfetchOptions(opts, body, responseType, effectiveRetry);
@@ -149,11 +149,15 @@ export const createClient = (config: Config = {}): Client => {
     let response: Awaited<ReturnType<typeof ofetch.raw>> | undefined;
 
     try {
-      const { networkBody: initialNetworkBody, opts, url } = await resolveOptions(options as RequestOptions);
+      const {
+        networkBody: initialNetworkBody,
+        opts,
+        url,
+      } = await resolveOptions(options as RequestOptions);
       // map parseAs -> ofetch responseType once per request
       const ofetchResponseType: OfetchResponseType | undefined = mapParseAsToResponseType(
         opts.parseAs,
-        opts.responseType
+        opts.responseType,
       );
 
       const $ofetch = opts.ofetch ?? ofetch;
