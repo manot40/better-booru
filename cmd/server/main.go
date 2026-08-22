@@ -201,6 +201,9 @@ func main() {
 	<-shutdownChan
 	slog.Info("Shutting down server gracefully...")
 
+	if err := os.RemoveAll(image.ProxyCachePath); err != nil && !os.IsNotExist(err) {
+		slog.Error("Error during proxy cache cleanup", "error", err)
+	}
 	if err := app.ShutdownWithTimeout(10 * time.Second); err != nil {
 		slog.Error("Error during server shutdown", "error", err)
 	}

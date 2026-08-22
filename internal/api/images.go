@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -199,12 +198,6 @@ func (h *ImageHandler) EncoderHandler(c fiber.Ctx) error {
 	return c.Send(res.Data)
 }
 
-var (
-	PROXY_ERR_FAIL               = ErrorResponse{Error: "Failed to request proxied image"}
-	PROXY_ERR_INVALID_URL        = ErrorResponse{Error: "Invalid image URL format"}
-	PROXY_ERR_UNRECOGNIZED_IMAGE = ErrorResponse{Error: "Invalid image format sent from upstream"}
-)
-
 // PreviewHandler godoc
 // @Summary      Proxy image preview thumbnail
 // @Description  Serves image thumbnail when it's not possible (Typically CORS problem)
@@ -212,46 +205,18 @@ var (
 // @Produce      image/*
 // @Param        b64   path  string  true  "Image url in base64 encoded"
 // @Success      200   {file} binary "Image result"
-// @Failure      404   {object} api.ErrorResponse
+// @Failure      400   {object} api.ErrorResponse
 // @Failure      500   {object} api.ErrorResponse
 // @Router       /images/{b64} [get]
 func (h *ImageHandler) ProxyHandler(c fiber.Ctx) error {
 	ctx := c.Context()
 	b64str := strings.TrimSpace(c.Params("b64"))
-	b64dec, err := base64.StdEncoding.DecodeString(b64str)
+
+	result, err := image.FetchProxiedImage(&ctx, h.httpClient, b64str)
 	if err != nil {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_INVALID_URL)
+		c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: err.Error()})
 	}
 
-	url := string(b64dec)
-	if !strings.HasPrefix(url, "") {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_INVALID_URL)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-	if err != nil {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_FAIL)
-	}
-
-	resp, err := h.httpClient.Do(req)
-	if err != nil {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_FAIL)
-	}
-	if resp.StatusCode != http.StatusOK {
-		c.Status(resp.StatusCode)
-		return c.Send(nil)
-	}
-
-	contentType := resp.Header.Get("Content-Type")
-	if contentType != "" && len(contentType) > 6 && contentType[:6] != "image/" {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_UNRECOGNIZED_IMAGE)
-	}
-	contentLength := int(resp.ContentLength)
-	if contentLength <= 0 {
-		contentLength = -1
-	}
-
-	c.Set("Content-Type", contentType)
-	return c.SendStream(resp.Body, contentLength)
+	c.Set("Content-Type", result.MimeType)
+	return c.Send(result.Content)
 }
