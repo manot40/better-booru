@@ -96,9 +96,11 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 		}
 	}
 
-	imageHandler := NewImageHandler(deps.BunDB, deps.S3Storage, baseCacheDir, enc, encoderEnabled)
-	app.Get("/images/preview/:hash", middleware.CacheControlMiddleware(maxAge), middleware.ETagMiddleware(), imageHandler.ImagePreviewHandler)
-	app.Get("/images/encoder/:hash", middleware.CacheControlMiddleware(365*24*3600), middleware.ETagMiddleware(), imageHandler.ImageEncoderHandler)
+	imgHandler := NewImageHandler(deps.BunDB, deps.S3Storage, baseCacheDir, enc, encoderEnabled)
+	imgGroup := app.Group("/images", middleware.CacheControlMiddleware(maxAge), middleware.ETagMiddleware())
+	imgGroup.Get("/preview/:hash", imgHandler.PreviewHandler)
+	imgGroup.Get("/encoder/:hash", imgHandler.EncoderHandler)
+	imgGroup.Get("/:b64", imgHandler.ProxyHandler)
 
 	// Admin & Background Worker Handlers (Protected by API Key)
 	adminHandler := NewAdminHandler(deps.Scraper, deps.ImageWorker, deps.CleanupWorker)

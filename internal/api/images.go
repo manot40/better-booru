@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -44,7 +45,7 @@ func NewImageHandler(
 	}
 }
 
-// ImagePreviewHandler godoc
+// PreviewHandler godoc
 // @Summary      Get image preview thumbnail
 // @Description  Serves cached optimized WebP thumbnail or generates it on-demand
 // @Tags         images
@@ -55,7 +56,7 @@ func NewImageHandler(
 // @Failure      404   {object} api.ErrorResponse
 // @Failure      500   {object} api.ErrorResponse
 // @Router       /images/preview/{hash} [get]
-func (h *ImageHandler) ImagePreviewHandler(c fiber.Ctx) error {
+func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
 	hash := strings.TrimSpace(c.Params("hash"))
 	if hash == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Hash parameter required"})
@@ -155,7 +156,7 @@ func (h *ImageHandler) ImagePreviewHandler(c fiber.Ctx) error {
 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "Image Not Found"})
 }
 
-// ImageEncoderHandler godoc
+// EncoderHandler godoc
 // @Summary      Encode image to AVIF
 // @Description  Fetches the original image from Danbooru CDN and encodes it to AVIF using ffmpeg.
 // @Description  Returns 404 if IPX_ENABLE_AVIF is false or image is not found.
@@ -169,7 +170,7 @@ func (h *ImageHandler) ImagePreviewHandler(c fiber.Ctx) error {
 // @Failure      415   {object} api.ErrorResponse "Video files are not supported"
 // @Failure      500   {object} api.ErrorResponse "Encoding error"
 // @Router       /images/encoder/{hash} [get]
-func (h *ImageHandler) ImageEncoderHandler(c fiber.Ctx) error {
+func (h *ImageHandler) EncoderHandler(c fiber.Ctx) error {
 	if !h.encoderEnabled || h.encoder == nil {
 		return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "AVIF encoding not available"})
 	}
@@ -198,3 +199,59 @@ func (h *ImageHandler) ImageEncoderHandler(c fiber.Ctx) error {
 	return c.Send(res.Data)
 }
 
+var (
+	PROXY_ERR_FAIL               = ErrorResponse{Error: "Failed to request proxied image"}
+	PROXY_ERR_INVALID_URL        = ErrorResponse{Error: "Invalid image URL format"}
+	PROXY_ERR_UNRECOGNIZED_IMAGE = ErrorResponse{Error: "Invalid image format sent from upstream"}
+)
+
+// PreviewHandler godoc
+// @Summary      Proxy image preview thumbnail
+// @Description  Serves image thumbnail when it's not possible (Typically CORS problem)
+// @Tags         images
+// @Produce      image/*
+// @Param        b64   path  string  true  "Image url in base64 encoded"
+// @Success      200   {file} binary "Image result"
+// @Failure      404   {object} api.ErrorResponse
+// @Failure      500   {object} api.ErrorResponse
+// @Router       /images/{b64} [get]
+func (h *ImageHandler) ProxyHandler(c fiber.Ctx) error {
+	ctx := c.Context()
+	b64str := strings.TrimSpace(c.Params("b64"))
+	b64dec, err := base64.StdEncoding.DecodeString(b64str)
+	if err != nil {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_INVALID_URL)
+	}
+
+	url := string(b64dec)
+	if !strings.HasPrefix(url, "") {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_INVALID_URL)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+	if err != nil {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_FAIL)
+	}
+
+	resp, err := h.httpClient.Do(req)
+	if err != nil {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_FAIL)
+	}
+	if resp.StatusCode != http.StatusOK {
+		c.Status(resp.StatusCode)
+		return c.Send(nil)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType != "" && len(contentType) > 6 && contentType[:6] != "image/" {
+		return c.Status(fiber.StatusUnsupportedMediaType).JSON(PROXY_ERR_UNRECOGNIZED_IMAGE)
+	}
+	contentLength := int(resp.ContentLength)
+	if contentLength <= 0 {
+		contentLength = -1
+	}
+
+	c.Set("Content-Type", contentType)
+	return c.SendStream(resp.Body, contentLength)
+}

@@ -59,11 +59,10 @@ func ProcessImage(ctx context.Context, payload ProcessPayload, s3Enabled bool, h
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, payload.Src, nil)
+	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
-
-	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
