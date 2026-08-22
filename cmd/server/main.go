@@ -152,9 +152,15 @@ func main() {
 	// Initialize GoFiber App
 	app := fiber.New(fiber.Config{
 		AppName:      "Better Booru",
-		ServerHeader: "Better-Booru",
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
+
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Private:  true,
+			Loopback: true,
+		},
+		ProxyHeader: "X-Forwarded-For",
 	})
 
 	// Setup API routes and middleware

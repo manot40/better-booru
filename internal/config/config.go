@@ -13,6 +13,7 @@ type Config struct {
 	Port              string `mapstructure:"port"`
 	LogsDir           string `mapstructure:"logs_dir"`
 	BaseURL           string `mapstructure:"base_url"`
+	RateLimit         bool   `mapstructure:"rate_limit_enable"`
 	DatabaseURL       string `mapstructure:"database_url"`
 	RedisURL          string `mapstructure:"redis_url"`
 	DanbooruUserID    string `mapstructure:"danbooru_user_id"`
@@ -71,6 +72,7 @@ func LoadWithViper(v *viper.Viper) (*Config, error) {
 	v.SetDefault("port", "3001")
 	v.SetDefault("logs_dir", "")
 	v.SetDefault("base_url", "http://localhost:3001")
+	v.SetDefault("rate_limit_enable", true)
 	v.SetDefault("database_url", "postgresql://booru:booru@localhost:5432/booru")
 	v.SetDefault("redis_url", "redis://localhost:6379")
 	v.SetDefault("s3_region", "auto")
