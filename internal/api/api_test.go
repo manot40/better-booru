@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -329,3 +330,18 @@ func TestAPI_ImageEncoder_Enabled_VideoAndCache(t *testing.T) {
 	assert.Equal(t, http.StatusNotModified, respEtag.StatusCode)
 }
 
+func TestAPI_LogWriter(t *testing.T) {
+	app := fiber.New()
+	var buf strings.Builder
+	api.SetupRoutes(app, api.Dependencies{
+		LogWriter: &buf,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/posts", nil)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+
+	logOutput := buf.String()
+	assert.Contains(t, logOutput, "GET /api/posts")
+}

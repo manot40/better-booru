@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	Port              string `mapstructure:"port"`
+	LogsDir           string `mapstructure:"logs_dir"`
 	BaseURL           string `mapstructure:"base_url"`
 	DatabaseURL       string `mapstructure:"database_url"`
 	RedisURL          string `mapstructure:"redis_url"`
@@ -68,6 +69,7 @@ func Load() (*Config, error) {
 // LoadWithViper loads configuration using a provided viper instance (useful for test isolation).
 func LoadWithViper(v *viper.Viper) (*Config, error) {
 	v.SetDefault("port", "3001")
+	v.SetDefault("logs_dir", "")
 	v.SetDefault("base_url", "http://localhost:3001")
 	v.SetDefault("database_url", "postgresql://booru:booru@localhost:5432/booru")
 	v.SetDefault("redis_url", "redis://localhost:6379")

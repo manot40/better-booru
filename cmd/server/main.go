@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/manot40/better-booru/internal/danbooru"
 	"github.com/manot40/better-booru/internal/db"
 	"github.com/manot40/better-booru/internal/image"
+	"github.com/manot40/better-booru/internal/logger"
 	"github.com/manot40/better-booru/internal/s3"
 	"github.com/manot40/better-booru/internal/scraper"
 	staticPkg "github.com/manot40/better-booru/internal/static"
@@ -28,10 +30,19 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
+	var logsDir string
+	flagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flagSet.StringVar(&logsDir, "logs-dir", "", "Directory for daily rotated log files instead of stdout")
+	_ = flagSet.Parse(os.Args[1:])
+
+	logCloser, logWriter, err := logger.InitLogger(logsDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	if logCloser != nil {
+		defer logCloser.Close()
+	}
 
 	slog.Info("Starting Server...")
 
@@ -39,6 +50,20 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to load configuration", "error", err)
 		os.Exit(1)
+	}
+
+	// Fallback to cfg.LogsDir if CLI flag was not provided
+	if logsDir == "" && cfg.LogsDir != "" {
+		cfgCloser, cfgWriter, err := logger.InitLogger(cfg.LogsDir)
+		if err != nil {
+			slog.Error("Failed to initialize logger from config", "error", err)
+		} else {
+			logCloser = cfgCloser
+			logWriter = cfgWriter
+			if logCloser != nil {
+				defer logCloser.Close()
+			}
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -139,6 +164,7 @@ func main() {
 		RedisClient:   rdb,
 		DanClient:     danClient,
 		S3Storage:     s3Client,
+		LogWriter:     logWriter,
 		Scraper:       sc,
 		ImageWorker:   iw,
 		CleanupWorker: cw,
@@ -161,7 +187,7 @@ func main() {
 	go func() {
 		addr := fmt.Sprintf(":%s", cfg.Port)
 		slog.Info("Server listening", "addr", addr, "url", cfg.BaseURL)
-		if err := app.Listen(addr, fiber.ListenConfig{DisableStartupMessage: false}); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := app.Listen(addr, fiber.ListenConfig{DisableStartupMessage: logCloser != nil}); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("Server error", "error", err)
 		}
 	}()

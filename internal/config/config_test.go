@@ -21,9 +21,18 @@ func TestLoad_Defaults(t *testing.T) {
 	assert.Equal(t, "redis://localhost:6379", cfg.RedisURL)
 	assert.Equal(t, 604800, cfg.IPXMaxAge)
 	assert.Equal(t, ".cache", cfg.IPXCacheDir)
+	assert.Equal(t, "", cfg.LogsDir)
 	assert.False(t, cfg.IPXAllowParallel)
 	assert.False(t, cfg.IPXEnableAvif)
 	assert.False(t, cfg.S3Enabled())
+}
+
+func TestLoad_LogsDir(t *testing.T) {
+	v := viper.New()
+	v.Set("logs_dir", "./var/logs")
+	cfg, err := config.LoadWithViper(v)
+	require.NoError(t, err)
+	assert.Equal(t, "./var/logs", cfg.LogsDir)
 }
 
 func TestLoad_IPXAllowParallel(t *testing.T) {
@@ -75,4 +84,3 @@ func TestConfig_S3Enabled(t *testing.T) {
 	cfg.S3Bucket = ""
 	assert.False(t, cfg.S3Enabled())
 }
-

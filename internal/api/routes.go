@@ -13,6 +13,7 @@ package api
 // @description Token or API Key for administrative routes
 
 import (
+	"io"
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v3"
@@ -37,6 +38,7 @@ type Dependencies struct {
 	RedisClient   *redis.Client
 	DanClient     *danbooru.Client
 	S3Storage     image.S3Storage
+	LogWriter     io.Writer
 	Scraper       *scraper.Scraper
 	ImageWorker   *image.Worker
 	CleanupWorker *image.CleanupWorker
@@ -46,10 +48,16 @@ type Dependencies struct {
 func SetupRoutes(app *fiber.App, deps Dependencies) {
 	// Global middlewares
 	app.Use(recover.New())
-	app.Use(logger.New(logger.Config{
+
+	loggerCfg := logger.Config{
 		Format:     "[${time}] ${status} - ${latency} ${method} ${path}\n",
 		TimeFormat: "2006-01-02 15:04:05",
-	}))
+	}
+	if deps.LogWriter != nil {
+		loggerCfg.Stream = deps.LogWriter
+	}
+
+	app.Use(logger.New(loggerCfg))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-Config", "User-Config", "If-None-Match"},
