@@ -29,7 +29,7 @@ type ProxiedImage struct {
 
 func FetchProxiedImage(ctx *context.Context, hc *http.Client, b64str string) (*ProxiedImage, error) {
 	if !proxyCachePathExist {
-		os.MkdirAll(ProxyCachePath, 0644)
+		os.MkdirAll(ProxyCachePath, 0700)
 		proxyCachePathExist = true
 	}
 
