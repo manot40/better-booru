@@ -3,10 +3,12 @@ package danbooru_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,8 +25,8 @@ func TestClient_ListPosts(t *testing.T) {
 				ImageWidth:  1920,
 				ImageHeight: 1080,
 				Variants: []danbooru.Variant{
-					{Type: "original", URL: "https://cdn.donmai.us/orig.jpg", Width: 1920, Height: 1080, FileExt: "jpg"},
-					{Type: "sample", URL: "https://cdn.donmai.us/sample.jpg", Width: 800, Height: 450, FileExt: "jpg"},
+					{Type: "original", URL: fmt.Sprintf("%s/orig.jpg", constant.DanbooruCDN), Width: 1920, Height: 1080, FileExt: "jpg"},
+					{Type: "sample", URL: fmt.Sprintf("%s/sample.jpg", constant.DanbooruCDN), Width: 800, Height: 450, FileExt: "jpg"},
 				},
 			},
 		},
@@ -50,9 +52,9 @@ func TestClient_ListPosts(t *testing.T) {
 	assert.Equal(t, "abc12345", posts[0].MD5)
 
 	img := danbooru.GetDanbooruImage(&posts[0])
-	assert.Equal(t, "https://cdn.donmai.us/orig.jpg", img.FileURL)
+	assert.Equal(t, fmt.Sprintf("%s/orig.jpg", constant.DanbooruCDN), img.FileURL)
 	require.NotNil(t, img.SampleURL)
-	assert.Equal(t, "https://cdn.donmai.us/sample.jpg", *img.SampleURL)
+	assert.Equal(t, fmt.Sprintf("%s/sample.jpg", constant.DanbooruCDN), *img.SampleURL)
 }
 
 func TestClient_GetPost(t *testing.T) {

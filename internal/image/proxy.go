@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/manot40/better-booru/internal/constant"
 )
 
 const (
@@ -39,7 +41,7 @@ func FetchProxiedImage(ctx *context.Context, hc *http.Client, b64str string) (*P
 	}
 
 	url := string(b64dec)
-	if !strings.HasPrefix(url, "") {
+	if !strings.HasPrefix(url, constant.DanbooruCDN) {
 		return nil, errors.New(errInvalidURL)
 	}
 

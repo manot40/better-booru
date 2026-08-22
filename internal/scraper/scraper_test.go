@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
 	"github.com/manot40/better-booru/internal/scraper"
 	"github.com/redis/go-redis/v9"
@@ -25,7 +26,7 @@ func TestScraper_IsBusyAndLastRun(t *testing.T) {
 	userID := os.Getenv("DANBOORU_USER_ID")
 	apiKey := os.Getenv("DANBOORU_API_KEY")
 
-	danClient := danbooru.NewClientWithHTTP("https://danbooru.donmai.us", userID, apiKey, nil)
+	danClient := danbooru.NewClientWithHTTP(constant.DanbooruURL, userID, apiKey, nil)
 	s := scraper.NewScraper(nil, rdb, danClient)
 
 	assert.False(t, s.IsBusy())
@@ -45,7 +46,7 @@ func TestScraper_FetchLiveDanbooru(t *testing.T) {
 		t.Skip("DANBOORU_USER_ID and DANBOORU_API_KEY not set; skipping live Danbooru test")
 	}
 
-	danClient := danbooru.NewClientWithHTTP("https://danbooru.donmai.us", userID, apiKey, nil)
+	danClient := danbooru.NewClientWithHTTP(constant.DanbooruURL, userID, apiKey, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

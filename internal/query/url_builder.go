@@ -3,6 +3,7 @@ package query
 import (
 	"fmt"
 
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/uptrace/bun"
 )
 
@@ -10,17 +11,23 @@ import (
 
 // BaseFileURL returns SQL for the original Danbooru CDN file URL.
 func BaseFileURL() string {
-	return `CONCAT('https://cdn.donmai.us/original/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', p.hash, '.', p.file_ext)`
+	return fmt.Sprintf(`CONCAT('%s/original/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', p.hash, '.', p.file_ext)`, constant.DanbooruCDN)
 }
 
 // BaseSampleURL returns SQL for the sample Danbooru CDN URL.
 func BaseSampleURL() string {
-	return `CASE WHEN p.sample_ext != '' AND p.sample_ext IS NOT NULL THEN CONCAT('https://cdn.donmai.us/sample/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', 'sample-', p.hash, '.', p.sample_ext) END`
+	return fmt.Sprintf(
+		`CASE WHEN p.sample_ext != '' AND p.sample_ext IS NOT NULL THEN CONCAT('%s/sample/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', 'sample-', p.hash, '.', p.sample_ext) END`,
+		constant.DanbooruCDN,
+	)
 }
 
 // BasePreviewURL returns SQL for the preview 720x720 Danbooru CDN URL.
 func BasePreviewURL() string {
-	return `CASE WHEN p.preview_ext != '' AND p.preview_ext IS NOT NULL THEN CONCAT('https://cdn.donmai.us/720x720/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', p.hash, '.', p.preview_ext) END`
+	return fmt.Sprintf(
+		`CASE WHEN p.preview_ext != '' AND p.preview_ext IS NOT NULL THEN CONCAT('%s/720x720/', SUBSTR(p.hash, 1, 2), '/', SUBSTR(p.hash, 3, 2), '/', p.hash, '.', p.preview_ext) END`,
+		constant.DanbooruCDN,
+	)
 }
 
 // LQIPExpr returns SQL expression to encode the bytea LQIP column as a base64 Data URL.
@@ -34,30 +41,30 @@ func PreviewDimExpr(dim string) string {
 }
 
 // ProcessedFileURLExpr returns SQL expression prioritizing cached local/S3 images over Danbooru CDN.
-func ProcessedFileURLExpr(baseURL, s3PublicURL string) string {
+func ProcessedFileURLExpr(s3PublicURL string) string {
 	return fmt.Sprintf(`COALESCE(
-		MAX(CASE WHEN pi.type = 'ORIGINAL' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' ELSE '%s' END, '/images/original/', pi.id) END),
+		MAX(CASE WHEN pi.type = 'ORIGINAL' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' END, '/images/original/', pi.id) END),
 		%s
-	)`, s3PublicURL, baseURL, BaseFileURL())
+	)`, s3PublicURL, BaseFileURL())
 }
 
 // ProcessedPreviewURLExpr returns SQL expression prioritizing cached local/S3 preview images over Danbooru CDN.
-func ProcessedPreviewURLExpr(baseURL, s3PublicURL string) string {
+func ProcessedPreviewURLExpr(s3PublicURL string) string {
 	return fmt.Sprintf(`COALESCE(
-		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' ELSE '%s' END, '/images/preview/', pi.id) END),
+		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' END, '/images/preview/', pi.id) END),
 		%s
-	)`, s3PublicURL, baseURL, BasePreviewURL())
+	)`, s3PublicURL, BasePreviewURL())
 }
 
 // ApplySelectFields adds all dynamic columns (URLs, LQIP, dimensions) to a bun select query.
-func ApplySelectFields(q *bun.SelectQuery, baseURL, s3PublicURL string) *bun.SelectQuery {
+func ApplySelectFields(q *bun.SelectQuery, s3PublicURL string) *bun.SelectQuery {
 	return q.
 		Column("p.id", "p.hash", "p.score", "p.source", "p.rating", "p.width", "p.height", "p.file_ext", "p.file_size").
 		Column("p.sample_width", "p.sample_height", "p.pixiv_id", "p.parent_id", "p.uploader_id", "p.has_notes", "p.has_children", "p.created_at").
 		ColumnExpr(LQIPExpr() + " AS lqip").
-		ColumnExpr(ProcessedFileURLExpr(baseURL, s3PublicURL) + " AS file_url").
+		ColumnExpr(ProcessedFileURLExpr(s3PublicURL) + " AS file_url").
 		ColumnExpr(BaseSampleURL() + " AS sample_url").
-		ColumnExpr(ProcessedPreviewURLExpr(baseURL, s3PublicURL) + " AS preview_url").
+		ColumnExpr(ProcessedPreviewURLExpr(s3PublicURL) + " AS preview_url").
 		ColumnExpr(PreviewDimExpr("width") + " AS preview_width").
 		ColumnExpr(PreviewDimExpr("height") + " AS preview_height")
 }

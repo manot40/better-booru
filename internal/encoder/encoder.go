@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/manot40/better-booru/internal/constant"
 )
 
 const (
@@ -44,7 +46,7 @@ type Encoder struct {
 
 // New creates a new Encoder instance with cache directory set to baseCacheDir/original_images.
 func New(baseCacheDir string) *Encoder {
-	return NewWithClient(baseCacheDir, &http.Client{Timeout: 60 * time.Second}, "https://cdn.donmai.us")
+	return NewWithClient(baseCacheDir, &http.Client{Timeout: 60 * time.Second}, constant.DanbooruCDN)
 }
 
 // NewWithClient creates an Encoder instance with a custom HTTP client and CDN base URL (useful for testing).
@@ -53,7 +55,7 @@ func NewWithClient(baseCacheDir string, httpClient *http.Client, cdnBaseURL stri
 		httpClient = &http.Client{Timeout: 60 * time.Second}
 	}
 	if cdnBaseURL == "" {
-		cdnBaseURL = "https://cdn.donmai.us"
+		cdnBaseURL = constant.DanbooruCDN
 	}
 	return &Encoder{
 		cacheDir:   filepath.Join(baseCacheDir, "original_images"),

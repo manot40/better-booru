@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/manot40/better-booru/internal/config"
+	"github.com/manot40/better-booru/internal/constant"
 )
-
-const defaultBaseURL = "https://danbooru.donmai.us"
 
 // Client is an HTTP client for interacting with the Danbooru API.
 type Client struct {
@@ -28,7 +27,7 @@ type Client struct {
 // NewClient creates a new Danbooru API client using the given configuration.
 func NewClient(cfg *config.Config) *Client {
 	return &Client{
-		baseURL: defaultBaseURL,
+		baseURL: constant.DanbooruURL,
 		userID:  cfg.DanbooruUserID,
 		apiKey:  cfg.DanbooruAPIKey,
 		httpClient: &http.Client{
@@ -40,7 +39,7 @@ func NewClient(cfg *config.Config) *Client {
 // NewClientWithHTTP creates a Danbooru API client with a custom HTTP client and base URL (useful for testing).
 func NewClientWithHTTP(baseURL, userID, apiKey string, httpClient *http.Client) *Client {
 	if baseURL == "" {
-		baseURL = defaultBaseURL
+		baseURL = constant.DanbooruURL
 	}
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 20 * time.Second}

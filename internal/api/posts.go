@@ -156,10 +156,6 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 		if h.cfg != nil && h.cfg.S3Enabled() {
 			s3PublicURL = h.cfg.S3PublicEndpoint
 		}
-		baseURL := ""
-		if h.cfg != nil {
-			baseURL = h.cfg.BaseURL
-		}
 
 		var postDTO query.PostDTO
 		q := h.bunDB.NewSelect().
@@ -167,7 +163,7 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 			Join("LEFT JOIN posts_images AS pi ON pi.post_id = p.id AND pi.orphaned = false").
 			Where("p.id = ?", id).
 			Group("p.id")
-		q = query.ApplySelectFields(q, baseURL, s3PublicURL)
+		q = query.ApplySelectFields(q, s3PublicURL)
 
 		err := q.Scan(c.Context(), &postDTO)
 		if err != nil {
@@ -197,7 +193,7 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 
 		fileUrl := postDTO.FileURL
 		if h.cfg.IPXEnableAvif {
-			fileUrl = fmt.Sprintf("%s/images/encoder/%s", h.cfg.BaseURL, path.Base(postDTO.FileURL))
+			fileUrl = fmt.Sprintf("/images/encoder/%s", path.Base(postDTO.FileURL))
 		}
 
 		return c.JSON(PostItem{

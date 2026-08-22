@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/manot40/better-booru/internal/api"
 	"github.com/manot40/better-booru/internal/config"
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/manot40/better-booru/internal/scraper"
@@ -45,7 +47,7 @@ func setupTestApp(t *testing.T) (*fiber.App, *miniredis.Miniredis, *httptest.Ser
 					FileSize:    100000,
 					MediaAsset: danbooru.MediaAsset{
 						Variants: []danbooru.Variant{
-							{Type: "original", URL: "https://danbooru.donmai.us/test.jpg", Width: 800, Height: 600, FileExt: "jpg"},
+							{Type: "original", URL: fmt.Sprintf("%s/test.jpg", constant.DanbooruURL), Width: 800, Height: 600, FileExt: "jpg"},
 						},
 					},
 				},
@@ -63,7 +65,7 @@ func setupTestApp(t *testing.T) (*fiber.App, *miniredis.Miniredis, *httptest.Ser
 				FileSize:    100000,
 				MediaAsset: danbooru.MediaAsset{
 					Variants: []danbooru.Variant{
-						{Type: "original", URL: "https://danbooru.donmai.us/test.jpg", Width: 800, Height: 600, FileExt: "jpg"},
+						{Type: "original", URL: fmt.Sprintf("%s/test.jpg", constant.DanbooruCDN), Width: 800, Height: 600, FileExt: "jpg"},
 					},
 				},
 			}

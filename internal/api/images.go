@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/db"
 	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
@@ -93,15 +94,15 @@ func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
 		if err == nil {
 			var previewURL *string
 			if post.PreviewExt != nil {
-				u := fmt.Sprintf("https://cdn.donmai.us/180x180/%s/%s/%s.%s", post.Hash[:2], post.Hash[2:4], post.Hash, *post.PreviewExt)
+				u := fmt.Sprintf("%s/180x180/%s/%s/%s.%s", constant.DanbooruCDN, post.Hash[:2], post.Hash[2:4], post.Hash, *post.PreviewExt)
 				previewURL = &u
 			}
 			var sampleURL *string
 			if post.SampleExt != nil {
-				u := fmt.Sprintf("https://cdn.donmai.us/sample/%s/%s/sample-%s.%s", post.Hash[:2], post.Hash[2:4], post.Hash, *post.SampleExt)
+				u := fmt.Sprintf("%s/sample/%s/%s/sample-%s.%s", constant.DanbooruCDN, post.Hash[:2], post.Hash[2:4], post.Hash, *post.SampleExt)
 				sampleURL = &u
 			}
-			fileURL := fmt.Sprintf("https://cdn.donmai.us/original/%s/%s/%s.%s", post.Hash[:2], post.Hash[2:4], post.Hash, post.FileExt)
+			fileURL := fmt.Sprintf("%s/original/%s/%s/%s.%s", constant.DanbooruCDN, post.Hash[:2], post.Hash[2:4], post.Hash, post.FileExt)
 
 			calc := image.PreviewCalc{
 				Width:         post.Width,
@@ -214,7 +215,7 @@ func (h *ImageHandler) ProxyHandler(c fiber.Ctx) error {
 
 	result, err := image.FetchProxiedImage(&ctx, h.httpClient, b64str)
 	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: err.Error()})
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: err.Error()})
 	}
 
 	c.Set("Content-Type", result.MimeType)

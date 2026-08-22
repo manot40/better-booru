@@ -92,7 +92,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	if cfg.S3Enabled() {
 		s3PublicURL = cfg.S3PublicEndpoint
 	}
-	q = ApplySelectFields(q, cfg.BaseURL, s3PublicURL)
+	q = ApplySelectFields(q, s3PublicURL)
 
 	// Page / Cursor Filter
 	if strings.HasPrefix(pageStr, "a") || strings.HasPrefix(pageStr, "b") {
@@ -137,7 +137,7 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 
 	for i := range posts {
 		if cfg.IPXEnableAvif {
-			posts[i].FileURL = fmt.Sprintf("%s/images/encoder/%s", cfg.BaseURL, path.Base(posts[i].FileURL))
+			posts[i].FileURL = fmt.Sprintf("/images/encoder/%s", path.Base(posts[i].FileURL))
 		}
 	}
 
