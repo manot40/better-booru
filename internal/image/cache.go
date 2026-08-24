@@ -22,8 +22,8 @@ type S3Storage interface {
 
 // CachePayload contains metadata of image to cache.
 type CachePayload struct {
-	ID       string
 	PostID   int
+	Hash     string
 	Loc      string // CDN | LOCAL
 	Type     string // PREVIEW | ORIGINAL
 	Width    int
@@ -46,14 +46,14 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 
 	if s3Storage != nil && s3Storage.Enabled() {
 		loc = "CDN"
-		key := strings.ToLower(fmt.Sprintf("images/%s/%s", meta.Type, meta.ID))
+		key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", meta.Type, meta.Hash, meta.FileType))
 		if err := s3Storage.Upload(ctx, key, data, "image/"+meta.FileType); err != nil {
 			return "", fmt.Errorf("uploading to s3: %w", err)
 		}
 		publicURL = s3Storage.PublicURL(key)
 	} else {
 		loc = "LOCAL"
-		filePath := GetFilePath(baseCacheDir, meta.ID)
+		filePath := GetFilePath(baseCacheDir, meta.Hash, meta.FileType)
 		if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 			return "", fmt.Errorf("creating cache dir: %w", err)
 		}
@@ -66,9 +66,9 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	now := time.Now()
 
 	record := db.PostImage{
-		ID:        meta.ID,
 		PostID:    meta.PostID,
 		Loc:       loc,
+		Hash:      meta.Hash,
 		Type:      meta.Type,
 		Width:     meta.Width,
 		Height:    meta.Height,
@@ -82,8 +82,9 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	if bunDB != nil && meta.PostID > 0 {
 		_, err := bunDB.NewInsert().
 			Model(&record).
+			ExcludeColumn("id").
 			On("CONFLICT (post_id, type) DO UPDATE").
-			Set("id = EXCLUDED.id").
+			Set("hash = EXCLUDED.hash").
 			Set("loc = EXCLUDED.loc").
 			Set("width = EXCLUDED.width").
 			Set("height = EXCLUDED.height").
@@ -108,13 +109,13 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 		err := bunDB.NewSelect().Model(&record).Where("id = ?", hash).Scan(ctx)
 		if err == nil {
 			if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
-				key := strings.ToLower(fmt.Sprintf("images/%s/%s", record.Type, record.ID))
+				key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", record.Type, record.Hash, record.FileType))
 				return &CachedResult{
 					RedirectURL: s3Storage.PublicURL(key),
 				}, nil
 			}
 
-			filePath := GetFilePath(baseCacheDir, record.ID)
+			filePath := GetFilePath(baseCacheDir, record.Hash, record.FileType)
 			data, err := os.ReadFile(filePath)
 			if err != nil {
 				// File missing from disk, mark orphaned
@@ -134,7 +135,7 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	}
 
 	// Fallback to local disk if not in DB or DB not available
-	filePath := GetFilePath(baseCacheDir, hash)
+	filePath := GetFilePath(baseCacheDir, hash, "")
 	if data, err := os.ReadFile(filePath); err == nil && len(data) > 0 {
 		return &CachedResult{
 			FilePath: filePath,

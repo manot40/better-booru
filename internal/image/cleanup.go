@@ -70,13 +70,13 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 	cleanedIDs := make([]string, 0, len(oldImages))
 	for _, img := range oldImages {
 		if img.Loc == "LOCAL" {
-			filePath := GetFilePath(c.baseCacheDir, img.ID)
+			filePath := GetFilePath(c.baseCacheDir, img.Hash, img.FileType)
 			_ = os.Remove(filePath)
 		} else if img.Loc == "CDN" && c.s3Storage != nil && c.s3Storage.Enabled() {
-			key := strings.ToLower(fmt.Sprintf("images/%s/%s", img.Type, img.ID))
+			key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", img.Type, img.Hash, img.FileType))
 			_ = c.s3Storage.Delete(ctx, key)
 		}
-		cleanedIDs = append(cleanedIDs, img.ID)
+		cleanedIDs = append(cleanedIDs, img.Hash)
 	}
 
 	if len(cleanedIDs) > 0 {

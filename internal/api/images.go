@@ -133,7 +133,7 @@ func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
 
 			if err == nil && processed != nil {
 				publicURL, _ := image.SetCache(c.Context(), h.bunDB, h.s3Storage, h.baseCacheDir, processed.Data, image.CachePayload{
-					ID:       hash,
+					Hash:     hash,
 					PostID:   post.ID,
 					Loc:      processed.Loc,
 					Type:     "PREVIEW",

@@ -101,7 +101,8 @@ type Tag struct {
 type PostImage struct {
 	bun.BaseModel `bun:"table:posts_images,alias:pi"`
 
-	ID        string     `bun:"id,pk" json:"id"`
+	ID        int64      `bun:"id,pk,autoincrement" json:"id"`
+	Hash      string     `bun:"hash,notnull" json:"hash"`
 	PostID    int        `bun:"post_id,notnull" json:"post_id"`
 	Loc       string     `bun:"loc,notnull" json:"loc"`   // CDN | LOCAL
 	Type      string     `bun:"type,notnull" json:"type"` // PREVIEW | ORIGINAL

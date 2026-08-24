@@ -46,11 +46,11 @@ func TestReduceSize(t *testing.T) {
 	previewW := 720
 	previewH := 480
 	itemVideoWithPreview := image.PreviewCalc{
-		Width:        1920,
-		Height:       1080,
-		FileURL:      "https://example.com/video.mp4",
-		PreviewURL:   &previewURL,
-		PreviewWidth: &previewW,
+		Width:         1920,
+		Height:        1080,
+		FileURL:       "https://example.com/video.mp4",
+		PreviewURL:    &previewURL,
+		PreviewWidth:  &previewW,
 		PreviewHeight: &previewH,
 	}
 	srcV, wV, hV, okV := image.ReduceSize(itemVideoWithPreview)
@@ -75,7 +75,7 @@ func TestGetHash(t *testing.T) {
 
 func TestGetFilePath(t *testing.T) {
 	hash := "abcd1234ef56"
-	path := image.GetFilePath("/cache", hash)
+	path := image.GetFilePath("/cache", hash, "")
 	assert.Contains(t, path, "ab")
 	assert.Contains(t, path, "cd")
 	assert.Contains(t, path, "abcd1234ef56")

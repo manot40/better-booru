@@ -90,8 +90,7 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 		return &EncodeResult{IsVideo: true}, nil
 	}
 
-	cacheID := fileName + ".avif"
-	cached, err := image.GetCache(ctx, e.bunDB, e.s3Storage, e.cacheDir, cacheID)
+	cached, err := image.GetCache(ctx, e.bunDB, e.s3Storage, e.cacheDir, fileName)
 	if err == nil && cached != nil {
 		if cached.RedirectURL != "" {
 			return &EncodeResult{
@@ -217,7 +216,7 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 	}
 
 	meta := image.CachePayload{
-		ID:       cacheID,
+		Hash:     fileName,
 		PostID:   postID,
 		Loc:      loc,
 		Type:     "ORIGINAL",

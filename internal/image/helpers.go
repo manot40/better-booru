@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"path/filepath"
 	"regexp"
@@ -89,9 +90,16 @@ func GetHash(srcURL string, modifiers map[string]string) string {
 }
 
 // GetFilePath computes deterministic file path: baseDir/ab/cd/abcd...
-func GetFilePath(baseDir, hash string) string {
+func GetFilePath(baseDir, hash string, ext string) string {
+	var path string
 	if len(hash) < 4 {
-		return filepath.Join(baseDir, hash)
+		path = filepath.Join(baseDir, hash)
+	} else {
+		path = filepath.Join(baseDir, hash[:2], hash[2:4], hash)
 	}
-	return filepath.Join(baseDir, hash[:2], hash[2:4], hash)
+
+	if ext != "" {
+		return fmt.Sprintf("%s.%s", path, ext)
+	}
+	return path
 }

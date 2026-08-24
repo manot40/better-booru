@@ -202,7 +202,7 @@ func (w *Worker) processTask(ctx context.Context, key, val string) error {
 	}
 
 	_, err = SetCache(ctx, w.bunDB, w.s3Storage, w.baseCacheDir, processed.Data, CachePayload{
-		ID:       key,
+		Hash:       key,
 		PostID:   task.PostID,
 		Loc:      processed.Loc,
 		Type:     "PREVIEW",
