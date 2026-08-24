@@ -12,7 +12,7 @@ import (
 
 func TestLoad_Defaults(t *testing.T) {
 	v := viper.New()
-	cfg, err := config.LoadWithViper(v)
+	cfg, err := config.LoadWithViper(v, true)
 	require.NoError(t, err)
 
 	assert.Equal(t, "3001", cfg.Port)
@@ -30,7 +30,7 @@ func TestLoad_Defaults(t *testing.T) {
 func TestLoad_LogsDir(t *testing.T) {
 	v := viper.New()
 	v.Set("logs_dir", "./var/logs")
-	cfg, err := config.LoadWithViper(v)
+	cfg, err := config.LoadWithViper(v, true)
 	require.NoError(t, err)
 	assert.Equal(t, "./var/logs", cfg.LogsDir)
 }
@@ -38,7 +38,7 @@ func TestLoad_LogsDir(t *testing.T) {
 func TestLoad_IPXAllowParallel(t *testing.T) {
 	v := viper.New()
 	v.Set("ipx_allow_parallel", true)
-	cfg, err := config.LoadWithViper(v)
+	cfg, err := config.LoadWithViper(v, true)
 	require.NoError(t, err)
 	assert.True(t, cfg.IPXAllowParallel)
 }
@@ -46,7 +46,7 @@ func TestLoad_IPXAllowParallel(t *testing.T) {
 func TestLoad_IPXEnableAvif(t *testing.T) {
 	v := viper.New()
 	v.Set("ipx_enable_avif", true)
-	cfg, err := config.LoadWithViper(v)
+	cfg, err := config.LoadWithViper(v, true)
 	require.NoError(t, err)
 	assert.True(t, cfg.IPXEnableAvif)
 }

@@ -79,21 +79,23 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 		CreatedAt: now,
 	}
 
-	_, err := bunDB.NewInsert().
-		Model(&record).
-		On("CONFLICT (post_id, type) DO UPDATE").
-		Set("id = EXCLUDED.id").
-		Set("loc = EXCLUDED.loc").
-		Set("width = EXCLUDED.width").
-		Set("height = EXCLUDED.height").
-		Set("file_type = EXCLUDED.file_type").
-		Set("file_size = EXCLUDED.file_size").
-		Set("orphaned = false").
-		Set("updated_at = EXCLUDED.updated_at").
-		Exec(ctx)
+	if bunDB != nil && meta.PostID > 0 {
+		_, err := bunDB.NewInsert().
+			Model(&record).
+			On("CONFLICT (post_id, type) DO UPDATE").
+			Set("id = EXCLUDED.id").
+			Set("loc = EXCLUDED.loc").
+			Set("width = EXCLUDED.width").
+			Set("height = EXCLUDED.height").
+			Set("file_type = EXCLUDED.file_type").
+			Set("file_size = EXCLUDED.file_size").
+			Set("orphaned = false").
+			Set("updated_at = EXCLUDED.updated_at").
+			Exec(ctx)
 
-	if err != nil {
-		return "", fmt.Errorf("upserting post_image: %w", err)
+		if err != nil {
+			return "", fmt.Errorf("upserting post_image: %w", err)
+		}
 	}
 
 	return publicURL, nil
@@ -101,34 +103,44 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 
 // GetCache checks if the image exists in cache (S3 or local disk).
 func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCacheDir, hash string) (*CachedResult, error) {
-	var record db.PostImage
-	err := bunDB.NewSelect().Model(&record).Where("id = ?", hash).Scan(ctx)
+	if bunDB != nil {
+		var record db.PostImage
+		err := bunDB.NewSelect().Model(&record).Where("id = ?", hash).Scan(ctx)
+		if err == nil {
+			if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
+				key := strings.ToLower(fmt.Sprintf("images/%s/%s", record.Type, record.ID))
+				return &CachedResult{
+					RedirectURL: s3Storage.PublicURL(key),
+				}, nil
+			}
 
-	if err != nil {
-		return nil, nil // Cache miss
+			filePath := GetFilePath(baseCacheDir, record.ID)
+			data, err := os.ReadFile(filePath)
+			if err != nil {
+				// File missing from disk, mark orphaned
+				_, _ = bunDB.NewUpdate().
+					Model((*db.PostImage)(nil)).
+					Set("orphaned = true").
+					Where("id = ?", record.ID).
+					Exec(ctx)
+				return nil, nil
+			}
+
+			return &CachedResult{
+				FilePath: filePath,
+				Data:     data,
+			}, nil
+		}
 	}
 
-	if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
-		key := strings.ToLower(fmt.Sprintf("images/%s/%s", record.Type, record.ID))
+	// Fallback to local disk if not in DB or DB not available
+	filePath := GetFilePath(baseCacheDir, hash)
+	if data, err := os.ReadFile(filePath); err == nil && len(data) > 0 {
 		return &CachedResult{
-			RedirectURL: s3Storage.PublicURL(key),
+			FilePath: filePath,
+			Data:     data,
 		}, nil
 	}
 
-	filePath := GetFilePath(baseCacheDir, record.ID)
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		// File missing from disk, mark orphaned
-		_, _ = bunDB.NewUpdate().
-			Model((*db.PostImage)(nil)).
-			Set("orphaned = true").
-			Where("id = ?", record.ID).
-			Exec(ctx)
-		return nil, nil
-	}
-
-	return &CachedResult{
-		FilePath: filePath,
-		Data:     data,
-	}, nil
+	return nil, nil
 }

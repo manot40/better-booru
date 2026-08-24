@@ -39,36 +39,44 @@ func (c *Config) S3Enabled() bool {
 func Load() (*Config, error) {
 	v := viper.New()
 
-	if envFile := os.Getenv("ENV_FILE"); envFile != "" {
-		v.SetConfigFile(envFile)
-		if err := v.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("reading config file %q: %w", envFile, err)
-		}
-	} else {
-		// Discover .env in CWD, executable directory, or its parent.
-		v.SetConfigName(".env")
-		v.SetConfigType("env")
-		v.AddConfigPath(".")
-		if execPath, err := os.Executable(); err == nil {
-			v.AddConfigPath(filepath.Dir(execPath))
-			v.AddConfigPath(filepath.Join(filepath.Dir(execPath), ".."))
-		}
+	setDefaults(v)
+	v.SetConfigName(".env")
+	v.SetConfigType("env")
+	v.AddConfigPath(".")
+	if execPath, err := os.Executable(); err == nil {
+		v.AddConfigPath(filepath.Dir(execPath))
+		v.AddConfigPath(filepath.Join(filepath.Dir(execPath), ".."))
+	}
 
-		if err := v.ReadInConfig(); err != nil {
-			// ConfigFileNotFoundError is expected when running in Docker / CI
-			// with environment variables injected directly — not a fatal error.
-			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-				return nil, fmt.Errorf("reading .env file: %w", err)
-			}
-			// No .env file found; proceed with system environment only.
+	if err := v.ReadInConfig(); err != nil {
+		// ConfigFileNotFoundError is expected when running in Docker / CI
+		// with environment variables injected directly — not a fatal error.
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("reading .env file: %w", err)
 		}
 	}
 
-	return LoadWithViper(v)
+	return LoadWithViper(v, false)
 }
 
 // LoadWithViper loads configuration using a provided viper instance (useful for test isolation).
-func LoadWithViper(v *viper.Viper) (*Config, error) {
+func LoadWithViper(v *viper.Viper, forTest bool) (*Config, error) {
+	if forTest {
+		setDefaults(v)
+	}
+
+	v.AutomaticEnv()
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("unmarshaling config: %w", err)
+	}
+
+	return &cfg, nil
+}
+
+func setDefaults(v *viper.Viper) {
 	v.SetDefault("port", "3001")
 	v.SetDefault("logs_dir", "")
 	v.SetDefault("base_url", "http://localhost:3001")
@@ -81,14 +89,4 @@ func LoadWithViper(v *viper.Viper) (*Config, error) {
 	v.SetDefault("ipx_enable_avif", false)
 	v.SetDefault("ipx_max_age", 604800) // 7 days in seconds
 	v.SetDefault("ipx_cache_dir", ".cache")
-
-	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-	v.AutomaticEnv()
-
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("unmarshaling config: %w", err)
-	}
-
-	return &cfg, nil
 }

@@ -11,12 +11,43 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type mockS3Storage struct {
+	enabled   bool
+	uploaded  map[string][]byte
+	types     map[string]string
+	publicURL string
+}
+
+func (m *mockS3Storage) Enabled() bool {
+	return m.enabled
+}
+
+func (m *mockS3Storage) Upload(ctx context.Context, key string, data []byte, contentType string) error {
+	if m.uploaded == nil {
+		m.uploaded = make(map[string][]byte)
+		m.types = make(map[string]string)
+	}
+	m.uploaded[key] = data
+	m.types[key] = contentType
+	return nil
+}
+
+func (m *mockS3Storage) Delete(ctx context.Context, key string) error {
+	delete(m.uploaded, key)
+	return nil
+}
+
+func (m *mockS3Storage) PublicURL(key string) string {
+	return m.publicURL + "/" + strings.TrimLeft(key, "/")
+}
 
 func createTestJPEG(w, h int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
@@ -47,7 +78,7 @@ func createTestPNG(w, h int, opaque bool) []byte {
 }
 
 func TestEncoder_InvalidHash(t *testing.T) {
-	enc := encoder.New(t.TempDir())
+	enc := encoder.New(t.TempDir(), nil, nil)
 	ctx := context.Background()
 
 	badHashes := []string{
@@ -69,7 +100,7 @@ func TestEncoder_InvalidHash(t *testing.T) {
 }
 
 func TestEncoder_VideoFiles(t *testing.T) {
-	enc := encoder.New(t.TempDir())
+	enc := encoder.New(t.TempDir(), nil, nil)
 	ctx := context.Background()
 
 	videos := []string{"12345678abcdef.mp4", "12345678abcdef.webm"}
@@ -85,7 +116,7 @@ func TestEncoder_VideoFiles(t *testing.T) {
 
 func TestEncoder_CacheHit(t *testing.T) {
 	tempDir := t.TempDir()
-	enc := encoder.New(tempDir)
+	enc := encoder.New(tempDir, nil, nil)
 	ctx := context.Background()
 
 	// Pre-create cache file
@@ -108,7 +139,7 @@ func TestEncoder_CDNNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
-	enc := encoder.NewWithClient(t.TempDir(), server.Client(), server.URL)
+	enc := encoder.NewWithClient(t.TempDir(), nil, nil, server.Client(), server.URL)
 	ctx := context.Background()
 
 	res, err := enc.Encode(ctx, "9999999999.jpg")
@@ -125,7 +156,7 @@ func TestEncoder_AlreadyAVIF(t *testing.T) {
 	defer server.Close()
 
 	tempDir := t.TempDir()
-	enc := encoder.NewWithClient(tempDir, server.Client(), server.URL)
+	enc := encoder.NewWithClient(tempDir, nil, nil, server.Client(), server.URL)
 	ctx := context.Background()
 
 	res, err := enc.Encode(ctx, "aabbccddee.avif")
@@ -149,7 +180,7 @@ func TestEncoder_EncodeJPEGtoAVIF(t *testing.T) {
 	defer server.Close()
 
 	tempDir := t.TempDir()
-	enc := encoder.NewWithClient(tempDir, server.Client(), server.URL)
+	enc := encoder.NewWithClient(tempDir, nil, nil, server.Client(), server.URL)
 	ctx := context.Background()
 
 	res, err := enc.Encode(ctx, "1122334455.jpg")
@@ -162,4 +193,58 @@ func TestEncoder_EncodeJPEGtoAVIF(t *testing.T) {
 	cached, err := os.ReadFile(filepath.Join(tempDir, "original_images", "11", "22", "1122334455.avif"))
 	require.NoError(t, err)
 	assert.Equal(t, res.Data, cached)
+}
+
+func TestEncoder_S3Storage_UploadAndRedirect(t *testing.T) {
+	jpegData := createTestJPEG(100, 100)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		_, _ = w.Write(jpegData)
+	}))
+	defer server.Close()
+
+	mockS3 := &mockS3Storage{
+		enabled:   true,
+		publicURL: "https://s3.example.com",
+	}
+
+	tempDir := t.TempDir()
+	enc := encoder.NewWithClient(tempDir, nil, mockS3, server.Client(), server.URL)
+	ctx := context.Background()
+
+	res, err := enc.Encode(ctx, "3344556677.jpg")
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, "image/avif", res.ContentType)
+	assert.Equal(t, "https://s3.example.com/images/original/3344556677.avif", res.RedirectURL)
+
+	// Verify S3 has the object with key images/original/3344556677.avif
+	s3Key := "images/original/3344556677.avif"
+	assert.Contains(t, mockS3.uploaded, s3Key)
+	assert.Equal(t, "image/avif", mockS3.types[s3Key])
+	assert.NotEmpty(t, mockS3.uploaded[s3Key])
+
+	// Verify temporary local file is cleaned up when S3 is enabled
+	localFile := filepath.Join(tempDir, "original_images", "33", "44", "3344556677.avif")
+	_, err = os.Stat(localFile)
+	assert.True(t, os.IsNotExist(err), "Local cache file should be removed after upload to S3")
+}
+
+func TestEncoder_PNGTransparency(t *testing.T) {
+	pngData := createTestPNG(50, 50, false) // Transparent PNG
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write(pngData)
+	}))
+	defer server.Close()
+
+	tempDir := t.TempDir()
+	enc := encoder.NewWithClient(tempDir, nil, nil, server.Client(), server.URL)
+	ctx := context.Background()
+
+	res, err := enc.Encode(ctx, "9988776655.png")
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, "image/png", res.ContentType)
+	assert.Equal(t, pngData, res.Data)
 }

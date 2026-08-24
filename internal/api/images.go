@@ -195,6 +195,10 @@ func (h *ImageHandler) EncoderHandler(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnsupportedMediaType).JSON(ErrorResponse{Error: "Video files are not supported"})
 	}
 
+	if res.RedirectURL != "" {
+		return c.Redirect().Status(fiber.StatusFound).To(res.RedirectURL)
+	}
+
 	c.Set("Content-Type", res.ContentType)
 	return c.Send(res.Data)
 }

@@ -1,9 +1,13 @@
 services:
   app:
     build:
-      tags: [booru-go:latest]
+      tags: [booru-app:latest]
+      network: host
       context: .
-    env_file:
-      - .env
+    volumes:
+      - .env:/app/.env
+      - ./.cache:/app/.cache
+    ports:
+      - 3001:3001
     expose:
       - 3001

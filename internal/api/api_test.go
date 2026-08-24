@@ -18,6 +18,7 @@ import (
 	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
+	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/manot40/better-booru/internal/scraper"
 	"github.com/redis/go-redis/v9"
@@ -346,4 +347,95 @@ func TestAPI_LogWriter(t *testing.T) {
 
 	logOutput := buf.String()
 	assert.Contains(t, logOutput, "GET /api/posts")
+}
+
+type mockAPIS3Storage struct {
+	enabled   bool
+	uploaded  map[string][]byte
+	types     map[string]string
+	publicURL string
+}
+
+func (m *mockAPIS3Storage) Enabled() bool {
+	return m.enabled
+}
+
+func (m *mockAPIS3Storage) Upload(ctx context.Context, key string, data []byte, contentType string) error {
+	if m.uploaded == nil {
+		m.uploaded = make(map[string][]byte)
+		m.types = make(map[string]string)
+	}
+	m.uploaded[key] = data
+	m.types[key] = contentType
+	return nil
+}
+
+func (m *mockAPIS3Storage) Delete(ctx context.Context, key string) error {
+	delete(m.uploaded, key)
+	return nil
+}
+
+func (m *mockAPIS3Storage) PublicURL(key string) string {
+	return m.publicURL + "/" + strings.TrimLeft(key, "/")
+}
+
+func TestAPI_ImageEncoder_S3Redirect(t *testing.T) {
+	tempCacheDir := t.TempDir()
+	cfg := &config.Config{
+		IPXEnableAvif: true,
+		IPXCacheDir:   tempCacheDir,
+	}
+
+	mockS3 := &mockAPIS3Storage{
+		enabled:   true,
+		publicURL: "https://s3.example.com",
+	}
+
+	app := fiber.New()
+	api.SetupRoutes(app, api.Dependencies{
+		Config:    cfg,
+		S3Storage: mockS3,
+	})
+
+	// Pre-populate local cache with existing avif file so it detects the cache
+	cachedFilePath := tempCacheDir + "/original_images/aa/bb/aabbccddee.avif"
+	require.NoError(t, os.MkdirAll(tempCacheDir+"/original_images/aa/bb", 0755))
+	require.NoError(t, os.WriteFile(cachedFilePath, []byte("mock-avif"), 0644))
+
+	req := httptest.NewRequest(http.MethodGet, "/images/encoder/aabbccddee.jpg", nil)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "image/avif", resp.Header.Get("Content-Type"))
+}
+
+func TestAPI_ImageEncoder_S3Upload_And_302Redirect(t *testing.T) {
+	tempCacheDir := t.TempDir()
+
+	mockS3 := &mockAPIS3Storage{
+		enabled:   true,
+		publicURL: "https://s3.example.com",
+	}
+
+	// Mock CDN server serving valid AVIF data directly
+	cdnServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/avif")
+		_, _ = w.Write([]byte("mock-avif-bytes"))
+	}))
+	defer cdnServer.Close()
+
+	enc := encoder.NewWithClient(tempCacheDir, nil, mockS3, cdnServer.Client(), cdnServer.URL)
+
+	app := fiber.New()
+	imgHandler := api.NewImageHandler(nil, mockS3, tempCacheDir, enc, true)
+	app.Get("/images/encoder/:hash", imgHandler.EncoderHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/images/encoder/4455667788.jpg", nil)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusFound, resp.StatusCode)
+	assert.Equal(t, "https://s3.example.com/images/original/4455667788.avif", resp.Header.Get("Location"))
+
+	// Verify S3 upload
+	assert.Contains(t, mockS3.uploaded, "images/original/4455667788.avif")
 }

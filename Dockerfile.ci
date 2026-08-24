@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine3.24 AS builder
 WORKDIR /app
 
-RUN apk add --no-cache build-base make pkgconfig vips-dev
+RUN apk update && apk add --no-cache build-base make pkgconfig vips-dev
 # Cache dependencies
 COPY go.mod go.sum ./
 RUN go mod download
@@ -19,7 +19,7 @@ RUN make build
 FROM alpine:3.24 AS runner
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata vips
+RUN apk update && apk add --no-cache ca-certificates ffmpeg tzdata vips
 
 RUN addgroup -S booru && adduser -S booru -G booru
 RUN mkdir -p /app/.cache/preview_images && chown -R booru:booru /app

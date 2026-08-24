@@ -15,7 +15,9 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/manot40/better-booru/internal/constant"
+	"github.com/manot40/better-booru/internal/db"
 	"github.com/manot40/better-booru/internal/image"
+	"github.com/uptrace/bun"
 )
 
 const (
@@ -36,6 +38,7 @@ type EncodeResult struct {
 	Data        []byte
 	ContentType string
 	IsVideo     bool
+	RedirectURL string
 }
 
 // Encoder coordinates caching and transcoding images to AVIF.
@@ -43,15 +46,17 @@ type Encoder struct {
 	cacheDir   string
 	httpClient *http.Client
 	cdnBaseURL string
+	bunDB      *bun.DB
+	s3Storage  image.S3Storage
 }
 
 // New creates a new Encoder instance with cache directory set to baseCacheDir/original_images.
-func New(baseCacheDir string) *Encoder {
-	return NewWithClient(baseCacheDir, &http.Client{Timeout: 60 * time.Second}, constant.DanbooruCDN)
+func New(baseCacheDir string, bunDB *bun.DB, s3Storage image.S3Storage) *Encoder {
+	return NewWithClient(baseCacheDir, bunDB, s3Storage, &http.Client{Timeout: 60 * time.Second}, constant.DanbooruCDN)
 }
 
 // NewWithClient creates an Encoder instance with a custom HTTP client and CDN base URL (useful for testing).
-func NewWithClient(baseCacheDir string, httpClient *http.Client, cdnBaseURL string) *Encoder {
+func NewWithClient(baseCacheDir string, bunDB *bun.DB, s3Storage image.S3Storage, httpClient *http.Client, cdnBaseURL string) *Encoder {
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 60 * time.Second}
 	}
@@ -62,6 +67,8 @@ func NewWithClient(baseCacheDir string, httpClient *http.Client, cdnBaseURL stri
 		cacheDir:   filepath.Join(baseCacheDir, "original_images"),
 		httpClient: httpClient,
 		cdnBaseURL: strings.TrimRight(cdnBaseURL, "/"),
+		bunDB:      bunDB,
+		s3Storage:  s3Storage,
 	}
 }
 
@@ -78,12 +85,37 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 		return nil, ErrInvalidHash
 	}
 
-	// 1. Video files -> 415 unsupported
-	if ext == "webm" || ext == "mp4" {
+	// Error 415 for unsupported formats
+	if ext == "webm" || ext == "mp4" || ext == "zip" {
 		return &EncodeResult{IsVideo: true}, nil
 	}
 
-	// 2. Check local disk cache for existing .avif
+	cacheID := fileName + ".avif"
+	cached, err := image.GetCache(ctx, e.bunDB, e.s3Storage, e.cacheDir, cacheID)
+	if err == nil && cached != nil {
+		if cached.RedirectURL != "" {
+			return &EncodeResult{
+				RedirectURL: cached.RedirectURL,
+				ContentType: "image/avif",
+			}, nil
+		}
+		if len(cached.Data) > 0 {
+			return &EncodeResult{
+				Data:        cached.Data,
+				ContentType: "image/avif",
+			}, nil
+		}
+		if cached.FilePath != "" {
+			if data, err := os.ReadFile(cached.FilePath); err == nil && len(data) > 0 {
+				return &EncodeResult{
+					Data:        data,
+					ContentType: "image/avif",
+				}, nil
+			}
+		}
+	}
+
+	// Fallback to direct local disk cache for existing .avif
 	cachePath := e.getCachePath(fileName)
 	if cachedData, err := os.ReadFile(cachePath); err == nil && len(cachedData) > 0 {
 		return &EncodeResult{
@@ -92,12 +124,12 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 		}, nil
 	}
 
-	// 3. Ensure destination cache directory exists
+	// Ensure destination cache directory exists
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
 		return nil, fmt.Errorf("creating cache dir: %w", err)
 	}
 
-	// 4. Fetch original from CDN
+	// Fetch original from CDN
 	cdnURL := e.getCDNURL(fileName, hash)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cdnURL, nil)
 	if err != nil {
@@ -138,26 +170,78 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 		}
 	}
 
-	// 6. Already AVIF -> write to disk cache and serve
+	var encodedData []byte
+
+	// Already AVIF
 	if ext == "avif" || contentType == "image/avif" {
-		_ = os.WriteFile(cachePath, bin, 0644)
-		return &EncodeResult{
-			Data:        bin,
-			ContentType: "image/avif",
-		}, nil
+		encodedData = bin
+	} else {
+		// Transcode to AVIF with FFmpeg (HW -> SW fallback)
+		if err := e.transcode(ctx, bin, cachePath); err != nil {
+			_ = os.Remove(cachePath)
+			return nil, fmt.Errorf("encoding image to avif: %w", err)
+		}
+
+		encodedData, err = os.ReadFile(cachePath)
+		if err != nil {
+			_ = os.Remove(cachePath)
+			return nil, fmt.Errorf("reading encoded avif file: %w", err)
+		}
 	}
 
-	// 7. Transcode to AVIF with FFmpeg (HW -> SW fallback)
-	if err := e.transcode(ctx, bin, cachePath); err != nil {
-		_ = os.Remove(cachePath)
-		return nil, fmt.Errorf("encoding image to avif: %w", err)
+	// Query post metadata from DB if available
+	var postID, width, height int
+	if e.bunDB != nil {
+		var post db.Post
+		if err := e.bunDB.NewSelect().Model(&post).Where("hash = ?", fileName).Scan(ctx); err == nil {
+			postID = post.ID
+			width = post.Width
+			height = post.Height
+		}
 	}
 
-	// 8. Read encoded file from disk
-	encodedData, err := os.ReadFile(cachePath)
+	// If width/height still unknown, inspect image dimensions via govips
+	if width == 0 || height == 0 {
+		if err := image.EnsureVipsStarted(); err == nil {
+			if img, err := vips.NewImageFromBuffer(encodedData); err == nil {
+				width = img.Width()
+				height = img.Height()
+				img.Close()
+			}
+		}
+	}
+
+	loc := "LOCAL"
+	if e.s3Storage != nil && e.s3Storage.Enabled() {
+		loc = "CDN"
+	}
+
+	meta := image.CachePayload{
+		ID:       cacheID,
+		PostID:   postID,
+		Loc:      loc,
+		Type:     "ORIGINAL",
+		Width:    width,
+		Height:   height,
+		FileType: "avif",
+		FileSize: len(encodedData),
+	}
+
+	publicURL, err := image.SetCache(ctx, e.bunDB, e.s3Storage, e.cacheDir, encodedData, meta)
 	if err != nil {
+		return nil, fmt.Errorf("caching encoded image: %w", err)
+	}
+
+	if e.s3Storage != nil && e.s3Storage.Enabled() {
+		// Clean up local temp file when S3 is enabled
 		_ = os.Remove(cachePath)
-		return nil, fmt.Errorf("reading encoded avif file: %w", err)
+		if publicURL != "" {
+			return &EncodeResult{
+				Data:        encodedData,
+				ContentType: "image/avif",
+				RedirectURL: publicURL,
+			}, nil
+		}
 	}
 
 	return &EncodeResult{

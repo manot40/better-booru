@@ -65,7 +65,7 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-Config", "User-Config", "If-None-Match"},
 		AllowMethods: []string{"GET", "POST", "HEAD", "PUT", "DELETE", "PATCH", "OPTIONS"},
 	}))
-	if deps.Config.RateLimit {
+	if deps.Config != nil && deps.Config.RateLimit {
 		app.Use(limiter.New(limiter.Config{
 			Next: func(c fiber.Ctx) bool {
 				path := c.Path()
@@ -107,7 +107,7 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 		baseCacheDir = filepath.Join(deps.Config.IPXCacheDir, "preview_images")
 		encoderEnabled = deps.Config.IPXEnableAvif
 		if deps.Config.IPXEnableAvif {
-			enc = encoder.New(deps.Config.IPXCacheDir)
+			enc = encoder.New(deps.Config.IPXCacheDir, deps.BunDB, deps.S3Storage)
 		}
 		if deps.Config.IPXMaxAge > 0 {
 			maxAge = deps.Config.IPXMaxAge
@@ -122,7 +122,11 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 
 	// Admin & Background Worker Handlers (Protected by API Key)
 	adminHandler := NewAdminHandler(deps.Scraper, deps.ImageWorker, deps.CleanupWorker)
-	adminGroup := apiGroup.Group("", middleware.AdminAuthMiddleware(deps.Config.DanbooruAPIKey))
+	apiKey := ""
+	if deps.Config != nil {
+		apiKey = deps.Config.DanbooruAPIKey
+	}
+	adminGroup := apiGroup.Group("", middleware.AdminAuthMiddleware(apiKey))
 
 	adminGroup.Get("/scrap/trigger", adminHandler.ScrapTriggerHandler)
 	adminGroup.Get("/scrap/status", adminHandler.ScrapStatusHandler)

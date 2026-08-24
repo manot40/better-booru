@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/manot40/better-booru/internal/config"
@@ -192,7 +193,7 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 		}
 
 		fileUrl := postDTO.FileURL
-		if h.cfg.IPXEnableAvif {
+		if h.cfg.IPXEnableAvif && (s3PublicURL == "" || !strings.HasPrefix(fileUrl, s3PublicURL)) {
 			fileUrl = fmt.Sprintf("/images/encoder/%s", path.Base(postDTO.FileURL))
 		}
 

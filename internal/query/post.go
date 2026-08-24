@@ -136,8 +136,9 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	}
 
 	for i := range posts {
-		if cfg.IPXEnableAvif {
-			posts[i].FileURL = fmt.Sprintf("/images/encoder/%s", path.Base(posts[i].FileURL))
+		fileUrl := posts[i].FileURL
+		if cfg.IPXEnableAvif && (s3PublicURL == "" || !strings.HasPrefix(fileUrl, s3PublicURL)) {
+			posts[i].FileURL = fmt.Sprintf("/images/encoder/%s", path.Base(fileUrl))
 		}
 	}
 
