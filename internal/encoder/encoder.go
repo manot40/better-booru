@@ -10,11 +10,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/manot40/better-booru/internal/constant"
+	"github.com/manot40/better-booru/internal/image"
 )
 
 const (
@@ -127,7 +128,7 @@ func (e *Encoder) Encode(ctx context.Context, hash string) (*EncodeResult, error
 
 	// 5. PNG alpha transparency check
 	if ext == "png" || strings.HasPrefix(contentType, "image/png") {
-		isOpaque := e.checkPNGOpaqueness(ctx, bin)
+		isOpaque := e.checkPNGOpaqueness(bin)
 		if !isOpaque {
 			// Serve as raw PNG without transcoding
 			return &EncodeResult{
@@ -179,31 +180,38 @@ func (e *Encoder) getCDNURL(fileName, hash string) string {
 	return fmt.Sprintf("%s/original/%s", e.cdnBaseURL, hash)
 }
 
-// checkPNGOpaqueness probes if a PNG image is completely opaque using ffprobe signalstats.
-// Returns false if the image has alpha transparency or ffprobe is unavailable.
-func (e *Encoder) checkPNGOpaqueness(ctx context.Context, bin []byte) bool {
-	cmd := exec.CommandContext(ctx, "ffprobe",
-		"-v", "error",
-		"-f", "lavfi",
-		"-i", "movie='pipe\\:0':f=png_pipe,signalstats",
-		"-show_entries", "frame_tags=lavfi.signalstats.YMIN",
-		"-of", "default=noprint_wrappers=1:nokey=1",
-	)
-	cmd.Stdin = bytes.NewReader(bin)
-
-	out, err := cmd.Output()
-	if err != nil {
-		// ffprobe missing or lavfi error: fallback to false so transparent images don't break
+func (e *Encoder) checkPNGOpaqueness(bin []byte) bool {
+	if err := image.EnsureVipsStarted(); err != nil {
 		return false
 	}
 
-	alphaStr := strings.TrimSpace(string(out))
-	alphaVal, err := strconv.ParseFloat(alphaStr, 64)
+	img, err := vips.NewImageFromBuffer(bin)
+	if err != nil {
+		return false
+	}
+	defer img.Close()
+
+	if !img.HasAlpha() {
+		return true
+	}
+
+	bands := img.Bands()
+	if bands < 2 {
+		return true
+	}
+
+	alpha, err := img.ExtractBandToImage(bands-1, 1)
+	if err != nil {
+		return false
+	}
+	defer alpha.Close()
+
+	minAlpha, _, _, err := alpha.Min()
 	if err != nil {
 		return false
 	}
 
-	return alphaVal >= 255
+	return minAlpha >= 255
 }
 
 // transcode runs FFmpeg to convert raw image bytes to an AVIF file.
