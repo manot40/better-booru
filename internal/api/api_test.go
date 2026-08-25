@@ -18,7 +18,6 @@ import (
 	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
-	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/manot40/better-booru/internal/scraper"
 	"github.com/redis/go-redis/v9"
@@ -287,7 +286,7 @@ func TestAPI_ImageEncoder_Disabled(t *testing.T) {
 		Config: cfg,
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/images/encoder/testimage.jpg", nil)
+	req := httptest.NewRequest(http.MethodGet, "/images/original/testimage.jpg", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
@@ -306,7 +305,7 @@ func TestAPI_ImageEncoder_Enabled_VideoAndCache(t *testing.T) {
 	})
 
 	// 1. Video files -> 415 Unsupported Media Type
-	reqVideo := httptest.NewRequest(http.MethodGet, "/images/encoder/video1234.mp4", nil)
+	reqVideo := httptest.NewRequest(http.MethodGet, "/images/original/video1234.mp4", nil)
 	respVideo, err := app.Test(reqVideo)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusUnsupportedMediaType, respVideo.StatusCode)
@@ -316,7 +315,7 @@ func TestAPI_ImageEncoder_Enabled_VideoAndCache(t *testing.T) {
 	require.NoError(t, os.MkdirAll(tempCacheDir+"/original_images/12/34", 0755))
 	require.NoError(t, os.WriteFile(cachedFilePath, []byte("avif-binary-data"), 0644))
 
-	reqCache := httptest.NewRequest(http.MethodGet, "/images/encoder/12345678.jpg", nil)
+	reqCache := httptest.NewRequest(http.MethodGet, "/images/original/12345678.jpg", nil)
 	respCache, err := app.Test(reqCache)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, respCache.StatusCode)
@@ -326,7 +325,7 @@ func TestAPI_ImageEncoder_Enabled_VideoAndCache(t *testing.T) {
 	assert.NotEmpty(t, etag)
 
 	// 3. ETag If-None-Match -> 304 Not Modified
-	reqEtag := httptest.NewRequest(http.MethodGet, "/images/encoder/12345678.jpg", nil)
+	reqEtag := httptest.NewRequest(http.MethodGet, "/images/original/12345678.jpg", nil)
 	reqEtag.Header.Set("If-None-Match", etag)
 	respEtag, err := app.Test(reqEtag)
 	require.NoError(t, err)
@@ -402,40 +401,9 @@ func TestAPI_ImageEncoder_S3Redirect(t *testing.T) {
 	require.NoError(t, os.MkdirAll(tempCacheDir+"/original_images/aa/bb", 0755))
 	require.NoError(t, os.WriteFile(cachedFilePath, []byte("mock-avif"), 0644))
 
-	req := httptest.NewRequest(http.MethodGet, "/images/encoder/aabbccddee.jpg", nil)
+	req := httptest.NewRequest(http.MethodGet, "/images/original/aabbccddee.jpg", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/avif", resp.Header.Get("Content-Type"))
-}
-
-func TestAPI_ImageEncoder_S3Upload_And_302Redirect(t *testing.T) {
-	tempCacheDir := t.TempDir()
-
-	mockS3 := &mockAPIS3Storage{
-		enabled:   true,
-		publicURL: "https://s3.example.com",
-	}
-
-	// Mock CDN server serving valid AVIF data directly
-	cdnServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "image/avif")
-		_, _ = w.Write([]byte("mock-avif-bytes"))
-	}))
-	defer cdnServer.Close()
-
-	enc := encoder.NewWithClient(tempCacheDir, nil, mockS3, cdnServer.Client(), cdnServer.URL)
-
-	app := fiber.New()
-	imgHandler := api.NewImageHandler(nil, mockS3, tempCacheDir, enc, true)
-	app.Get("/images/encoder/:hash", imgHandler.EncoderHandler)
-
-	req := httptest.NewRequest(http.MethodGet, "/images/encoder/4455667788.jpg", nil)
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusFound, resp.StatusCode)
-	assert.Equal(t, "https://s3.example.com/images/original/4455667788.avif", resp.Header.Get("Location"))
-
-	// Verify S3 upload
-	assert.Contains(t, mockS3.uploaded, "images/original/4455667788.avif")
 }

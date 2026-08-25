@@ -36,6 +36,7 @@ type CachePayload struct {
 type CachedResult struct {
 	RedirectURL string
 	FilePath    string
+	FileType    string
 	Data        []byte
 }
 
@@ -84,13 +85,12 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 			Model(&record).
 			ExcludeColumn("id").
 			On("CONFLICT (post_id, type) DO UPDATE").
-			Set("hash = EXCLUDED.hash").
 			Set("loc = EXCLUDED.loc").
 			Set("width = EXCLUDED.width").
 			Set("height = EXCLUDED.height").
+			Set("orphaned = false").
 			Set("file_type = EXCLUDED.file_type").
 			Set("file_size = EXCLUDED.file_size").
-			Set("orphaned = false").
 			Set("updated_at = EXCLUDED.updated_at").
 			Exec(ctx)
 
@@ -103,14 +103,18 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 }
 
 // GetCache checks if the image exists in cache (S3 or local disk).
-func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCacheDir, hash string) (*CachedResult, error) {
+func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCacheDir, hash, cacheType string) (*CachedResult, error) {
 	if bunDB != nil {
 		var record db.PostImage
-		err := bunDB.NewSelect().Model(&record).Where("id = ?", hash).Scan(ctx)
+		err := bunDB.NewSelect().
+			Model(&record).
+			Where("hash = ? AND type = ?", hash, strings.ToUpper(cacheType)).
+			Scan(ctx)
 		if err == nil {
 			if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
 				key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", record.Type, record.Hash, record.FileType))
 				return &CachedResult{
+					FileType:    record.FileType,
 					RedirectURL: s3Storage.PublicURL(key),
 				}, nil
 			}
@@ -128,6 +132,7 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 			}
 
 			return &CachedResult{
+				FileType: record.FileType,
 				FilePath: filePath,
 				Data:     data,
 			}, nil
@@ -138,6 +143,7 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	filePath := GetFilePath(baseCacheDir, hash, "")
 	if data, err := os.ReadFile(filePath); err == nil && len(data) > 0 {
 		return &CachedResult{
+			FileType: "webp",
 			FilePath: filePath,
 			Data:     data,
 		}, nil

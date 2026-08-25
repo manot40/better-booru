@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/manot40/better-booru/internal/config"
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 )
@@ -137,8 +138,8 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 
 	for i := range posts {
 		fileUrl := posts[i].FileURL
-		if cfg.IPXEnableAvif && (s3PublicURL == "" || !strings.HasPrefix(fileUrl, s3PublicURL)) {
-			posts[i].FileURL = fmt.Sprintf("/images/encoder/%s", path.Base(fileUrl))
+		if cfg.IPXEnableAvif && strings.HasPrefix(fileUrl, constant.DanbooruCDN) {
+			posts[i].FileURL = fmt.Sprintf("/images/original/%s", path.Base(fileUrl))
 		}
 	}
 

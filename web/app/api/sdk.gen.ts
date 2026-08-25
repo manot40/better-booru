@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetApiAutocompleteData, GetApiAutocompleteErrors, GetApiAutocompleteResponses, GetApiImagesCleanupData, GetApiImagesCleanupErrors, GetApiImagesCleanupResponses, GetApiImagesStatusData, GetApiImagesStatusErrors, GetApiImagesStatusResponses, GetApiImagesTriggerData, GetApiImagesTriggerErrors, GetApiImagesTriggerResponses, GetApiPostsByIdData, GetApiPostsByIdErrors, GetApiPostsByIdResponses, GetApiPostsByIdTagsData, GetApiPostsByIdTagsErrors, GetApiPostsByIdTagsResponses, GetApiPostsData, GetApiPostsErrors, GetApiPostsResponses, GetApiScrapStatusData, GetApiScrapStatusErrors, GetApiScrapStatusResponses, GetApiScrapTriggerData, GetApiScrapTriggerErrors, GetApiScrapTriggerResponses, GetImagesEncoderByHashData, GetImagesEncoderByHashErrors, GetImagesEncoderByHashResponses, GetImagesPreviewByHashData, GetImagesPreviewByHashErrors, GetImagesPreviewByHashResponses } from './types.gen';
+import type { GetApiAutocompleteData, GetApiAutocompleteErrors, GetApiAutocompleteResponses, GetApiImagesCleanupData, GetApiImagesCleanupErrors, GetApiImagesCleanupResponses, GetApiImagesStatusData, GetApiImagesStatusErrors, GetApiImagesStatusResponses, GetApiImagesTriggerData, GetApiImagesTriggerErrors, GetApiImagesTriggerResponses, GetApiPostsByIdData, GetApiPostsByIdErrors, GetApiPostsByIdResponses, GetApiPostsByIdTagsData, GetApiPostsByIdTagsErrors, GetApiPostsByIdTagsResponses, GetApiPostsData, GetApiPostsErrors, GetApiPostsResponses, GetApiScrapStatusData, GetApiScrapStatusErrors, GetApiScrapStatusResponses, GetApiScrapTriggerData, GetApiScrapTriggerErrors, GetApiScrapTriggerResponses, GetImagesByAssetTypeByHashData, GetImagesByAssetTypeByHashErrors, GetImagesByAssetTypeByHashResponses, GetImagesByB64Data, GetImagesByB64Errors, GetImagesByB64Responses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -122,17 +122,15 @@ export const getApiScrapTrigger = <ThrowOnError extends boolean = false>(options
 });
 
 /**
- * Encode image to AVIF
- *
- * Fetches the original image from Danbooru CDN and encodes it to AVIF using ffmpeg.
- * Returns 404 if IPX_ENABLE_AVIF is false or image is not found.
- * Returns 415 for video file types (.mp4, .webm).
- */
-export const getImagesEncoderByHash = <ThrowOnError extends boolean = false>(options: Options<GetImagesEncoderByHashData, ThrowOnError>): RequestResult<GetImagesEncoderByHashResponses, GetImagesEncoderByHashErrors, ThrowOnError> => (options.client ?? client).get<GetImagesEncoderByHashResponses, GetImagesEncoderByHashErrors, ThrowOnError>({ url: '/images/encoder/{hash}', ...options });
-
-/**
  * Get image preview thumbnail
  *
  * Serves cached optimized WebP thumbnail or generates it on-demand
  */
-export const getImagesPreviewByHash = <ThrowOnError extends boolean = false>(options: Options<GetImagesPreviewByHashData, ThrowOnError>): RequestResult<GetImagesPreviewByHashResponses, GetImagesPreviewByHashErrors, ThrowOnError> => (options.client ?? client).get<GetImagesPreviewByHashResponses, GetImagesPreviewByHashErrors, ThrowOnError>({ url: '/images/preview/{hash}', ...options });
+export const getImagesByAssetTypeByHash = <ThrowOnError extends boolean = false>(options: Options<GetImagesByAssetTypeByHashData, ThrowOnError>): RequestResult<GetImagesByAssetTypeByHashResponses, GetImagesByAssetTypeByHashErrors, ThrowOnError> => (options.client ?? client).get<GetImagesByAssetTypeByHashResponses, GetImagesByAssetTypeByHashErrors, ThrowOnError>({ url: '/images/{assetType}/{hash}', ...options });
+
+/**
+ * Proxy image preview thumbnail
+ *
+ * Serves image thumbnail when it's not possible (Typically CORS problem)
+ */
+export const getImagesByB64 = <ThrowOnError extends boolean = false>(options: Options<GetImagesByB64Data, ThrowOnError>): RequestResult<GetImagesByB64Responses, GetImagesByB64Errors, ThrowOnError> => (options.client ?? client).get<GetImagesByB64Responses, GetImagesByB64Errors, ThrowOnError>({ url: '/images/{b64}', ...options });

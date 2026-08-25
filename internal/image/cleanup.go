@@ -67,7 +67,7 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 
-	cleanedIDs := make([]string, 0, len(oldImages))
+	cleanedIDs := make([]int64, 0, len(oldImages))
 	for _, img := range oldImages {
 		if img.Loc == "LOCAL" {
 			filePath := GetFilePath(c.baseCacheDir, img.Hash, img.FileType)
@@ -76,7 +76,7 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 			key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", img.Type, img.Hash, img.FileType))
 			_ = c.s3Storage.Delete(ctx, key)
 		}
-		cleanedIDs = append(cleanedIDs, img.Hash)
+		cleanedIDs = append(cleanedIDs, img.ID)
 	}
 
 	if len(cleanedIDs) > 0 {

@@ -14,7 +14,6 @@ package api
 
 import (
 	"io"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -26,7 +25,6 @@ import (
 	_ "github.com/manot40/better-booru/docs"
 	"github.com/manot40/better-booru/internal/config"
 	"github.com/manot40/better-booru/internal/danbooru"
-	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/manot40/better-booru/internal/middleware"
 	"github.com/manot40/better-booru/internal/scraper"
@@ -99,25 +97,18 @@ func SetupRoutes(app *fiber.App, deps Dependencies) {
 	apiGroup.Get("/autocomplete", autocompleteHandler.Autocomplete)
 
 	// Image Preview and Encoder Handlers
-	var enc *encoder.Encoder
-	baseCacheDir := ".cache/preview_images"
-	encoderEnabled := false
 	maxAge := 604800
+	encoderEnabled := false
 	if deps.Config != nil {
-		baseCacheDir = filepath.Join(deps.Config.IPXCacheDir, "preview_images")
 		encoderEnabled = deps.Config.IPXEnableAvif
-		if deps.Config.IPXEnableAvif {
-			enc = encoder.New(deps.Config.IPXCacheDir, deps.BunDB, deps.S3Storage)
-		}
 		if deps.Config.IPXMaxAge > 0 {
 			maxAge = deps.Config.IPXMaxAge
 		}
 	}
 
-	imgHandler := NewImageHandler(deps.BunDB, deps.S3Storage, baseCacheDir, enc, encoderEnabled)
+	imgHandler := NewImageHandler(deps.BunDB, deps.S3Storage, deps.Config.IPXCacheDir, encoderEnabled)
 	imgGroup := app.Group("/images", middleware.CacheControlMiddleware(maxAge), middleware.ETagMiddleware())
-	imgGroup.Get("/preview/:hash", imgHandler.PreviewHandler)
-	imgGroup.Get("/encoder/:hash", imgHandler.EncoderHandler)
+	imgGroup.Get("/:assetType/:hash", imgHandler.LocalAssetsHandler)
 	imgGroup.Get("/:b64", imgHandler.ProxyHandler)
 
 	// Admin & Background Worker Handlers (Protected by API Key)

@@ -354,59 +354,23 @@ export type GetApiScrapTriggerResponses = {
 
 export type GetApiScrapTriggerResponse = GetApiScrapTriggerResponses[keyof GetApiScrapTriggerResponses];
 
-export type GetImagesEncoderByHashData = {
+export type GetImagesByAssetTypeByHashData = {
     body?: never;
     path: {
         /**
-         * Post image filename with extension (e.g. 92f7b4d1add652d381a0f3ded55b3f3d.jpg)
+         * Asset type, either 'original' or 'preview'
          */
-        hash: string;
-    };
-    query?: never;
-    url: '/images/encoder/{hash}';
-};
-
-export type GetImagesEncoderByHashErrors = {
-    /**
-     * Invalid hash parameter
-     */
-    400: InternalApiErrorResponse;
-    /**
-     * AVIF encoding not available or image not found
-     */
-    404: InternalApiErrorResponse;
-    /**
-     * Video files are not supported
-     */
-    415: InternalApiErrorResponse;
-    /**
-     * Encoding error
-     */
-    500: InternalApiErrorResponse;
-};
-
-export type GetImagesEncoderByHashError = GetImagesEncoderByHashErrors[keyof GetImagesEncoderByHashErrors];
-
-export type GetImagesEncoderByHashResponses = {
-    /**
-     * AVIF encoded image
-     */
-    200: unknown;
-};
-
-export type GetImagesPreviewByHashData = {
-    body?: never;
-    path: {
+        assetType: string;
         /**
          * Post image hash or identifier
          */
         hash: string;
     };
     query?: never;
-    url: '/images/preview/{hash}';
+    url: '/images/{assetType}/{hash}';
 };
 
-export type GetImagesPreviewByHashErrors = {
+export type GetImagesByAssetTypeByHashErrors = {
     /**
      * Not Found
      */
@@ -417,11 +381,43 @@ export type GetImagesPreviewByHashErrors = {
     500: InternalApiErrorResponse;
 };
 
-export type GetImagesPreviewByHashError = GetImagesPreviewByHashErrors[keyof GetImagesPreviewByHashErrors];
+export type GetImagesByAssetTypeByHashError = GetImagesByAssetTypeByHashErrors[keyof GetImagesByAssetTypeByHashErrors];
 
-export type GetImagesPreviewByHashResponses = {
+export type GetImagesByAssetTypeByHashResponses = {
     /**
      * Optimized WebP image
+     */
+    200: unknown;
+};
+
+export type GetImagesByB64Data = {
+    body?: never;
+    path: {
+        /**
+         * Image url in base64 encoded
+         */
+        b64: string;
+    };
+    query?: never;
+    url: '/images/{b64}';
+};
+
+export type GetImagesByB64Errors = {
+    /**
+     * Bad Request
+     */
+    400: InternalApiErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: InternalApiErrorResponse;
+};
+
+export type GetImagesByB64Error = GetImagesByB64Errors[keyof GetImagesByB64Errors];
+
+export type GetImagesByB64Responses = {
+    /**
+     * Image result
      */
     200: unknown;
 };

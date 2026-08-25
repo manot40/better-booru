@@ -1,15 +1,14 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/db"
-	"github.com/manot40/better-booru/internal/encoder"
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/uptrace/bun"
 )
@@ -18,9 +17,9 @@ import (
 type ImageHandler struct {
 	bunDB          *bun.DB
 	s3Storage      image.S3Storage
-	baseCacheDir   string
+	previewImgDir  string
+	originalImgDir string
 	httpClient     *http.Client
-	encoder        *encoder.Encoder
 	encoderEnabled bool
 }
 
@@ -29,61 +28,85 @@ func NewImageHandler(
 	bunDB *bun.DB,
 	s3Storage image.S3Storage,
 	baseCacheDir string,
-	enc *encoder.Encoder,
 	encoderEnabled bool,
 ) *ImageHandler {
 	if baseCacheDir == "" {
-		baseCacheDir = ".cache/preview_images"
+		baseCacheDir = ".cache"
 	}
+
+	previewImgDir := filepath.Join(baseCacheDir, "preview_images")
+	originalImgDir := filepath.Join(baseCacheDir, "original_images")
+
 	return &ImageHandler{
 		bunDB:          bunDB,
 		s3Storage:      s3Storage,
-		baseCacheDir:   baseCacheDir,
+		previewImgDir:  previewImgDir,
+		originalImgDir: originalImgDir,
 		httpClient:     &http.Client{},
-		encoder:        enc,
 		encoderEnabled: encoderEnabled,
 	}
 }
 
-// PreviewHandler godoc
+// LocalAssetsHandler godoc
 // @Summary      Get image preview thumbnail
 // @Description  Serves cached optimized WebP thumbnail or generates it on-demand
 // @Tags         images
 // @Produce      image/webp
-// @Param        hash  path  string  true  "Post image hash or identifier"
-// @Success      200   {file} binary "Optimized WebP image"
-// @Success      302   "Redirect to CDN storage"
-// @Failure      404   {object} api.ErrorResponse
-// @Failure      500   {object} api.ErrorResponse
-// @Router       /images/preview/{hash} [get]
-func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
-	hash := strings.TrimSpace(c.Params("hash"))
-	if hash == "" {
+// @Param        assetType	path  string  true  "Asset type, either 'original' or 'preview'"
+// @Param        hash				path  string  true  "Post image hash or identifier"
+// @Success      200				{file} binary "Optimized WebP image"
+// @Success      302				"Redirect to CDN storage"
+// @Failure      404				{object} api.ErrorResponse
+// @Failure      500				{object} api.ErrorResponse
+// @Router       /images/{assetType}/{hash} [get]
+func (h *ImageHandler) LocalAssetsHandler(c fiber.Ctx) error {
+	path := c.Path()
+	oriHash := strings.TrimSpace(c.Params("hash"))
+	assType := strings.TrimSpace(c.Params("assetType"))
+	urlWithoutExt := strings.TrimSuffix(path, filepath.Ext(path))
+
+	if oriHash == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Hash parameter required"})
+	} else if assType != "original" && assType != "preview" {
+		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid image type request"})
 	}
 
-	// Remove possible extension from hash parameter
+	var cacheDir string
+	if assType == "original" {
+		cacheDir = h.originalImgDir
+	} else {
+		cacheDir = h.previewImgDir
+	}
+
+	hash := oriHash
 	if dot := strings.LastIndex(hash, "."); dot != -1 {
 		hash = hash[:dot]
 	}
 
-	// 1. Check cache (S3 or local disk)
-	cached, err := image.GetCache(c.Context(), h.bunDB, h.s3Storage, h.baseCacheDir, hash)
+	// Check cache (S3 or local disk)
+	cached, err := image.GetCache(c.Context(), h.bunDB, h.s3Storage, cacheDir, hash, assType)
 	if err == nil && cached != nil {
 		if cached.RedirectURL != "" {
 			return c.Redirect().Status(fiber.StatusFound).To(cached.RedirectURL)
 		}
-		if len(cached.Data) > 0 {
-			c.Set("Content-Type", "image/webp")
-			return c.Send(cached.Data)
+
+		if !strings.HasSuffix(path, cached.FileType) {
+			return c.Redirect().Status(fiber.StatusFound).To(fmt.Sprintf("%s.%s", urlWithoutExt, cached.FileType))
 		}
-		if cached.FilePath != "" {
-			c.Set("Content-Type", "image/webp")
-			return c.SendFile(cached.FilePath)
+
+		hasData := len(cached.Data) > 0
+		if hasData || cached.FilePath != "" {
+			c.Set("Content-Type", "image/"+cached.FileType)
+			if hasData {
+				return c.Send(cached.Data)
+			} else {
+				return c.SendFile(cached.FilePath)
+			}
 		}
+
 	}
 
-	// 2. On-demand generation if post exists in DB
+	// On-demand generation if post exists in DB
 	if h.bunDB != nil {
 		var post db.Post
 		err := h.bunDB.NewSelect().
@@ -116,27 +139,44 @@ func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
 				PreviewHeight: post.PreviewHeight,
 			}
 
-			src, w, hg, ok := image.ReduceSize(calc)
-			if !ok {
-				src = fileURL
-				w = post.Width
-				hg = post.Height
+			s3Enabled := h.s3Storage != nil && h.s3Storage.Enabled()
+
+			var processed *image.ProcessedImage
+			if assType == "original" {
+				if !h.encoderEnabled {
+					return c.Status(fiber.StatusForbidden).JSON(ErrorResponse{Error: "Original image currently not available"})
+				}
+
+				result, err := image.ProcessAVIF(c.Context(), calc, s3Enabled, h.httpClient)
+				if err != nil {
+					return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Failed processing original image"})
+				}
+				processed = result
+			} else {
+				src, w, hg, ok := image.ReduceSize(calc)
+				if !ok {
+					src = fileURL
+					w = post.Width
+					hg = post.Height
+				}
+				result, err := image.ProcessWEBP(c.Context(), image.ProcessPayload{
+					Src:     src,
+					Width:   w,
+					Height:  hg,
+					Quality: 80,
+				}, s3Enabled, h.httpClient)
+				if err != nil {
+					return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Failed processing preview image"})
+				}
+				processed = result
 			}
 
-			s3Enabled := h.s3Storage != nil && h.s3Storage.Enabled()
-			processed, err := image.ProcessImage(c.Context(), image.ProcessPayload{
-				Src:     src,
-				Width:   w,
-				Height:  hg,
-				Quality: 80,
-			}, s3Enabled, h.httpClient)
-
-			if err == nil && processed != nil {
-				publicURL, _ := image.SetCache(c.Context(), h.bunDB, h.s3Storage, h.baseCacheDir, processed.Data, image.CachePayload{
+			if processed != nil {
+				publicURL, _ := image.SetCache(c.Context(), h.bunDB, h.s3Storage, cacheDir, processed.Data, image.CachePayload{
 					Hash:     hash,
 					PostID:   post.ID,
 					Loc:      processed.Loc,
-					Type:     "PREVIEW",
+					Type:     strings.ToUpper(assType),
 					Width:    processed.Width,
 					Height:   processed.Height,
 					FileType: processed.FileType,
@@ -147,60 +187,17 @@ func (h *ImageHandler) PreviewHandler(c fiber.Ctx) error {
 					return c.Redirect().Status(fiber.StatusFound).To(publicURL)
 				}
 
-				c.Set("Content-Type", "image/webp")
+				if assType == "original" && !strings.HasSuffix(path, "avif") {
+					return c.Redirect().Status(fiber.StatusFound).To(urlWithoutExt + ".avif")
+				}
+
+				c.Set("Content-Type", "image/"+processed.FileType)
 				return c.Send(processed.Data)
 			}
 		}
 	}
 
 	return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "Image Not Found"})
-}
-
-// EncoderHandler godoc
-// @Summary      Encode image to AVIF
-// @Description  Fetches the original image from Danbooru CDN and encodes it to AVIF using ffmpeg.
-// @Description  Returns 404 if IPX_ENABLE_AVIF is false or image is not found.
-// @Description  Returns 415 for video file types (.mp4, .webm).
-// @Tags         images
-// @Produce      image/avif
-// @Param        hash  path  string  true  "Post image filename with extension (e.g. 92f7b4d1add652d381a0f3ded55b3f3d.jpg)"
-// @Success      200   {file} binary "AVIF encoded image"
-// @Failure      400   {object} api.ErrorResponse "Invalid hash parameter"
-// @Failure      404   {object} api.ErrorResponse "AVIF encoding not available or image not found"
-// @Failure      415   {object} api.ErrorResponse "Video files are not supported"
-// @Failure      500   {object} api.ErrorResponse "Encoding error"
-// @Router       /images/encoder/{hash} [get]
-func (h *ImageHandler) EncoderHandler(c fiber.Ctx) error {
-	if !h.encoderEnabled || h.encoder == nil {
-		return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "AVIF encoding not available"})
-	}
-
-	hash := strings.TrimSpace(c.Params("hash"))
-	if hash == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Hash parameter required"})
-	}
-
-	res, err := h.encoder.Encode(c.Context(), hash)
-	if err != nil {
-		if errors.Is(err, encoder.ErrInvalidHash) {
-			return c.Status(fiber.StatusBadRequest).JSON(ErrorResponse{Error: "Invalid hash parameter"})
-		}
-		if errors.Is(err, encoder.ErrNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(ErrorResponse{Error: "Image not found"})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: fmt.Sprintf("Encoding failed: %v", err)})
-	}
-
-	if res.IsVideo {
-		return c.Status(fiber.StatusUnsupportedMediaType).JSON(ErrorResponse{Error: "Video files are not supported"})
-	}
-
-	if res.RedirectURL != "" {
-		return c.Redirect().Status(fiber.StatusFound).To(res.RedirectURL)
-	}
-
-	c.Set("Content-Type", res.ContentType)
-	return c.Send(res.Data)
 }
 
 // PreviewHandler godoc

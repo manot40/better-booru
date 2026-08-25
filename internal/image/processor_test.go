@@ -55,7 +55,7 @@ func TestProcessImage(t *testing.T) {
 		Quality: 80,
 	}
 
-	res, err := imgpkg.ProcessImage(context.Background(), payload, false, server.Client())
+	res, err := imgpkg.ProcessWEBP(context.Background(), payload, false, server.Client())
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	assert.Equal(t, "webp", res.FileType)

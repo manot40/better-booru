@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,23 +50,19 @@ type ProcessedImage struct {
 	Loc      string // "CDN" | "LOCAL"
 }
 
-// ProcessImage fetches an image from URL, resizes it with govips, and encodes to WebP.
-func ProcessImage(ctx context.Context, payload ProcessPayload, s3Enabled bool, httpClient *http.Client) (*ProcessedImage, error) {
-	if err := EnsureVipsStarted(); err != nil {
-		return nil, fmt.Errorf("initializing vips: %w", err)
-	}
+type RawImageResult struct {
+	Data []byte
+	Mime string
+}
 
-	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 30 * time.Second}
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, payload.Src, nil)
+func getRawImage(ctx context.Context, hc *http.Client, url string) (*RawImageResult, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	req.Header.Set("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
-	resp, err := httpClient.Do(req)
+	resp, err := hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching image: %w", err)
 	}
@@ -82,12 +80,33 @@ func ProcessImage(ctx context.Context, payload ProcessPayload, s3Enabled bool, h
 		return nil, fmt.Errorf("invalid image content-type: %s", contentType)
 	}
 
-	rawBytes, err := io.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading image body: %w", err)
 	}
 
-	img, err := vips.NewImageFromBuffer(rawBytes)
+	return &RawImageResult{
+		Data: bytes,
+		Mime: resp.Header.Get("Content-Type"),
+	}, nil
+}
+
+// ProcessWEBP fetches an image from URL, resizes it with govips, and encodes to WebP.
+func ProcessWEBP(ctx context.Context, payload ProcessPayload, s3Enabled bool, httpClient *http.Client) (*ProcessedImage, error) {
+	if err := EnsureVipsStarted(); err != nil {
+		return nil, fmt.Errorf("initializing vips: %w", err)
+	}
+
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+
+	fetchImg, err := getRawImage(ctx, httpClient, payload.Src)
+	if err != nil {
+		return nil, fmt.Errorf("fetching upstream image: %w", err)
+	}
+
+	img, err := vips.NewImageFromBuffer(fetchImg.Data)
 	if err != nil {
 		return nil, fmt.Errorf("decoding image with vips: %w", err)
 	}
@@ -134,6 +153,66 @@ func ProcessImage(ctx context.Context, payload ProcessPayload, s3Enabled bool, h
 		FileSize: len(webpBytes),
 		Loc:      loc,
 	}, nil
+}
+
+func ProcessAVIF(ctx context.Context, calc PreviewCalc, s3Enabled bool, httpClient *http.Client) (*ProcessedImage, error) {
+	ext := strings.ToLower(strings.TrimPrefix(path.Ext(calc.FileURL), "."))
+	hash := path.Base(calc.FileURL)
+
+	// Error 415 for unsupported formats
+	if ext != "jpg" && ext != "jpeg" && ext != "png" {
+		return nil, fmt.Errorf("Disallowed file format: %s", ext)
+	}
+
+	if err := EnsureVipsStarted(); err != nil {
+		return nil, fmt.Errorf("initializing vips: %w", err)
+	}
+
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+
+	fetchImg, err := getRawImage(ctx, httpClient, calc.FileURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching upstream image: %w", err)
+	}
+
+	loc := "LOCAL"
+	if s3Enabled {
+		loc = "CDN"
+	}
+	processedImage := &ProcessedImage{
+		Loc:      loc,
+		Data:     fetchImg.Data,
+		Width:    calc.Width,
+		Height:   calc.Height,
+		FileSize: len(fetchImg.Data),
+	}
+
+	if ext == "png" || strings.HasPrefix(fetchImg.Mime, "image/png") {
+		isOpaque := checkPNGOpaqueness(fetchImg.Data)
+		if !isOpaque {
+			// Serve as raw PNG without transcoding
+			processedImage.FileType = "png"
+			return processedImage, nil
+		}
+	}
+
+	processedImage.FileType = "avif"
+	// Already AVIF
+	if ext == "avif" || fetchImg.Mime == "image/avif" {
+		return processedImage, nil
+	}
+
+	// Transcode to AVIF with FFmpeg (HW -> SW fallback)
+	result, err := transcode(ctx, fetchImg.Data, hash)
+	if err != nil {
+		return nil, fmt.Errorf("encoding image to avif: %w", err)
+	}
+
+	processedImage.Data = result
+	processedImage.FileSize = len(result)
+	return processedImage, nil
 }
 
 // GenerateLQIP creates a tiny (16x16) blurred WebP low-quality image placeholder.

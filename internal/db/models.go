@@ -139,6 +139,17 @@ func (*PostImage) AfterCreateTable(ctx context.Context, query *bun.CreateTableQu
 	if err != nil {
 		return fmt.Errorf("creating posts_images_by_type index: %w", err)
 	}
+
+	_, err = query.DB().NewCreateIndex().
+		Model((*PostImage)(nil)).
+		Index("idx_posts_images_hash").
+		Column("hash").
+		Using("btree").
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("creating idx_posts_images_hash: %w", err)
+	}
 	return nil
 }
 

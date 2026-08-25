@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/manot40/better-booru/internal/config"
+	"github.com/manot40/better-booru/internal/constant"
 	"github.com/manot40/better-booru/internal/danbooru"
 	"github.com/manot40/better-booru/internal/middleware"
 	"github.com/manot40/better-booru/internal/query"
@@ -193,8 +194,8 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 		}
 
 		fileUrl := postDTO.FileURL
-		if h.cfg.IPXEnableAvif && (s3PublicURL == "" || !strings.HasPrefix(fileUrl, s3PublicURL)) {
-			fileUrl = fmt.Sprintf("/images/encoder/%s", path.Base(postDTO.FileURL))
+		if h.cfg.IPXEnableAvif && strings.HasPrefix(fileUrl, constant.DanbooruCDN) {
+			fileUrl = fmt.Sprintf("/images/original/%s", path.Base(postDTO.FileURL))
 		}
 
 		return c.JSON(PostItem{

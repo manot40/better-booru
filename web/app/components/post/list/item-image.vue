@@ -16,6 +16,7 @@ const vImage: Directive<HTMLImageElement> = {
     el.addEventListener("load", toggleLoaded, { once: true });
     // prettier-ignore
     el.addEventListener("error", () => {
+    if (el.src.startsWith("https://cdn.donmai.us"))
       el.src = new URL(`/images/preview/${props.item.hash}`, location.origin).toString();
     }, { once:true });
   },

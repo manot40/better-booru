@@ -191,7 +191,7 @@ func (w *Worker) processTask(ctx context.Context, key, val string) error {
 	}
 
 	s3Enabled := w.s3Storage != nil && w.s3Storage.Enabled()
-	processed, err := ProcessImage(ctx, ProcessPayload{
+	processed, err := ProcessWEBP(ctx, ProcessPayload{
 		Src:     task.Src,
 		Width:   task.Width,
 		Height:  task.Height,
@@ -202,7 +202,7 @@ func (w *Worker) processTask(ctx context.Context, key, val string) error {
 	}
 
 	_, err = SetCache(ctx, w.bunDB, w.s3Storage, w.baseCacheDir, processed.Data, CachePayload{
-		Hash:       key,
+		Hash:     key,
 		PostID:   task.PostID,
 		Loc:      processed.Loc,
 		Type:     "PREVIEW",
