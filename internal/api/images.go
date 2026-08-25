@@ -117,7 +117,7 @@ func (h *ImageHandler) LocalAssetsHandler(c fiber.Ctx) error {
 		if err == nil {
 			var previewURL *string
 			if post.PreviewExt != nil {
-				u := fmt.Sprintf("%s/180x180/%s/%s/%s.%s", constant.DanbooruCDN, post.Hash[:2], post.Hash[2:4], post.Hash, *post.PreviewExt)
+				u := fmt.Sprintf("%s/720x720/%s/%s/%s.%s", constant.DanbooruCDN, post.Hash[:2], post.Hash[2:4], post.Hash, *post.PreviewExt)
 				previewURL = &u
 			}
 			var sampleURL *string
