@@ -125,7 +125,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		default:
 		}
 
-		key, err := w.rdb.LPop(ctx, imageQueueListKey).Result()
+		key, err := w.rdb.RPop(ctx, imageQueueListKey).Result()
 		if errors.Is(err, redis.Nil) {
 			break // Queue empty
 		} else if err != nil {
