@@ -15,12 +15,14 @@ import (
 
 const (
 	encoderHW  = "av1_qsv"
-	encoderSW1 = "libaom-av1"
-	encoderSW2 = "libsvtav1"
+	encoderSW  = "libsvtav1"
 	encoderReS = "scale='min(8704,iw)':'min(8704,ih)':force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2"
 )
 
-var isIntelGPU = utils.CheckIfIntelGPU()
+var (
+	hasLowCPU  = runtime.NumCPU() < 4
+	isIntelGPU = utils.CheckIfIntelGPU()
+)
 
 // transcode runs FFmpeg to convert raw image bytes to an AVIF file.
 func transcode(ctx context.Context, bin []byte, hash string) ([]byte, error) {
@@ -34,15 +36,29 @@ func transcode(ctx context.Context, bin []byte, hash string) ([]byte, error) {
 		}
 	}
 
-	var encoder string
-	if runtime.NumCPU() < 4 {
-		encoder = encoderSW1
-	} else {
-		encoder = encoderSW2
+	if hasLowCPU {
+		if err := EnsureVipsStarted(); err != nil {
+			return nil, err
+		}
+
+		img, err := vips.NewImageFromBuffer(bin)
+		if err != nil {
+			return nil, fmt.Errorf("decoding image with vips: %w", err)
+		}
+		defer img.Close()
+
+		buff, _, err := img.ExportAvif(&vips.AvifExportParams{
+			Quality:       90,
+			StripMetadata: true,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return buff, nil
 	}
 
-	// Fallback to software encoder
-	err := runFFmpeg(ctx, encoder, encoderReS, bin, outFile)
+	err := runFFmpeg(ctx, encoderSW, encoderReS, bin, outFile)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +67,8 @@ func transcode(ctx context.Context, bin []byte, hash string) ([]byte, error) {
 }
 
 func runFFmpeg(ctx context.Context, enc, vf string, bin []byte, outFile string) error {
-	pixFmt := "yuv420p"
-	if enc != encoderSW1 {
-		pixFmt = "yuv444p10le"
-	}
-
 	svtav1Params := "null"
-	if enc == encoderSW2 {
+	if enc == encoderSW {
 		svtav1Params = "avif=1:lp=4:la-depth=0:fast-decode=1"
 	}
 
@@ -68,7 +79,7 @@ func runFFmpeg(ctx context.Context, enc, vf string, bin []byte, outFile string) 
 		"-i", "pipe:",
 		"-c:v", enc,
 		"-vf", vf,
-		"-pix_fmt", pixFmt,
+		"-pix_fmt", "yuv444p10le",
 		"-still-picture", "1",
 		"-svtav1-params", svtav1Params,
 		"-crf", "12",

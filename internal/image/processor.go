@@ -131,11 +131,10 @@ func ProcessWEBP(ctx context.Context, payload ProcessPayload, s3Enabled bool, ht
 		quality = 80
 	}
 
-	ep := vips.NewWebpExportParams()
-	ep.Quality = quality
-	ep.StripMetadata = true
-
-	webpBytes, _, err := img.ExportWebp(ep)
+	webpBytes, _, err := img.ExportWebp(&vips.WebpExportParams{
+		Quality:       quality,
+		StripMetadata: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("exporting webp: %w", err)
 	}
@@ -237,11 +236,10 @@ func GenerateLQIP(data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("generating thumbnail: %w", err)
 	}
 
-	ep := vips.NewWebpExportParams()
-	ep.Quality = 30
-	ep.StripMetadata = true
-
-	lqipBytes, _, err := img.ExportWebp(ep)
+	lqipBytes, _, err := img.ExportWebp(&vips.WebpExportParams{
+		Quality:       30,
+		StripMetadata: true,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("exporting lqip webp: %w", err)
 	}

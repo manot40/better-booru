@@ -152,8 +152,8 @@ func main() {
 	// Initialize GoFiber App
 	app := fiber.New(fiber.Config{
 		AppName:      "Better Booru",
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 
 		TrustProxy: true,
 		TrustProxyConfig: fiber.TrustProxyConfig{

@@ -41,7 +41,7 @@ RUN make build
 FROM alpine:3.24 AS runner
 WORKDIR /app
 
-RUN apk update && apk add --no-cache ca-certificates ffmpeg tzdata vips
+RUN apk update && apk add --no-cache ca-certificates ffmpeg tzdata vips vips-heif
 
 RUN addgroup -S booru && adduser -S booru -G booru
 RUN mkdir -p /app/.cache && chown -R booru:booru /app
