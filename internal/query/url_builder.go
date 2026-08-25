@@ -43,7 +43,7 @@ func PreviewDimExpr(dim string) string {
 // ProcessedFileURLExpr returns SQL expression prioritizing cached local/S3 images over Danbooru CDN.
 func ProcessedFileURLExpr(s3PublicURL string) string {
 	return fmt.Sprintf(`COALESCE(
-		MAX(CASE WHEN pi.type = 'ORIGINAL' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' END, '/images/original/', pi.hash, '.', pi.file_type) END),
+		MAX(CASE WHEN pi.type = 'ORIGINAL' THEN CONCAT(CASE WHEN pi.loc = 'CDN' AND pi.orphaned = FALSE THEN '%s' END, '/images/original/', pi.hash, '.', pi.file_type) END),
 		%s
 	)`, s3PublicURL, BaseFileURL())
 }
@@ -51,7 +51,7 @@ func ProcessedFileURLExpr(s3PublicURL string) string {
 // ProcessedPreviewURLExpr returns SQL expression prioritizing cached local/S3 preview images over Danbooru CDN.
 func ProcessedPreviewURLExpr(s3PublicURL string) string {
 	return fmt.Sprintf(`COALESCE(
-		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' THEN '%s' END, '/images/preview/', pi.hash, '.', pi.file_type) END),
+		MAX(CASE WHEN pi.type = 'PREVIEW' THEN CONCAT(CASE WHEN pi.loc = 'CDN' AND pi.orphaned = FALSE THEN '%s' END, '/images/preview/', pi.hash, '.', pi.file_type) END),
 		%s
 	)`, s3PublicURL, BasePreviewURL())
 }

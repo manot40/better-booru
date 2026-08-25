@@ -15,6 +15,7 @@ import (
 // S3Storage defines interface for S3 upload operations.
 type S3Storage interface {
 	Enabled() bool
+	Exists(ctx context.Context, key string) (bool, error)
 	Upload(ctx context.Context, key string, data []byte, contentType string) error
 	Delete(ctx context.Context, key string) error
 	PublicURL(key string) string
@@ -45,7 +46,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	loc := meta.Loc
 	publicURL := ""
 
-	if s3Storage != nil && s3Storage.Enabled() {
+	if s3Storage.Enabled() {
 		loc = "CDN"
 		key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", meta.Type, meta.Hash, meta.FileType))
 		if err := s3Storage.Upload(ctx, key, data, "image/"+meta.FileType); err != nil {
@@ -110,8 +111,8 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 			Model(&record).
 			Where("hash = ? AND type = ?", hash, strings.ToUpper(cacheType)).
 			Scan(ctx)
-		if err == nil {
-			if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
+		if err == nil && !record.Orphaned {
+			if record.Loc == "CDN" && s3Storage.Enabled() {
 				key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", record.Type, record.Hash, record.FileType))
 				return &CachedResult{
 					FileType:    record.FileType,

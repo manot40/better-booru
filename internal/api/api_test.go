@@ -349,10 +349,19 @@ func TestAPI_LogWriter(t *testing.T) {
 }
 
 type mockAPIS3Storage struct {
+	exists    *bool
 	enabled   bool
 	uploaded  map[string][]byte
 	types     map[string]string
 	publicURL string
+}
+
+func (m *mockAPIS3Storage) Exists(ctx context.Context, key string) (bool, error) {
+	if m.exists == nil {
+		return true, nil
+	} else {
+		return *m.exists, nil
+	}
 }
 
 func (m *mockAPIS3Storage) Enabled() bool {
