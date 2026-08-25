@@ -44,7 +44,7 @@ WORKDIR /app
 RUN apk update && apk add --no-cache ca-certificates ffmpeg tzdata vips
 
 RUN addgroup -S booru && adduser -S booru -G booru
-RUN mkdir -p /app/.cache/preview_images && chown -R booru:booru /app
+RUN mkdir -p /app/.cache && chown -R booru:booru /app
 
 COPY --from=builder --chown=booru:booru /app/bin/booru-server /app/booru-server
 

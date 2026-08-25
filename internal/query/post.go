@@ -139,7 +139,10 @@ func QueryPosts(ctx context.Context, bunDB *bun.DB, rdb *redis.Client, cfg *conf
 	for i := range posts {
 		fileUrl := posts[i].FileURL
 		if cfg.IPXEnableAvif && strings.HasPrefix(fileUrl, constant.DanbooruCDN) {
-			posts[i].FileURL = fmt.Sprintf("/images/original/%s", path.Base(fileUrl))
+			ext := strings.TrimPrefix(path.Ext(fileUrl), ".")
+			if ext == "jpg" || ext == "jpeg" || ext == "png" {
+				posts[i].FileURL = fmt.Sprintf("/images/original/%s", path.Base(fileUrl))
+			}
 		}
 	}
 

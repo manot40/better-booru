@@ -195,7 +195,10 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 
 		fileUrl := postDTO.FileURL
 		if h.cfg.IPXEnableAvif && strings.HasPrefix(fileUrl, constant.DanbooruCDN) {
-			fileUrl = fmt.Sprintf("/images/original/%s", path.Base(postDTO.FileURL))
+			ext := strings.TrimPrefix(path.Ext(fileUrl), ".")
+			if ext == "jpg" || ext == "jpeg" || ext == "png" {
+				fileUrl = fmt.Sprintf("/images/original/%s", path.Base(postDTO.FileURL))
+			}
 		}
 
 		return c.JSON(PostItem{
