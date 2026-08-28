@@ -92,10 +92,11 @@ func (*Post) AfterCreateTable(ctx context.Context, query *bun.CreateTableQuery) 
 type Tag struct {
 	bun.BaseModel `bun:"table:tags,alias:t"`
 
-	ID         int    `bun:"id,pk,autoincrement" json:"id"`
-	Name       string `bun:"name,unique,notnull" json:"name"`
-	Category   int16  `bun:"category,notnull" json:"category"`
-	PostsCount int64  `bun:"posts_count,notnull,default:0" json:"posts_count"`
+	ID         int      `bun:"id,pk,autoincrement" json:"id"`
+	Name       string   `bun:"name,unique,notnull" json:"name"`
+	Category   int16    `bun:"category,notnull" json:"category"`
+	PostsCount int64    `bun:"posts_count,notnull,default:0" json:"posts_count"`
+	Relevance  *float64 `bun:"relevance,scanonly"`
 }
 
 var _ bun.AfterCreateTableHook = (*Tag)(nil)
@@ -110,6 +111,17 @@ func (*Tag) AfterCreateTable(ctx context.Context, query *bun.CreateTableQuery) e
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("creating idx_tags_posts_count: %w", err)
+	}
+
+	_, err = query.DB().NewCreateIndex().
+		Model((*Tag)(nil)).
+		Index("idx_tags_name_trgm").
+		Column("name", "gin_trgm_ops").
+		Using("gin").
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("creating idx_tags_name_trgm: %w", err)
 	}
 
 	return nil

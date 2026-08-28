@@ -4,6 +4,8 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE IF NOT EXISTS "posts" (
 	"id" integer PRIMARY KEY NOT NULL,
 	"lqip" bytea,
@@ -57,3 +59,4 @@ CREATE TABLE IF NOT EXISTS "posts_images" (
 CREATE INDEX IF NOT EXISTS "idx_score" ON "posts" USING btree ("score");
 CREATE INDEX IF NOT EXISTS "idx_posts_tag_ids" ON "posts" USING gin ("tag_ids");
 CREATE INDEX IF NOT EXISTS "idx_posts_meta_ids" ON "posts" USING gin ("meta_ids");
+CREATE INDEX IF NOT EXISTS "idx_tags_name_trgm" ON "tags" USING gin (name gin_trgm_ops);

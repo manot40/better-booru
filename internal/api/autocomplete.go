@@ -41,6 +41,7 @@ func NewAutocompleteHandler(bunDB *bun.DB, danClient *danbooru.Client) *Autocomp
 // @Router       /api/autocomplete [get]
 func (h *AutocompleteHandler) Autocomplete(c fiber.Ctx) error {
 	q := strings.TrimSpace(c.Query("q"))
+	qTerm := "%" + q + "%"
 	if q == "" {
 		return c.JSON([]AutocompleteItem{})
 	} else {
@@ -56,30 +57,34 @@ func (h *AutocompleteHandler) Autocomplete(c fiber.Ctx) error {
 		limit = 50
 	}
 
-	// 1. Check database for local matching tags
-	var items []AutocompleteItem
-	seen := make(map[string]struct{})
-
 	if h.bunDB != nil {
 		var tags []db.Tag
 		err := h.bunDB.NewSelect().
 			Model(&tags).
-			Where("name ILIKE ?", q+"%").
-			Order("posts_count DESC").
+			Column("name", "category", "posts_count").
+			ColumnExpr(
+				"CASE WHEN name ILIKE ? THEN 1 WHEN name ILIKE ? THEN .8 ELSE word_similarity(name, ?) END AS relevance",
+				q+"%", qTerm, q).
+			Where("name ILIKE ? OR ? <% name", qTerm, q).
+			Order("relevance DESC", "posts_count DESC").
 			Limit(limit).
 			Scan(c.Context())
 
 		if err == nil {
-			for _, t := range tags {
-				seen[t.Name] = struct{}{}
+			var items []AutocompleteItem
+			for i := range tags {
+				tag := &tags[i]
 				items = append(items, AutocompleteItem{
-					Label:    reUnderscore.ReplaceAllString(t.Name, " "),
-					Value:    t.Name,
-					Category: t.Category,
+					Label:     reUnderscore.ReplaceAllString(tag.Name, " "),
+					Value:     tag.Name,
+					Category:  tag.Category,
+					PostCount: int(tag.PostsCount),
 				})
 			}
+
+			return c.JSON(items)
 		}
 	}
 
-	return c.JSON(items)
+	return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{Error: "Failed querying autocomplete data"})
 }
