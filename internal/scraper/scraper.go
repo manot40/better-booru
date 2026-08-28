@@ -97,6 +97,12 @@ func (s *Scraper) Run(ctx context.Context) error {
 			break
 		}
 
+		dt, err := time.Parse(time.RFC3339, posts[0].CreatedAt)
+		if err == nil && !isOldEnough(dt) {
+			isEnd = true
+			break
+		}
+
 		if len(posts) < 200 {
 			isEnd = true
 		}
@@ -398,4 +404,9 @@ func extractTags(p danbooru.DanbooruResponse) []tagItem {
 	addTags(p.TagStringMeta, 5)
 
 	return items
+}
+
+func isOldEnough(t time.Time) bool {
+	twoHoursAgo := time.Now().Add(-2 * time.Hour)
+	return t.Before(twoHoursAgo)
 }
