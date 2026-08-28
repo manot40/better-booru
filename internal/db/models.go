@@ -92,9 +92,27 @@ func (*Post) AfterCreateTable(ctx context.Context, query *bun.CreateTableQuery) 
 type Tag struct {
 	bun.BaseModel `bun:"table:tags,alias:t"`
 
-	ID       int    `bun:"id,pk,autoincrement" json:"id"`
-	Name     string `bun:"name,unique,notnull" json:"name"`
-	Category int16  `bun:"category,notnull" json:"category"`
+	ID         int    `bun:"id,pk,autoincrement" json:"id"`
+	Name       string `bun:"name,unique,notnull" json:"name"`
+	Category   int16  `bun:"category,notnull" json:"category"`
+	PostsCount int64  `bun:"posts_count,notnull,default:0" json:"posts_count"`
+}
+
+var _ bun.AfterCreateTableHook = (*Tag)(nil)
+
+func (*Tag) AfterCreateTable(ctx context.Context, query *bun.CreateTableQuery) error {
+	_, err := query.DB().NewCreateIndex().
+		Model((*Tag)(nil)).
+		Index("idx_tags_posts_count").
+		Column("posts_count").
+		Using("btree").
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("creating idx_tags_posts_count: %w", err)
+	}
+
+	return nil
 }
 
 // PostImage maps to "posts_images" table.

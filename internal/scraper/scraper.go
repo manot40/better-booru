@@ -251,6 +251,31 @@ func (s *Scraper) processBatch(ctx context.Context, posts []danbooru.DanbooruRes
 			return fmt.Errorf("upserting posts: %w", err)
 		}
 
+		// Collect all unique tag IDs touched in this batch and increment their posts_count.
+		allTagIDSet := make(map[int]struct{})
+		for _, pr := range postRecords {
+			for _, id := range pr.TagIDs {
+				allTagIDSet[id] = struct{}{}
+			}
+			for _, id := range pr.MetaIDs {
+				allTagIDSet[id] = struct{}{}
+			}
+		}
+		if len(allTagIDSet) > 0 {
+			allTagIDs := make([]int, 0, len(allTagIDSet))
+			for id := range allTagIDSet {
+				allTagIDs = append(allTagIDs, id)
+			}
+			_, err = tx.NewUpdate().
+				Model((*db.Tag)(nil)).
+				Set("posts_count = posts_count + 1").
+				Where("id IN (?)", bun.List(allTagIDs)).
+				Exec(ctx)
+			if err != nil {
+				return fmt.Errorf("incrementing tag posts_count: %w", err)
+			}
+		}
+
 		return nil
 	})
 }

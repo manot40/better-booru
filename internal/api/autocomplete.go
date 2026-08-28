@@ -1,6 +1,7 @@
 package api
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,8 @@ type AutocompleteHandler struct {
 	bunDB     *bun.DB
 	danClient *danbooru.Client
 }
+
+var reUnderscore = regexp.MustCompile(`_+`)
 
 // NewAutocompleteHandler creates a new AutocompleteHandler.
 func NewAutocompleteHandler(bunDB *bun.DB, danClient *danbooru.Client) *AutocompleteHandler {
@@ -40,6 +43,8 @@ func (h *AutocompleteHandler) Autocomplete(c fiber.Ctx) error {
 	q := strings.TrimSpace(c.Query("q"))
 	if q == "" {
 		return c.JSON([]AutocompleteItem{})
+	} else {
+		q = strings.Join(strings.Fields(q), "_")
 	}
 
 	limitStr := c.Query("limit", "10")
@@ -60,7 +65,7 @@ func (h *AutocompleteHandler) Autocomplete(c fiber.Ctx) error {
 		err := h.bunDB.NewSelect().
 			Model(&tags).
 			Where("name ILIKE ?", q+"%").
-			Order("name ASC").
+			Order("posts_count DESC").
 			Limit(limit).
 			Scan(c.Context())
 
@@ -68,31 +73,10 @@ func (h *AutocompleteHandler) Autocomplete(c fiber.Ctx) error {
 			for _, t := range tags {
 				seen[t.Name] = struct{}{}
 				items = append(items, AutocompleteItem{
-					Label:    t.Name,
+					Label:    reUnderscore.ReplaceAllString(t.Name, " "),
 					Value:    t.Name,
 					Category: t.Category,
 				})
-			}
-		}
-	}
-
-	// 2. If results are fewer than requested limit, fetch additional from upstream Danbooru
-	if len(items) < limit && h.danClient != nil {
-		remoteItems, err := h.danClient.Autocomplete(c.Context(), q)
-		if err == nil {
-			for _, ri := range remoteItems {
-				if _, exists := seen[ri.Value]; !exists {
-					seen[ri.Value] = struct{}{}
-					items = append(items, AutocompleteItem{
-						Label:     ri.Label,
-						Value:     ri.Value,
-						Category:  ri.Category,
-						PostCount: ri.PostCount,
-					})
-					if len(items) >= limit {
-						break
-					}
-				}
 			}
 		}
 	}

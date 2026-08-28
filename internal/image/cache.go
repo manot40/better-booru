@@ -77,7 +77,6 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 		FileType:  meta.FileType,
 		FileSize:  meta.FileSize,
 		Orphaned:  false,
-		UpdatedAt: &now,
 		CreatedAt: now,
 	}
 
