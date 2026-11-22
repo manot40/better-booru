@@ -1,10 +1,13 @@
 package image_test
 
 import (
+	"context"
+	"os"
 	"testing"
 
 	"github.com/manot40/better-booru/internal/image"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReduceSize(t *testing.T) {
@@ -79,4 +82,37 @@ func TestGetFilePath(t *testing.T) {
 	assert.Contains(t, path, "ab")
 	assert.Contains(t, path, "cd")
 	assert.Contains(t, path, "abcd1234ef56")
+}
+
+func TestSetAndGetCache_NilS3Storage(t *testing.T) {
+	ctx := context.Background()
+	cacheDir := t.TempDir()
+	hash := "9455bf7bf7b90e5acd68f442cd3d9308"
+	payload := []byte("webp-preview-data")
+
+	pubURL, err := image.SetCache(ctx, nil, nil, cacheDir, payload, image.CachePayload{
+		PostID:   11442595,
+		Hash:     hash,
+		Loc:      "LOCAL",
+		Type:     "PREVIEW",
+		Width:    850,
+		Height:   1173,
+		FileType: "webp",
+		FileSize: len(payload),
+	})
+	require.NoError(t, err)
+	assert.Empty(t, pubURL)
+
+	expectedPath := image.GetFilePath(cacheDir, hash, "webp")
+	written, err := os.ReadFile(expectedPath)
+	require.NoError(t, err)
+	assert.Equal(t, payload, written)
+
+	// Fallback disk lookup (without extension) also works with nil s3Storage
+	noExtPath := image.GetFilePath(cacheDir, hash, "")
+	require.NoError(t, os.WriteFile(noExtPath, payload, 0644))
+	cached, err := image.GetCache(ctx, nil, nil, cacheDir, hash, "PREVIEW")
+	require.NoError(t, err)
+	require.NotNil(t, cached)
+	assert.Equal(t, payload, cached.Data)
 }

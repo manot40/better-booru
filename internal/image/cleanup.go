@@ -55,8 +55,8 @@ func (c *CleanupWorker) Run(ctx context.Context) (int, error) {
 	var oldImages []db.PostImage
 	err := c.bunDB.NewSelect().
 		Model(&oldImages).
-		Column("id", "loc", "type").
-		Where("created_at < ? AND orphaned = false AND type = 'PREVIEW'", cutoff).
+		Column("id", "hash", "loc", "type", "file_type").
+		Where("COALESCE(updated_at, created_at) < ? AND orphaned = false AND type = 'PREVIEW'", cutoff).
 		Scan(ctx)
 
 	if err != nil {
