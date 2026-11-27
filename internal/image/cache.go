@@ -46,7 +46,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 	loc := meta.Loc
 	publicURL := ""
 
-	if s3Storage.Enabled() {
+	if s3Storage != nil && s3Storage.Enabled() {
 		loc = "CDN"
 		key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", meta.Type, meta.Hash, meta.FileType))
 		if err := s3Storage.Upload(ctx, key, data, "image/"+meta.FileType); err != nil {
@@ -77,6 +77,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 		FileType:  meta.FileType,
 		FileSize:  meta.FileSize,
 		Orphaned:  false,
+		UpdatedAt: &now,
 		CreatedAt: now,
 	}
 
@@ -85,6 +86,7 @@ func SetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 			Model(&record).
 			ExcludeColumn("id").
 			On("CONFLICT (post_id, type) DO UPDATE").
+			Set("hash = EXCLUDED.hash").
 			Set("loc = EXCLUDED.loc").
 			Set("width = EXCLUDED.width").
 			Set("height = EXCLUDED.height").
@@ -111,23 +113,51 @@ func GetCache(ctx context.Context, bunDB *bun.DB, s3Storage S3Storage, baseCache
 			Where("hash = ? AND type = ?", hash, strings.ToUpper(cacheType)).
 			Scan(ctx)
 		if err == nil {
-			if record.Loc == "CDN" && s3Storage.Enabled() && !record.Orphaned {
+			if record.Loc == "CDN" && s3Storage != nil && s3Storage.Enabled() {
 				key := strings.ToLower(fmt.Sprintf("images/%s/%s.%s", record.Type, record.Hash, record.FileType))
-				return &CachedResult{
-					FileType:    record.FileType,
-					RedirectURL: s3Storage.PublicURL(key),
-				}, nil
+				if !record.Orphaned {
+					return &CachedResult{
+						FileType:    record.FileType,
+						RedirectURL: s3Storage.PublicURL(key),
+					}, nil
+				}
+				if exists, err := s3Storage.Exists(ctx, key); err == nil && exists {
+					now := time.Now()
+					_, _ = bunDB.NewUpdate().
+						Model((*db.PostImage)(nil)).
+						Set("orphaned = false").
+						Set("updated_at = ?", now).
+						Where("id = ?", record.ID).
+						Exec(ctx)
+					return &CachedResult{
+						FileType:    record.FileType,
+						RedirectURL: s3Storage.PublicURL(key),
+					}, nil
+				}
+				return nil, nil
 			} else if record.Loc == "LOCAL" {
 				filePath := GetFilePath(baseCacheDir, record.Hash, record.FileType)
 				data, err := os.ReadFile(filePath)
 				if err != nil {
 					// File missing from disk, mark orphaned
+					if !record.Orphaned {
+						_, _ = bunDB.NewUpdate().
+							Model((*db.PostImage)(nil)).
+							Set("orphaned = true").
+							Where("id = ?", record.ID).
+							Exec(ctx)
+					}
+					return nil, nil
+				}
+
+				if record.Orphaned {
+					now := time.Now()
 					_, _ = bunDB.NewUpdate().
 						Model((*db.PostImage)(nil)).
-						Set("orphaned = true").
+						Set("orphaned = false").
+						Set("updated_at = ?", now).
 						Where("id = ?", record.ID).
 						Exec(ctx)
-					return nil, nil
 				}
 
 				return &CachedResult{

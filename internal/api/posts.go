@@ -162,7 +162,7 @@ func (h *PostHandler) GetPostHandler(c fiber.Ctx) error {
 		var postDTO query.PostDTO
 		q := h.bunDB.NewSelect().
 			TableExpr("posts AS p").
-			Join("LEFT JOIN posts_images AS pi ON pi.post_id = p.id AND pi.orphaned = false").
+			Join("LEFT JOIN posts_images AS pi ON pi.post_id = p.id").
 			Where("p.id = ?", id).
 			Group("p.id")
 		q = query.ApplySelectFields(q, s3PublicURL)

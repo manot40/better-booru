@@ -53,3 +53,13 @@ func TestSerializeTags(t *testing.T) {
 	serialized := query.SerializeTags(res.AST)
 	assert.Equal(t, input, serialized)
 }
+
+func TestProcessedURLExpr_UsesCanonicalPostHash(t *testing.T) {
+	fileExpr := query.ProcessedFileURLExpr("https://cdn.example.com")
+	assert.Contains(t, fileExpr, "p.hash")
+	assert.NotContains(t, fileExpr, "pi.hash")
+
+	previewExpr := query.ProcessedPreviewURLExpr("https://cdn.example.com")
+	assert.Contains(t, previewExpr, "p.hash")
+	assert.NotContains(t, previewExpr, "pi.hash")
+}
